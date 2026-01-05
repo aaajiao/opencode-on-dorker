@@ -194,8 +194,15 @@ EOFOMOCONFIG
         : > "$URL_FILE"
       fi
       if [[ -s "$NOTIFY_FILE" ]]; then
+        local ICON_FILE="$HOME/opencode/ghostty-128.png"
         while IFS='|' read -r title msg; do
-          [[ -n "$msg" ]] && osascript -e "display notification \"$msg\" with title \"$title\""
+          if [[ -n "$msg" ]]; then
+            if command -v terminal-notifier &>/dev/null && [[ -f "$ICON_FILE" ]]; then
+              terminal-notifier -title "$title" -message "$msg" -appIcon "$ICON_FILE" -sender com.mitchellh.ghostty
+            else
+              osascript -e "display notification \"$msg\" with title \"$title\""
+            fi
+          fi
         done < "$NOTIFY_FILE"
         : > "$NOTIFY_FILE"
       fi

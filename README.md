@@ -70,6 +70,8 @@
 ~/opencode/
 ├── Dockerfile          # Docker 镜像构建文件
 ├── docker-compose.yml  # Docker Compose 配置（可选）
+├── opencode.sh         # Shell 快捷函数
+├── ghostty-128.png     # 通知自定义图标
 ├── .env                # 环境变量配置（API 密钥等）
 └── README.md           # 本文档
 
@@ -252,7 +254,11 @@ opencode
 
 **原理**：
 1. 容器内 `notify` 命令将通知写入共享文件 `~/.opencode_data/notifications`
-2. 宿主机监听脚本检测到新内容后，调用 `osascript` 发送 macOS 原生通知
+2. 宿主机监听脚本检测到新内容后，使用 `terminal-notifier` 发送带自定义图标的 macOS 通知
+
+**自定义图标**：
+
+通知会显示 `~/opencode/ghostty-128.png` 作为图标，点击通知会激活 Ghostty 终端。
 
 **使用方法**（在容器内）：
 ```bash
@@ -265,7 +271,7 @@ notify "OpenCode" "后台任务已完成！"
 notify "构建成功" "项目编译完成，耗时 2 分钟"
 ```
 
-> 通知会带有 "Glass" 提示音，可在 macOS 系统设置中调整。
+> 如果未安装 `terminal-notifier` 或图标文件不存在，会自动回退到 `osascript` 发送通知。
 
 **oh-my-opencode 自动支持**：
 
@@ -335,11 +341,12 @@ echo "EXA_API_KEY=your-key" >> ~/opencode/.env
 
 - macOS
 - [OrbStack](https://orbstack.dev/) 或 Docker Desktop
+- [terminal-notifier](https://github.com/julienXX/terminal-notifier) (推荐，用于自定义图标通知)
 - [jq](https://jqlang.github.io/jq/) (可选，用于智能更新配置)
 
-安装 jq：
+安装依赖：
 ```bash
-brew install jq
+brew install terminal-notifier jq
 ```
 
 ## Ghostty 终端配置（可选）
