@@ -163,6 +163,11 @@ EOF
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
   "disabled_mcps": ["websearch_exa"],
+  "hooks": {
+    "session-notification": {
+      "idleConfirmationDelay": 180000
+    }
+  },
   "agents": {
     "Planner-Sisyphus": {
       "model": "anthropic/claude-opus-4-5"
