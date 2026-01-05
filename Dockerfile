@@ -73,7 +73,17 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN bun add -g opencode-ai
 
 # -------------------------------------------------------
-# 第十步：收尾配置
+# 第十步：通知脚本 - 写入共享文件，宿主机监听并发送 macOS 通知
+# -------------------------------------------------------
+RUN echo '#!/bin/bash\n\
+TITLE="${1:-OpenCode}"\n\
+MSG="${2:-通知}"\n\
+echo "${TITLE}|${MSG}" >> /root/.opencode/notifications\n\
+' > /usr/local/bin/notify && \
+    chmod +x /usr/local/bin/notify
+
+# -------------------------------------------------------
+# 第十一步：收尾配置
 # -------------------------------------------------------
 WORKDIR /workspace
 
@@ -83,7 +93,7 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
 
 # -------------------------------------------------------
-# 第十一步：Entrypoint 脚本 - 处理环境变量和 GitHub 认证
+# 第十二步：Entrypoint 脚本 - 处理环境变量和 GitHub 认证
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
