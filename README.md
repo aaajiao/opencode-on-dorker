@@ -121,10 +121,10 @@ EXA_API_KEY=your-exa-api-key  # 可选，用于 websearch_exa
 
 ### 3. 添加 Shell 函数
 
-将 `opencode.sh` 内容添加到 `~/.zshrc`：
+在 `~/.zshrc` 中引用 `opencode.sh`（推荐，方便后续更新）：
 
 ```bash
-cat opencode.sh >> ~/.zshrc
+echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
 source ~/.zshrc
 ```
 
