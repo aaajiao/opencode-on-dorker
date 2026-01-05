@@ -5,7 +5,8 @@
 #   opencode              # 实例名=当前目录名，自动分配端口
 #   opencode -p 5000      # 指定端口
 #   opencode -n myname    # 指定实例名
-#   opencode -r           # 重建镜像 + 清理当前实例配置
+#   opencode -r           # 重建镜像 + 清理所有实例配置
+#   opencode -r --keep    # 重建镜像 + 保留配置
 
 # =========================================
 # 辅助函数：清理实例名 ("My Project" -> "my-project")
@@ -35,6 +36,7 @@ opencode() {
 
   # 参数变量
   local REBUILD=0
+  local KEEP_CONFIG=0
   local INSTANCE_NAME=""
   local CUSTOM_PORT=""
 
@@ -42,6 +44,7 @@ opencode() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -r) REBUILD=1; shift ;;
+      --keep) KEEP_CONFIG=1; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       *) break ;;
@@ -77,9 +80,13 @@ opencode() {
   if [[ "$REBUILD" -eq 1 ]]; then
     echo "🗑️  删除旧镜像..."
     docker rmi "$IMAGE_NAME" 2>/dev/null
-    echo "🗑️  删除实例 [${INSTANCE_NAME}] 配置..."
-    rm -rf "$INSTANCE_CONFIG_DIR"
-    rm -rf "$INSTANCE_DATA_DIR"
+    if [[ "$KEEP_CONFIG" -eq 0 ]]; then
+      echo "🗑️  删除所有实例配置..."
+      rm -rf "$HOME/.config/opencode"
+      rm -rf "$HOME/.opencode_data"
+    else
+      echo "📦 保留现有配置..."
+    fi
     echo "🗑️  清除插件缓存..."
     rm -rf "$HOME/.cache/opencode/node_modules"
     echo "🏗️  正在完全重建镜像 (无缓存)..."

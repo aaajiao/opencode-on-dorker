@@ -178,8 +178,11 @@ opencode auth login
 cd ~/my-project
 opencode
 
-# 强制重建镜像 + 清理当前实例配置
+# 重建镜像 + 清理所有实例配置
 opencode -r
+
+# 重建镜像 + 保留配置
+opencode -r --keep
 
 # 访问 Web UI（端口会在启动时显示）
 open http://localhost:4096
@@ -212,7 +215,8 @@ opencode              # 实例: project-b, 端口: 4097（自动分配）
 |------|------|------|
 | `-n <name>` | 指定实例名（覆盖目录名） | `opencode -n myapp` |
 | `-p <port>` | 指定端口（覆盖自动分配） | `opencode -p 5000` |
-| `-r` | 重建镜像 + 清理当前实例配置 | `opencode -r` |
+| `-r` | 重建镜像 + 清理所有实例配置 | `opencode -r` |
+| `-r --keep` | 重建镜像 + 保留配置 | `opencode -r --keep` |
 
 **查看运行中的实例：**
 ```bash
@@ -283,14 +287,14 @@ docker-compose build --no-cache
 
 ### 配置重置
 
-如需重新生成当前实例的配置：
-
 ```bash
-# 方式一：使用 -r 参数（推荐，会同时重建镜像）
-cd ~/my-project
+# 重建镜像 + 清理所有实例配置（推荐）
 opencode -r
 
-# 方式二：手动删除实例配置
+# 重建镜像 + 保留配置（仅更新 OpenCode 版本）
+opencode -r --keep
+
+# 手动删除特定实例配置
 rm -rf ~/.config/opencode/my-project/
 rm -rf ~/.opencode_data/my-project/
 opencode
