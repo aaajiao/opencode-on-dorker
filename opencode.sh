@@ -1,26 +1,85 @@
-# OpenCode Docker Shortcut (支持 oh-my-opencode)
+# OpenCode Docker Shortcut (支持 oh-my-opencode + 多实例)
 # 添加到 ~/.zshrc 或 ~/.bashrc
+#
+# 用法:
+#   opencode              # 实例名=当前目录名，自动分配端口
+#   opencode -p 5000      # 指定端口
+#   opencode -n myname    # 指定实例名
+#   opencode -r           # 重建镜像 + 清理当前实例配置
+
+# =========================================
+# 辅助函数：清理实例名 ("My Project" -> "my-project")
+# =========================================
+_opencode_sanitize_name() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-_'
+}
+
+# =========================================
+# 辅助函数：查找空闲端口
+# =========================================
+_opencode_find_free_port() {
+  local base_port=${1:-4096}
+  for ((p=base_port; p<base_port+100; p++)); do
+    if ! lsof -i :"$p" &>/dev/null; then
+      echo "$p"
+      return
+    fi
+  done
+  echo "$base_port"
+}
+
 opencode() {
   local IMAGE_NAME="opencode-bun"
-  local CONTAINER_NAME="opencode"
-  local REBUILD=0
-  local URL_FILE="$HOME/.opencode_data/open_url"
-  local NOTIFY_FILE="$HOME/.opencode_data/notifications"
   local ENV_FILE="$HOME/opencode/.env"
-  local CONFIG_FILE="$HOME/.config/opencode/opencode.json"
-  local OMO_CONFIG_FILE="$HOME/.config/opencode/oh-my-opencode.json"
+  local SHARE_DIR="$HOME/.local/share/opencode"
 
-  if [[ "$1" == "-r" ]]; then
-    REBUILD=1
-    shift
+  # 参数变量
+  local REBUILD=0
+  local INSTANCE_NAME=""
+  local CUSTOM_PORT=""
+
+  # 解析参数
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -r) REBUILD=1; shift ;;
+      -n) INSTANCE_NAME="$2"; shift 2 ;;
+      -p) CUSTOM_PORT="$2"; shift 2 ;;
+      *) break ;;
+    esac
+  done
+
+  # 默认实例名 = 当前目录名（清理后）
+  if [[ -z "$INSTANCE_NAME" ]]; then
+    INSTANCE_NAME=$(_opencode_sanitize_name "$(basename "$(pwd)")")
+  fi
+
+  # 容器名
+  local CONTAINER_NAME="opencode-${INSTANCE_NAME}"
+
+  # 实例独立目录
+  local INSTANCE_CONFIG_DIR="$HOME/.config/opencode/${INSTANCE_NAME}"
+  local INSTANCE_DATA_DIR="$HOME/.opencode_data/${INSTANCE_NAME}"
+
+  # 实例独立文件
+  local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
+  local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
+  local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
+  local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
+
+  # 端口分配
+  local PORT
+  if [[ -n "$CUSTOM_PORT" ]]; then
+    PORT="$CUSTOM_PORT"
+  else
+    PORT=$(_opencode_find_free_port 4096)
   fi
 
   if [[ "$REBUILD" -eq 1 ]]; then
     echo "🗑️  删除旧镜像..."
     docker rmi "$IMAGE_NAME" 2>/dev/null
-    echo "🗑️  删除旧配置..."
-    rm -f "$CONFIG_FILE"
-    rm -f "$OMO_CONFIG_FILE"
+    echo "🗑️  删除实例 [${INSTANCE_NAME}] 配置..."
+    rm -rf "$INSTANCE_CONFIG_DIR"
+    rm -rf "$INSTANCE_DATA_DIR"
     echo "🗑️  清除插件缓存..."
     rm -rf "$HOME/.cache/opencode/node_modules"
     echo "🏗️  正在完全重建镜像 (无缓存)..."
@@ -30,9 +89,9 @@ opencode() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
-  mkdir -p "$HOME/.opencode_data"
-  mkdir -p "$HOME/.config/opencode"
-  mkdir -p "$HOME/.local/share/opencode"
+  mkdir -p "$INSTANCE_DATA_DIR"
+  mkdir -p "$INSTANCE_CONFIG_DIR"
+  mkdir -p "$SHARE_DIR"
 
   # 加载 .env 文件中的变量
   if [[ -f "$ENV_FILE" ]]; then
@@ -59,7 +118,7 @@ opencode() {
     "opencode-antigravity-auth"
   ],
   "server": {
-    "port": 4096,
+    "port": ${PORT},
     "hostname": "0.0.0.0"
   },
   "mcp": {
@@ -140,15 +199,15 @@ opencode() {
 }
 EOF
   else
-    # 配置文件已存在，只更新 apiKey 和 baseURL
     if command -v jq &> /dev/null; then
       local TMP_FILE=$(mktemp)
-      jq --arg key "$QUOTIO_API_KEY" --arg url "$QUOTIO_BASE_URL" \
-        '.provider.quotio.options.apiKey = $key | .provider.quotio.options.baseURL = $url' \
+      jq --arg key "$QUOTIO_API_KEY" --arg url "$QUOTIO_BASE_URL" --argjson port "$PORT" \
+        '.provider.quotio.options.apiKey = $key | .provider.quotio.options.baseURL = $url | .server.port = $port' \
         "$CONFIG_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONFIG_FILE"
     else
       sed -i.bak -E "s|(\"apiKey\":[[:space:]]*\")[^\"]*(\")|\1${QUOTIO_API_KEY}\2|g" "$CONFIG_FILE"
       sed -i.bak -E "s|(\"baseURL\":[[:space:]]*\")[^\"]*(\")|\1${QUOTIO_BASE_URL}\2|g" "$CONFIG_FILE"
+      sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${PORT}|g" "$CONFIG_FILE"
       rm -f "${CONFIG_FILE}.bak"
     fi
   fi
@@ -214,6 +273,11 @@ EOFOMOCONFIG
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
+  echo "🚀 启动实例: ${INSTANCE_NAME}"
+  echo "📂 工作目录: $(pwd)"
+  echo "🌐 Web UI: http://localhost:${PORT}"
+  echo ""
+
   docker run -it --rm \
     --name "$CONTAINER_NAME" \
     --network host \
@@ -222,9 +286,9 @@ EOFOMOCONFIG
     -e BROWSER=/usr/bin/xdg-open \
     -e EXA_API_KEY="${EXA_API_KEY:-}" \
     -v "$(pwd):/workspace" \
-    -v "$HOME/.opencode_data:/root/.opencode" \
-    -v "$HOME/.config/opencode:/root/.config/opencode" \
-    -v "$HOME/.local/share/opencode:/root/.local/share/opencode" \
+    -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
+    -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
+    -v "${SHARE_DIR}:/root/.local/share/opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
     -w /workspace \
     "$IMAGE_NAME" "$@"
