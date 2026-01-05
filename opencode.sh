@@ -194,7 +194,7 @@ EOFOMOCONFIG
       fi
       if [[ -s "$NOTIFY_FILE" ]]; then
         while IFS='|' read -r title msg; do
-          [[ -n "$msg" ]] && osascript -e "display notification \"$msg\" with title \"$title\" sound name \"Glass\""
+          [[ -n "$msg" ]] && osascript -e "display notification \"$msg\" with title \"$title\""
         done < "$NOTIFY_FILE"
         : > "$NOTIFY_FILE"
       fi
