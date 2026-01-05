@@ -1,0 +1,55 @@
+services:
+  opencode:
+    build: .
+    container_name: opencode
+
+    # 使用 host 网络模式，支持 OAuth 回调
+    # 访问地址: http://localhost:4096
+    network_mode: host
+
+    volumes:
+      # 工作目录
+      - .:/workspace
+
+      # 配置持久化
+      - ~/.config/opencode:/root/.config/opencode
+      - ~/.local/share/opencode:/root/.local/share/opencode
+
+      # opencode 数据目录
+      - ~/.opencode_data:/root/.opencode
+
+      # SSH 密钥挂载 (用于 Git SSH 操作)
+      - ~/.ssh:/root/.ssh:ro
+
+      # 注意：不挂载 ~/.config/gh，让容器使用 GITHUB_TOKEN 环境变量
+
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+
+    environment:
+      # --- AI 模型密钥 (从 .env 读取) ---
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+
+      # --- API Base URL (可选，用于自定义 API 端点) ---
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL:-}
+
+      # --- Quotio 自定义 Provider ---
+      - QUOTIO_API_KEY=${QUOTIO_API_KEY:-}
+      - QUOTIO_BASE_URL=${QUOTIO_BASE_URL:-}
+
+      # --- GitHub 增强 ---
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+
+      # --- Exa AI (用于 websearch_exa MCP) ---
+      - EXA_API_KEY=${EXA_API_KEY:-}
+
+      # --- 界面与显示 ---
+      - TERM=xterm-256color
+      - BROWSER=/usr/bin/xdg-open
+
+    # 如果遇到网络问题，取消下面的注释
+    # dns:
+    #   - 8.8.8.8
