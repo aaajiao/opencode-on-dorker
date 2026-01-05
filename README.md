@@ -6,6 +6,7 @@
 
 - ✅ 一键启动 OpenCode 容器
 - ✅ 链接自动在 Mac 浏览器打开
+- ✅ **macOS 桌面通知支持**（容器内任务完成时通知宿主机）
 - ✅ GitHub CLI 自动认证（通过 GITHUB_TOKEN）
 - ✅ OAuth 认证支持（Claude Max、Gemini Pro）
 - ✅ 配置和认证信息持久化
@@ -120,10 +121,10 @@ EXA_API_KEY=your-exa-api-key  # 可选，用于 websearch_exa
 
 ### 3. 添加 Shell 函数
 
-将 `opencode.sh` 内容添加到 `~/.zshrc`：
+在 `~/.zshrc` 中引用 `opencode.sh`（推荐，方便后续更新）：
 
 ```bash
-cat opencode.sh >> ~/.zshrc
+echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
 source ~/.zshrc
 ```
 
@@ -243,7 +244,32 @@ opencode
 |------|------|
 | `~/.config/opencode/` | OpenCode 配置文件 |
 | `~/.local/share/opencode/` | OAuth 认证信息 |
-| `~/.opencode_data/` | OpenCode 数据和 URL 监听文件 |
+| `~/.opencode_data/` | OpenCode 数据、URL 监听文件、通知文件 |
+
+## macOS 桌面通知
+
+由于 Docker 容器无法直接发送 macOS 桌面通知，本项目通过共享文件机制实现：
+
+**原理**：
+1. 容器内 `notify` 命令将通知写入共享文件 `~/.opencode_data/notifications`
+2. 宿主机监听脚本检测到新内容后，调用 `osascript` 发送 macOS 原生通知
+
+**使用方法**（在容器内）：
+```bash
+notify "标题" "通知内容"
+```
+
+**示例**：
+```bash
+notify "OpenCode" "后台任务已完成！"
+notify "构建成功" "项目编译完成，耗时 2 分钟"
+```
+
+> 通知会带有 "Glass" 提示音，可在 macOS 系统设置中调整。
+
+**oh-my-opencode 自动支持**：
+
+容器内已伪造 `osascript` 和 `notify-send` 命令，oh-my-opencode 的通知 hook（`session-notification`、`background-notification`）会自动通过此机制发送 macOS 通知，无需额外配置。
 
 ## 常见问题
 

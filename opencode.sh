@@ -5,6 +5,7 @@ opencode() {
   local CONTAINER_NAME="opencode"
   local REBUILD=0
   local URL_FILE="$HOME/.opencode_data/open_url"
+  local NOTIFY_FILE="$HOME/.opencode_data/notifications"
   local ENV_FILE="$HOME/opencode/.env"
   local CONFIG_FILE="$HOME/.config/opencode/opencode.json"
   local OMO_CONFIG_FILE="$HOME/.config/opencode/oh-my-opencode.json"
@@ -162,6 +163,7 @@ EOF
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
   "disabled_mcps": ["websearch_exa"],
+  "disabled_hooks": ["session-notification"],
   "agents": {
     "Planner-Sisyphus": {
       "model": "anthropic/claude-opus-4-5"
@@ -181,6 +183,7 @@ EOFOMOCONFIG
   fi
 
   : > "$URL_FILE"
+  : > "$NOTIFY_FILE"
 
   (
     while true; do
@@ -189,6 +192,12 @@ EOFOMOCONFIG
           [[ -n "$url" ]] && open "$url"
         done < "$URL_FILE"
         : > "$URL_FILE"
+      fi
+      if [[ -s "$NOTIFY_FILE" ]]; then
+        while IFS='|' read -r title msg; do
+          [[ -n "$msg" ]] && osascript -e "display notification \"$msg\" with title \"$title\""
+        done < "$NOTIFY_FILE"
+        : > "$NOTIFY_FILE"
       fi
       sleep 0.5
     done
