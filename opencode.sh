@@ -194,7 +194,7 @@ EOFOMOCONFIG
         : > "$URL_FILE"
       fi
       if [[ -s "$NOTIFY_FILE" ]]; then
-        local ICON_FILE="$HOME/opencode/opencode-icon.png"
+        local ICON_FILE="$HOME/opencode/ghostty-128.png"
         while IFS='|' read -r title msg; do
           if [[ -n "$msg" ]]; then
             if command -v terminal-notifier &>/dev/null && [[ -f "$ICON_FILE" ]]; then

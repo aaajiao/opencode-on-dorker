@@ -71,7 +71,7 @@
 ├── Dockerfile          # Docker 镜像构建文件
 ├── docker-compose.yml  # Docker Compose 配置（可选）
 ├── opencode.sh         # Shell 快捷函数
-├── opencode-icon.png   # 通知自定义图标
+├── ghostty-128.png     # 通知自定义图标
 ├── .env                # 环境变量配置（API 密钥等）
 └── README.md           # 本文档
 
@@ -258,7 +258,7 @@ opencode
 
 **自定义图标**：
 
-通知会显示 `~/opencode/opencode-icon.png` 作为图标，点击通知会激活 Ghostty 终端。
+通知会显示 `~/opencode/ghostty-128.png` 作为图标，点击通知会激活 Ghostty 终端。
 
 **使用方法**（在容器内）：
 ```bash
