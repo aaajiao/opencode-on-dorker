@@ -73,7 +73,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN bun add -g opencode-ai
 
 # -------------------------------------------------------
-# 第十步：通知脚本 - 写入共享文件，宿主机监听并发送 macOS 通知
+# 第十步：通知系统 - 写入共享文件，宿主机监听并发送 macOS 通知
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 TITLE="${1:-OpenCode}"\n\
@@ -81,6 +81,21 @@ MSG="${2:-通知}"\n\
 echo "${TITLE}|${MSG}" >> /root/.opencode/notifications\n\
 ' > /usr/local/bin/notify && \
     chmod +x /usr/local/bin/notify
+
+RUN echo '#!/bin/bash\n\
+if [[ "$*" == *"display notification"* ]]; then\n\
+  MSG=$(echo "$*" | sed -n '"'"'s/.*display notification "\\([^"]*\\)".*/\\1/p'"'"')\n\
+  TITLE=$(echo "$*" | sed -n '"'"'s/.*with title "\\([^"]*\\)".*/\\1/p'"'"')\n\
+  [[ -z "$TITLE" ]] && TITLE="OpenCode"\n\
+  [[ -n "$MSG" ]] && notify "$TITLE" "$MSG"\n\
+fi\n\
+' > /usr/local/bin/osascript && chmod +x /usr/local/bin/osascript
+
+RUN echo '#!/bin/bash\n\
+TITLE="${1:-通知}"\n\
+MSG="${2:-}"\n\
+[[ -n "$MSG" ]] && notify "$TITLE" "$MSG"\n\
+' > /usr/local/bin/notify-send && chmod +x /usr/local/bin/notify-send
 
 # -------------------------------------------------------
 # 第十一步：收尾配置

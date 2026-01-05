@@ -267,6 +267,10 @@ notify "构建成功" "项目编译完成，耗时 2 分钟"
 
 > 通知会带有 "Glass" 提示音，可在 macOS 系统设置中调整。
 
+**oh-my-opencode 自动支持**：
+
+容器内已伪造 `osascript` 和 `notify-send` 命令，oh-my-opencode 的通知 hook（`session-notification`、`background-notification`）会自动通过此机制发送 macOS 通知，无需额外配置。
+
 ## 常见问题
 
 ### Q: 环境变量没有加载？
