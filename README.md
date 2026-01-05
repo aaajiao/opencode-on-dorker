@@ -258,7 +258,7 @@ opencode
 
 **自定义图标**：
 
-通知会显示 `~/opencode/ghostty-128.png` 作为图标，点击通知会激活 Ghostty 终端。
+通知右侧会显示 `~/opencode/ghostty-128.png` 自定义图标。
 
 **使用方法**（在容器内）：
 ```bash
