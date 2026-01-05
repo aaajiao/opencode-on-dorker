@@ -5,12 +5,13 @@
 ## 功能特性
 
 - ✅ 一键启动 OpenCode 容器
+- ✅ **多实例支持**（同时编辑多个项目，自动端口分配）
 - ✅ 链接自动在 Mac 浏览器打开
 - ✅ **macOS 桌面通知支持**（容器内任务完成时通知宿主机）
 - ✅ GitHub CLI 自动认证（通过 GITHUB_TOKEN）
 - ✅ OAuth 认证支持（Claude Max、Gemini Pro）
 - ✅ 配置和认证信息持久化
-- ✅ Web UI 可访问 (`http://localhost:4096`)
+- ✅ Web UI 可访问
 - ✅ 环境变量动态配置
 - ✅ **oh-my-opencode 多 Agent 协作**
 - ✅ **MCP 服务器 (Context7, Playwright, Exa)**
@@ -42,7 +43,7 @@
 
 ### 自定义配置（可选）
 
-如需覆盖默认模型，编辑 `~/.config/opencode/oh-my-opencode.json`：
+如需覆盖默认模型，编辑实例的配置文件 `~/.config/opencode/<instance>/oh-my-opencode.json`：
 
 ```json
 {
@@ -76,14 +77,22 @@
 └── README.md           # 本文档
 
 ~/.config/opencode/
-├── opencode.json       # OpenCode 配置（自动生成）
-└── oh-my-opencode.json # oh-my-opencode 配置（自动生成）
+├── <instance-name>/    # 每个实例独立配置目录
+│   ├── opencode.json
+│   └── oh-my-opencode.json
+└── ...
+
+~/.opencode_data/
+├── <instance-name>/    # 每个实例独立数据目录
+│   ├── open_url
+│   └── notifications
+└── ...
 
 ~/.local/share/opencode/
-└── auth.json           # OAuth 认证信息（自动保存）
+└── auth.json           # OAuth 认证信息（所有实例共享）
 
 ~/.zshrc
-└── opencode()          # Shell 快捷函数
+└── source ~/opencode/opencode.sh
 ```
 
 ## 安装步骤
@@ -165,15 +174,49 @@ opencode auth login
 ### 基本使用
 
 ```bash
-# 在任意项目目录下启动
+# 在任意项目目录下启动（实例名自动取目录名）
 cd ~/my-project
 opencode
 
-# 强制重建镜像
+# 强制重建镜像 + 清理当前实例配置
 opencode -r
 
-# 访问 Web UI
+# 访问 Web UI（端口会在启动时显示）
 open http://localhost:4096
+```
+
+### 多实例运行
+
+支持同时编辑多个不相关的项目：
+
+```bash
+# 终端 1：编辑项目 A
+cd ~/project-a
+opencode              # 实例: project-a, 端口: 4096
+
+# 终端 2：编辑项目 B
+cd ~/project-b
+opencode              # 实例: project-b, 端口: 4097（自动分配）
+```
+
+**启动时显示：**
+```
+🚀 启动实例: project-a
+📂 工作目录: /Users/xxx/project-a
+🌐 Web UI: http://localhost:4096
+```
+
+**可选参数：**
+
+| 参数 | 说明 | 示例 |
+|------|------|------|
+| `-n <name>` | 指定实例名（覆盖目录名） | `opencode -n myapp` |
+| `-p <port>` | 指定端口（覆盖自动分配） | `opencode -p 5000` |
+| `-r` | 重建镜像 + 清理当前实例配置 | `opencode -r` |
+
+**查看运行中的实例：**
+```bash
+docker ps | grep opencode
 ```
 
 ### oh-my-opencode 常用命令
@@ -203,7 +246,7 @@ docker-compose build --no-cache
 | 特性 | 说明 |
 |------|------|
 | OAuth 回调 | ✅ 支持（容器与 Mac 共享 localhost） |
-| Web UI 地址 | `http://localhost:4096` |
+| Web UI 地址 | `http://localhost:<port>`（启动时显示） |
 | Quotio 地址 | `http://localhost:8317/v1` |
 | OrbStack Magic Domain | ❌ 不支持 |
 
@@ -240,11 +283,16 @@ docker-compose build --no-cache
 
 ### 配置重置
 
-如需重新生成配置：
+如需重新生成当前实例的配置：
 
 ```bash
-rm ~/.config/opencode/opencode.json
-rm ~/.config/opencode/oh-my-opencode.json
+# 方式一：使用 -r 参数（推荐，会同时重建镜像）
+cd ~/my-project
+opencode -r
+
+# 方式二：手动删除实例配置
+rm -rf ~/.config/opencode/my-project/
+rm -rf ~/.opencode_data/my-project/
 opencode
 ```
 
@@ -252,9 +300,9 @@ opencode
 
 | 目录 | 说明 |
 |------|------|
-| `~/.config/opencode/` | OpenCode 配置文件 |
-| `~/.local/share/opencode/` | OAuth 认证信息 |
-| `~/.opencode_data/` | OpenCode 数据、URL 监听文件、通知文件 |
+| `~/.config/opencode/<instance>/` | 实例配置文件（隔离） |
+| `~/.opencode_data/<instance>/` | 实例数据、URL 监听、通知文件（隔离） |
+| `~/.local/share/opencode/` | OAuth 认证信息（所有实例共享） |
 
 ## macOS 桌面通知
 
@@ -337,7 +385,8 @@ echo "EXA_API_KEY=your-key" >> ~/opencode/.env
 
 确保：
 1. `opencode.json` 中 server 配置正确
-2. 访问地址是 `http://localhost:4096`（不是 `opencode.orb.local`）
+2. 访问启动时显示的端口地址（如 `http://localhost:4096`）
+3. 多实例时每个实例端口不同，查看启动时的输出
 
 ### Q: GitHub 登录失败？
 
