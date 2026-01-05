@@ -198,7 +198,7 @@ EOFOMOCONFIG
         while IFS='|' read -r title msg; do
           if [[ -n "$msg" ]]; then
             if command -v terminal-notifier &>/dev/null && [[ -f "$ICON_FILE" ]]; then
-              terminal-notifier -title "$title" -message "$msg" -contentImage "$ICON_FILE" -sound Pong 
+              terminal-notifier -title "$title" -message "$msg" -contentImage "$ICON_FILE" -sound Morse
             else
               osascript -e "display notification \"$msg\" with title \"$title\""
             fi
