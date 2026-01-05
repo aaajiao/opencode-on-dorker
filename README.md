@@ -128,6 +128,9 @@ EXA_API_KEY=your-exa-api-key  # 可选，用于 websearch_exa
 ```bash
 echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
 source ~/.zshrc
+
+> **更新 opencode.sh 后生效方法**：
+> 如果更新了 `opencode.sh` 文件，需要运行 `exec zsh` 重新加载 shell，或者打开新的终端窗口。仅 `source ~/.zshrc` 可能无法覆盖已加载的函数。
 ```
 
 ### 4. 首次构建
@@ -258,7 +261,7 @@ opencode
 
 **自定义图标**：
 
-通知会显示 `~/opencode/ghostty-128.png` 作为图标，点击通知会激活 Ghostty 终端。
+通知右侧会显示 `~/opencode/ghostty-128.png` 自定义图标。
 
 **使用方法**（在容器内）：
 ```bash

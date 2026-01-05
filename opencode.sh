@@ -194,11 +194,11 @@ EOFOMOCONFIG
         : > "$URL_FILE"
       fi
       if [[ -s "$NOTIFY_FILE" ]]; then
-        local ICON_FILE="$HOME/opencode/ghostty-128.png"
+        ICON_FILE="$HOME/opencode/ghostty-128.png"
         while IFS='|' read -r title msg; do
           if [[ -n "$msg" ]]; then
             if command -v terminal-notifier &>/dev/null && [[ -f "$ICON_FILE" ]]; then
-              terminal-notifier -title "$title" -message "$msg" -appIcon "$ICON_FILE" -sender com.mitchellh.ghostty
+              terminal-notifier -title "$title" -message "$msg" -contentImage "$ICON_FILE" 
             else
               osascript -e "display notification \"$msg\" with title \"$title\""
             fi
@@ -210,6 +210,7 @@ EOFOMOCONFIG
     done
   ) &
   local WATCHER_PID=$!
+  disown $WATCHER_PID 2>/dev/null
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
