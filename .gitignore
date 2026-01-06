@@ -13,6 +13,8 @@ Icon*
 
 # 全局配置中的运行时数据
 global/claude/plugins/
+global/claude/todos/
+global/claude/transcripts/
 global/claude/.DS_Store
 global/claude/**/.DS_Store
 global/opencode/**/.DS_Store
