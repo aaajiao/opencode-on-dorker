@@ -76,8 +76,21 @@
 ├── opencode.sh         # Shell 快捷函数 (ocd 命令)
 ├── ghostty-128.png     # 通知自定义图标
 ├── .env                # 环境变量配置（API 密钥等）
-├── skills/             # 全局 skills（自动生成）
-│   └── remind/SKILL.md
+│
+├── claude_home/        # Claude Code 兼容层（全局共享）
+│   ├── skills/         # 自定义 Skills
+│   ├── commands/       # 自定义斜杠命令
+│   ├── agents/         # 自定义 Agents
+│   ├── rules/          # 条件规则
+│   ├── settings.json   # Hooks 配置
+│   └── .mcp.json       # 额外 MCP 服务器
+│
+├── instances/          # 实例数据（每实例隔离）
+│   └── <instance-name>/
+│       └── claude/
+│           ├── todos/       # 任务列表
+│           └── transcripts/ # 会话日志
+│
 └── README.md           # 本文档
 
 ~/.config/opencode/
@@ -98,6 +111,26 @@
 ~/.zshrc
 └── source ~/opencode/opencode.sh
 ```
+
+### Claude Code 兼容层说明
+
+| 目录 | 作用域 | 说明 |
+|------|--------|------|
+| `claude_home/skills/` | 全局 | 自定义 Skills，所有实例共享 |
+| `claude_home/commands/` | 全局 | 自定义斜杠命令 |
+| `claude_home/agents/` | 全局 | 自定义 Agents |
+| `claude_home/rules/` | 全局 | 条件规则（按文件类型等触发） |
+| `claude_home/settings.json` | 全局 | Hooks 配置 |
+| `claude_home/.mcp.json` | 全局 | 额外 MCP 服务器 |
+| `instances/<name>/claude/todos/` | 实例 | 任务列表（每实例独立） |
+| `instances/<name>/claude/transcripts/` | 实例 | 会话日志（每实例独立） |
+
+**容器内挂载映射**：
+- `~/opencode/claude_home/` → `/root/.claude/`
+- `~/opencode/instances/<name>/claude/todos/` → `/root/.claude/todos/`
+- `~/opencode/instances/<name>/claude/transcripts/` → `/root/.claude/transcripts/`
+
+> 详细使用场景请参考 [TOOLS.md](./TOOLS.md#-claude-code-兼容性)。
 
 ## 安装步骤
 
