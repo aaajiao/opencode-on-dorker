@@ -7,6 +7,7 @@
 #   opencode -n myname    # 指定实例名
 #   opencode -r           # 重建镜像 + 清理所有实例配置
 #   opencode -r --keep    # 重建镜像 + 保留配置
+#   opencode --quotio     # 启用 Quotio 代理（需配置 QUOTIO_API_KEY）
 
 # =========================================
 # 辅助函数：清理实例名 ("My Project" -> "my-project")
@@ -34,17 +35,17 @@ opencode() {
   local ENV_FILE="$HOME/opencode/.env"
   local SHARE_DIR="$HOME/.local/share/opencode"
 
-  # 参数变量
   local REBUILD=0
   local KEEP_CONFIG=0
   local INSTANCE_NAME=""
   local CUSTOM_PORT=""
+  local USE_QUOTIO=0
 
-  # 解析参数
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -r) REBUILD=1; shift ;;
       --keep) KEEP_CONFIG=1; shift ;;
+      --quotio) USE_QUOTIO=1; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       *) break ;;
@@ -101,23 +102,19 @@ opencode() {
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
 
-  # 加载 .env 文件中的变量
   if [[ -f "$ENV_FILE" ]]; then
     set -a
     source "$ENV_FILE"
     set +a
   fi
 
-  # 设置默认值
-  QUOTIO_API_KEY="${QUOTIO_API_KEY:-sk-default}"
+  QUOTIO_API_KEY="${QUOTIO_API_KEY:-}"
   QUOTIO_BASE_URL="${QUOTIO_BASE_URL:-http://localhost:8317/v1}"
 
-  # =========================================
-  # 生成 opencode.json (主配置)
-  # =========================================
   if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "📝 生成 opencode.json..."
-    cat > "$CONFIG_FILE" << EOF
+    if [[ "$USE_QUOTIO" -eq 1 ]]; then
+      cat > "$CONFIG_FILE" << EOF
 {
   "\$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-opus-4-5",
@@ -155,77 +152,79 @@ opencode() {
       "models": {
         "gemini-claude-sonnet-4-5": {
           "name": "Claude Sonnet 4.5",
-          "limit": {
-            "context": 200000,
-            "output": 64000
-          }
+          "limit": { "context": 200000, "output": 64000 }
         },
         "gemini-claude-opus-4-5-thinking": {
           "name": "Claude Opus 4.5 Thinking",
-          "limit": {
-            "context": 200000,
-            "output": 64000
-          },
+          "limit": { "context": 200000, "output": 64000 },
           "reasoning": true,
-          "options": {
-            "thinking": {
-              "type": "enabled",
-              "budgetTokens": 10000
-            }
-          }
+          "options": { "thinking": { "type": "enabled", "budgetTokens": 10000 } }
         },
         "gemini-3-pro-preview": {
           "name": "Gemini 3 Pro Preview",
-          "limit": {
-            "context": 1048576,
-            "output": 65536
-          }
+          "limit": { "context": 1048576, "output": 65536 }
         },
         "gemini-3-flash-preview": {
           "name": "Gemini 3 Flash Preview",
-          "limit": {
-            "context": 1048576,
-            "output": 65536
-          }
+          "limit": { "context": 1048576, "output": 65536 }
         },
         "gpt-5.2": {
           "name": "GPT 5.2",
-          "limit": {
-            "context": 400000,
-            "output": 32768
-          },
+          "limit": { "context": 400000, "output": 32768 },
           "reasoning": true,
-          "options": {
-            "reasoning": {
-              "effort": "medium"
-            }
-          }
+          "options": { "reasoning": { "effort": "medium" } }
         }
       }
     }
   }
 }
 EOF
+    else
+      cat > "$CONFIG_FILE" << EOF
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-opus-4-5",
+  "plugin": [
+    "oh-my-opencode",
+    "opencode-antigravity-auth@1.2.6"
+  ],
+  "server": {
+    "port": ${PORT},
+    "hostname": "0.0.0.0"
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@playwright/mcp@latest", "--headless"],
+      "enabled": true
+    },
+    "exa": {
+      "type": "local",
+      "command": ["npx", "-y", "exa-mcp-server"],
+      "timeout": 60000,
+      "environment": {
+        "EXA_API_KEY": "${EXA_API_KEY}"
+      }
+    }
+  }
+}
+EOF
+    fi
   else
     if command -v jq &> /dev/null; then
       local TMP_FILE=$(mktemp)
-      jq --arg key "$QUOTIO_API_KEY" --arg url "$QUOTIO_BASE_URL" --argjson port "$PORT" \
-        '.provider.quotio.options.apiKey = $key | .provider.quotio.options.baseURL = $url | .server.port = $port' \
+      jq --argjson port "$PORT" '.server.port = $port' \
         "$CONFIG_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONFIG_FILE"
     else
-      sed -i.bak -E "s|(\"apiKey\":[[:space:]]*\")[^\"]*(\")|\1${QUOTIO_API_KEY}\2|g" "$CONFIG_FILE"
-      sed -i.bak -E "s|(\"baseURL\":[[:space:]]*\")[^\"]*(\")|\1${QUOTIO_BASE_URL}\2|g" "$CONFIG_FILE"
       sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${PORT}|g" "$CONFIG_FILE"
       rm -f "${CONFIG_FILE}.bak"
     fi
   fi
 
-  # =========================================
-  # 生成 oh-my-opencode.json (插件配置)
-  # =========================================
   if [[ ! -f "$OMO_CONFIG_FILE" ]]; then
     echo "📝 生成 oh-my-opencode.json..."
-    cat > "$OMO_CONFIG_FILE" << 'EOFOMOCONFIG'
+    if [[ "$USE_QUOTIO" -eq 1 ]]; then
+      cat > "$OMO_CONFIG_FILE" << 'EOFOMOCONFIG'
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
@@ -247,6 +246,21 @@ EOF
   }
 }
 EOFOMOCONFIG
+    else
+      cat > "$OMO_CONFIG_FILE" << 'EOFOMOCONFIG'
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "google_auth": false,
+  "disabled_mcps": ["websearch_exa"],
+  "disabled_hooks": [],
+  "agents": {
+    "Planner-Sisyphus": {
+      "model": "anthropic/claude-opus-4-5"
+    }
+  }
+}
+EOFOMOCONFIG
+    fi
   fi
 
   : > "$URL_FILE"
@@ -284,6 +298,7 @@ EOFOMOCONFIG
   echo "🚀 启动实例: ${INSTANCE_NAME}"
   echo "📂 工作目录: $(pwd)"
   echo "🌐 Web UI: http://localhost:${PORT}"
+  [[ "$USE_QUOTIO" -eq 1 ]] && echo "🔌 Quotio 代理: 已启用"
   echo ""
 
   docker run -it --rm \

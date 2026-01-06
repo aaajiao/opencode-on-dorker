@@ -219,11 +219,28 @@ opencode              # 实例: project-b, 端口: 4097（自动分配）
 | `-p <port>` | 指定端口（覆盖自动分配） | `opencode -p 5000` |
 | `-r` | 重建镜像 + 清理所有实例配置 | `opencode -r` |
 | `-r --keep` | 重建镜像 + 保留配置 | `opencode -r --keep` |
+| `--quotio` | 启用 Quotio 代理（仅限新配置生成时） | `opencode --quotio` |
 
 **查看运行中的实例：**
 ```bash
 docker ps | grep opencode
 ```
+
+### Quotio 代理支持
+
+项目内置了对 Quotio 代理的可选支持，允许通过自定义代理使用更多模型。
+
+- **默认状态**：已禁用。
+- **启用方式**：在启动时添加 `--quotio` 开关。
+- **生效范围**：仅在生成**新配置**时生效（即新实例首次启动，或执行 `opencode -r` 后）。
+
+```bash
+# 启用 Quotio 代理启动新项目
+cd ~/new-project
+opencode --quotio
+```
+
+启用后，`frontend-ui-ux-engineer` 等 Agent 会默认使用通过 Quotio 代理提供的模型。
 
 ### oh-my-opencode 常用命令
 
@@ -253,7 +270,7 @@ docker-compose build --no-cache
 |------|------|
 | OAuth 回调 | ✅ 支持（容器与 Mac 共享 localhost） |
 | Web UI 地址 | `http://localhost:<port>`（启动时显示） |
-| Quotio 地址 | `http://localhost:8317/v1` |
+| Quotio 地址 | `http://localhost:8317/v1`（仅在启用 --quotio 时使用） |
 | OrbStack Magic Domain | ❌ 不支持 |
 
 > **为什么用 Host 模式？**
@@ -267,8 +284,8 @@ docker-compose build --no-cache
 |------|------|------|
 | `OPENAI_API_KEY` | OpenAI API 密钥 (用于 Oracle GPT-5.2) | 是 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥 | 否 |
-| `QUOTIO_API_KEY` | Quotio Provider API 密钥 | 是 |
-| `QUOTIO_BASE_URL` | Quotio Provider API 地址 | 是 |
+| `QUOTIO_API_KEY` | Quotio Provider API 密钥 | 否 (若用 --quotio 则必需) |
+| `QUOTIO_BASE_URL` | Quotio Provider API 地址 | 否 (若用 --quotio 则必需) |
 | `GITHUB_TOKEN` | GitHub Personal Access Token | 是 |
 | `EXA_API_KEY` | Exa AI API 密钥（用于 websearch_exa） | 否 |
 
