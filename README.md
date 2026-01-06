@@ -63,9 +63,19 @@
 | MCP | 来源 | 功能 |
 |-----|------|------|
 | context7 | oh-my-opencode 内置 | 官方文档查询 |
-| websearch_exa | oh-my-opencode 内置 | 网页搜索（需 EXA_API_KEY） |
+| exa | oh-my-opencode 内置 | 网页搜索（需 EXA_API_KEY） |
 | grep_app | oh-my-opencode 内置 | GitHub 代码搜索 |
 | playwright | opencode.json 配置 | 浏览器自动化 |
+| exa (fallback) | opencode.json 配置 | 内置 Exa 不可用时自动启用 |
+
+### Exa 动态检测
+
+启动时自动检测内置 Exa 是否可用：
+- ✅ **内置可用** → 使用 oh-my-opencode 内置的 Exa（默认）
+- ⚠️ **内置不可用** → 自动启用 fallback MCP（exa-mcp-server）
+- ℹ️ **无 API Key** → Exa 功能不可用
+
+检测结果会在启动时显示。
 
 ## 文件结构
 

@@ -155,6 +155,7 @@ ocd() {
       "type": "local",
       "command": ["npx", "-y", "exa-mcp-server"],
       "timeout": 60000,
+      "enabled": false,
       "environment": {
         "EXA_API_KEY": "${EXA_API_KEY}"
       }
@@ -221,6 +222,7 @@ EOF
       "type": "local",
       "command": ["npx", "-y", "exa-mcp-server"],
       "timeout": 60000,
+      "enabled": false,
       "environment": {
         "EXA_API_KEY": "${EXA_API_KEY}"
       }
