@@ -123,7 +123,7 @@ opencode() {
   "model": "anthropic/claude-opus-4-5",
   "plugin": [
     "oh-my-opencode",
-    "opencode-antigravity-auth"
+    "opencode-antigravity-auth@1.2.6"
   ],
   "server": {
     "port": ${PORT},
