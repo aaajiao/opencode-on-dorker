@@ -335,6 +335,10 @@ EOFOMOCONFIG
   # 项目 Claude 数据目录
   local PROJECT_CLAUDE="$(pwd)/.claude"
 
+  # Playwright/Patchright 缓存目录（持久化浏览器）
+  local PLAYWRIGHT_CACHE="$HOME/.cache/ms-playwright"
+  mkdir -p "$PLAYWRIGHT_CACHE"
+
   # Docker 挂载运行
   docker run -it --rm \
     --name "$CONTAINER_NAME" \
@@ -348,6 +352,7 @@ EOFOMOCONFIG
     -v "${SHARE_DIR}/auth.json:/root/.local/share/opencode/auth.json" \
     -v "${SHARE_DIR}/bin:/root/.local/share/opencode/bin" \
     -v "${INSTANCE_STORAGE_DIR}:/root/.local/share/opencode/storage" \
+    -v "${PLAYWRIGHT_CACHE}:/root/.cache/ms-playwright" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
     -v "${GLOBAL_OPENCODE}/skill:/root/.config/opencode/skill" \
     -v "${GLOBAL_OPENCODE}/command:/root/.config/opencode/command" \

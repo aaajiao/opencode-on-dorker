@@ -139,11 +139,20 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
 
 # -------------------------------------------------------
-# 第十三步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测
+# 第十三步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
+\n\
+# Chrome symlink for Playwright MCP (finds chrome in ms-playwright cache)\n\
+if [ -d "/root/.cache/ms-playwright" ]; then\n\
+    CHROME_PATH=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1)\n\
+    if [ -n "$CHROME_PATH" ]; then\n\
+        mkdir -p /opt/google/chrome\n\
+        ln -sf "$CHROME_PATH" /opt/google/chrome/chrome 2>/dev/null\n\
+    fi\n\
+fi\n\
 \n\
 if [[ -n "$GITHUB_TOKEN" ]]; then\n\
     if gh auth status &>/dev/null; then\n\
