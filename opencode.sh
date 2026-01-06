@@ -8,6 +8,19 @@
 #   opencode -r           # 重建镜像 + 清理所有实例配置
 #   opencode -r --keep    # 重建镜像 + 保留配置
 #   opencode --quotio     # 启用 Quotio 代理（需配置 QUOTIO_API_KEY）
+#   opencode -v           # 显示版本号
+
+# =========================================
+# 版本号
+# =========================================
+_opencode_version() {
+  local VERSION_FILE="$HOME/opencode/VERSION"
+  if [[ -f "$VERSION_FILE" ]]; then
+    cat "$VERSION_FILE"
+  else
+    echo "unknown"
+  fi
+}
 
 # =========================================
 # 辅助函数：清理实例名 ("My Project" -> "my-project")
@@ -43,6 +56,10 @@ opencode() {
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
+      -v|--version)
+        echo "OpenCode Docker v$(_opencode_version)"
+        return 0
+        ;;
       -r) REBUILD=1; shift ;;
       --keep) KEEP_CONFIG=1; shift ;;
       --quotio) USE_QUOTIO=1; shift ;;
@@ -97,7 +114,8 @@ opencode() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
-  _opencode_init_skills
+  _opencode_init_claude_home
+  _opencode_init_instance_claude "$INSTANCE_NAME"
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
@@ -228,7 +246,7 @@ EOF
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
-  "disabled_mcps": ["websearch_exa"],
+  "disabled_mcps": [],
   "disabled_hooks": [],
   "agents": {
     "Planner-Sisyphus": {
@@ -251,7 +269,7 @@ EOFOMOCONFIG
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
-  "disabled_mcps": ["websearch_exa"],
+  "disabled_mcps": [],
   "disabled_hooks": [],
   "agents": {
     "Planner-Sisyphus": {
@@ -295,11 +313,15 @@ EOFOMOCONFIG
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
-  echo "🚀 启动实例: ${INSTANCE_NAME}"
+  echo "🚀 OpenCode Docker v$(_opencode_version)"
+  echo "📦 实例: ${INSTANCE_NAME}"
   echo "📂 工作目录: $(pwd)"
   echo "🌐 Web UI: http://localhost:${PORT}"
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "🔌 Quotio 代理: 已启用"
   echo ""
+
+  local CLAUDE_HOME="$HOME/opencode/claude_home"
+  local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
 
   docker run -it --rm \
     --name "$CONTAINER_NAME" \
@@ -313,7 +335,9 @@ EOFOMOCONFIG
     -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
     -v "${SHARE_DIR}:/root/.local/share/opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
-    -v "$HOME/opencode/skills:/root/.claude/skills:ro" \
+    -v "${CLAUDE_HOME}:/root/.claude" \
+    -v "${INSTANCE_CLAUDE_DIR}/todos:/root/.claude/todos" \
+    -v "${INSTANCE_CLAUDE_DIR}/transcripts:/root/.claude/transcripts" \
     -w /workspace \
     "$IMAGE_NAME" "$@"
 
@@ -321,15 +345,27 @@ EOFOMOCONFIG
 }
 
 # =========================================
-# 辅助函数：生成全局 skills
+# 辅助函数：初始化 Claude Home 目录结构（用户级资产，所有实例共享）
 # =========================================
-_opencode_init_skills() {
-  local SKILLS_DIR="$HOME/opencode/skills"
+_opencode_init_claude_home() {
+  local CLAUDE_HOME="$HOME/opencode/claude_home"
   
-  # remind skill
-  if [[ ! -f "$SKILLS_DIR/remind/SKILL.md" ]]; then
-    mkdir -p "$SKILLS_DIR/remind"
-    cat > "$SKILLS_DIR/remind/SKILL.md" << 'EOF'
+  # 创建目录结构
+  mkdir -p "$CLAUDE_HOME"/{skills,commands,agents,rules,plugins}
+  
+  # 创建默认配置文件（如果不存在）
+  if [[ ! -f "$CLAUDE_HOME/settings.json" ]]; then
+    echo '{"hooks": {}}' > "$CLAUDE_HOME/settings.json"
+  fi
+  
+  if [[ ! -f "$CLAUDE_HOME/.mcp.json" ]]; then
+    echo '{"mcpServers": {}}' > "$CLAUDE_HOME/.mcp.json"
+  fi
+  
+  # 创建默认 remind skill（如果不存在）
+  if [[ ! -f "$CLAUDE_HOME/skills/remind/SKILL.md" ]]; then
+    mkdir -p "$CLAUDE_HOME/skills/remind"
+    cat > "$CLAUDE_HOME/skills/remind/SKILL.md" << 'EOF'
 ---
 name: task-completion-notify
 description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
@@ -357,4 +393,14 @@ notify "标题" "内容"
 ```
 EOF
   fi
+}
+
+# =========================================
+# 辅助函数：初始化实例的 Claude 数据目录（每实例独立）
+# =========================================
+_opencode_init_instance_claude() {
+  local INSTANCE_NAME="$1"
+  local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
+  
+  mkdir -p "$INSTANCE_CLAUDE_DIR"/{todos,transcripts}
 }
