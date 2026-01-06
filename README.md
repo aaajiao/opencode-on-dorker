@@ -371,7 +371,7 @@ AI 会在任务结束后调用 `notify` 命令发送桌面通知。
 {
   "plugin": [
     "oh-my-opencode",
-    "opencode-antigravity-auth@1.1.2"
+    "opencode-antigravity-auth"
   ]
 }
 ```
