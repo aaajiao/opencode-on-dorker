@@ -81,6 +81,9 @@ ocd() {
   local INSTANCE_CONFIG_DIR="$HOME/.config/opencode/${INSTANCE_NAME}"
   local INSTANCE_DATA_DIR="$HOME/.opencode_data/${INSTANCE_NAME}"
 
+  # 实例独立的存储目录（session 隔离）
+  local INSTANCE_STORAGE_DIR="${SHARE_DIR}/storage/${INSTANCE_NAME}"
+
   # 实例独立文件
   local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
   local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
@@ -119,7 +122,9 @@ ocd() {
   _ocd_init_project "$(pwd)"
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
-  mkdir -p "$SHARE_DIR"
+  mkdir -p "$SHARE_DIR/bin"
+  mkdir -p "$INSTANCE_STORAGE_DIR"
+  touch "$SHARE_DIR/auth.json" 2>/dev/null || true
 
   if [[ -f "$ENV_FILE" ]]; then
     set -a
@@ -340,7 +345,9 @@ EOFOMOCONFIG
     -e EXA_API_KEY="${EXA_API_KEY:-}" \
     -v "$(pwd):/workspace" \
     -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
-    -v "${SHARE_DIR}:/root/.local/share/opencode" \
+    -v "${SHARE_DIR}/auth.json:/root/.local/share/opencode/auth.json" \
+    -v "${SHARE_DIR}/bin:/root/.local/share/opencode/bin" \
+    -v "${INSTANCE_STORAGE_DIR}:/root/.local/share/opencode/storage" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
     -v "${GLOBAL_OPENCODE}/skill:/root/.config/opencode/skill" \
     -v "${GLOBAL_OPENCODE}/command:/root/.config/opencode/command" \
