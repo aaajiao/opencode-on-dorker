@@ -18,10 +18,14 @@ services:
       # opencode 数据目录
       - ~/.opencode_data:/root/.opencode
 
+      # Claude 兼容层（复数目录名）
+      - ~/opencode/claude_home:/root/.claude
+
       # SSH 密钥挂载 (用于 Git SSH 操作)
       - ~/.ssh:/root/.ssh:ro
 
       # 注意：不挂载 ~/.config/gh，让容器使用 GITHUB_TOKEN 环境变量
+      # 注意：docker-compose.yml 不支持多实例，建议使用 ocd 命令
 
     working_dir: /workspace
     stdin_open: true
