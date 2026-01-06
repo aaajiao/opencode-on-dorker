@@ -112,10 +112,8 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
-# 把环境变量写入 bashrc 供子 shell 使用\n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_)=" >> /root/.bashrc\n\
 \n\
-# 检查 GitHub 认证状态（GITHUB_TOKEN 环境变量会被 gh 自动使用）\n\
 if [[ -n "$GITHUB_TOKEN" ]]; then\n\
     if gh auth status &>/dev/null; then\n\
         echo "✅ GitHub 已认证 (使用 GITHUB_TOKEN)"\n\
@@ -124,7 +122,6 @@ if [[ -n "$GITHUB_TOKEN" ]]; then\n\
     fi\n\
 fi\n\
 \n\
-# 启动 opencode\n\
 exec opencode "$@"\n\
 ' > /usr/local/bin/entrypoint.sh && \
     chmod +x /usr/local/bin/entrypoint.sh

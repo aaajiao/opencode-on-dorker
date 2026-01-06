@@ -210,3 +210,19 @@ gh pr create --title "feat: ..." --body "..."
 3. Reload shell: `exec zsh`
 4. Restart: `opencode`
 5. Test notification: Container sends `notify "Title" "Message"`
+
+## /remind - 任务完成通知
+
+当用户使用 `/remind` 命令时，在任务完成后发送 macOS 桌面通知。
+
+**用法**:
+```
+/remind              # 默认通知
+/remind 部署完成      # 自定义消息
+```
+
+**规则**:
+1. 记住用户请求了完成提醒
+2. 正常执行任务
+3. 任务完成后调用: `notify "OpenCode" "任务已完成"` 或自定义消息
+4. 任务失败时通知应说明失败原因
