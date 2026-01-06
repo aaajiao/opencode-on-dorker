@@ -114,8 +114,14 @@ ocd() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
-  _ocd_init_claude_home
-  _ocd_init_instance_claude "$INSTANCE_NAME"
+  # 只有在 ~/opencode 目录下才初始化全局 claude_home 配置
+  if [[ "$(pwd)" == "$HOME/opencode" ]]; then
+    _ocd_init_claude_home
+  else
+    # 其他项目目录：初始化项目级配置结构和实例 Claude 目录
+    _ocd_init_project_config "$(pwd)"
+    _ocd_init_instance_claude "$INSTANCE_NAME"
+  fi
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
@@ -323,35 +329,56 @@ EOFOMOCONFIG
   local CLAUDE_HOME="$HOME/opencode/claude_home"
   local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
 
-  docker run -it --rm \
-    --name "$CONTAINER_NAME" \
-    --network host \
-    --env-file "$ENV_FILE" \
-    -e TERM=xterm-256color \
-    -e BROWSER=/usr/bin/xdg-open \
-    -e EXA_API_KEY="${EXA_API_KEY:-}" \
-    -v "$(pwd):/workspace" \
-    -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
-    -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
-    -v "${SHARE_DIR}:/root/.local/share/opencode" \
-    -v "$HOME/.ssh:/root/.ssh:ro" \
-    -v "${CLAUDE_HOME}:/root/.claude" \
-    -v "${INSTANCE_CLAUDE_DIR}/todos:/root/.claude/todos" \
-    -v "${INSTANCE_CLAUDE_DIR}/transcripts:/root/.claude/transcripts" \
-    -w /workspace \
-    "$IMAGE_NAME" "$@"
+  if [[ "$(pwd)" == "$HOME/opencode" ]]; then
+    # ~/opencode 目录：todos/transcripts 直接在 claude_home 里
+    docker run -it --rm \
+      --name "$CONTAINER_NAME" \
+      --network host \
+      --env-file "$ENV_FILE" \
+      -e TERM=xterm-256color \
+      -e BROWSER=/usr/bin/xdg-open \
+      -e EXA_API_KEY="${EXA_API_KEY:-}" \
+      -v "$(pwd):/workspace" \
+      -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
+      -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
+      -v "${SHARE_DIR}:/root/.local/share/opencode" \
+      -v "$HOME/.ssh:/root/.ssh:ro" \
+      -v "${CLAUDE_HOME}:/root/.claude" \
+      -w /workspace \
+      "$IMAGE_NAME" "$@"
+  else
+    # 其他项目：todos/transcripts 隔离到实例目录
+    docker run -it --rm \
+      --name "$CONTAINER_NAME" \
+      --network host \
+      --env-file "$ENV_FILE" \
+      -e TERM=xterm-256color \
+      -e BROWSER=/usr/bin/xdg-open \
+      -e EXA_API_KEY="${EXA_API_KEY:-}" \
+      -v "$(pwd):/workspace" \
+      -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
+      -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
+      -v "${SHARE_DIR}:/root/.local/share/opencode" \
+      -v "$HOME/.ssh:/root/.ssh:ro" \
+      -v "${CLAUDE_HOME}:/root/.claude" \
+      -v "${INSTANCE_CLAUDE_DIR}/todos:/root/.claude/todos" \
+      -v "${INSTANCE_CLAUDE_DIR}/transcripts:/root/.claude/transcripts" \
+      -w /workspace \
+      "$IMAGE_NAME" "$@"
+  fi
 
   kill $WATCHER_PID 2>/dev/null
 }
 
 # =========================================
-# 辅助函数：初始化 Claude Home 目录结构（用户级资产，所有实例共享）
+# 辅助函数：初始化 Claude Home 目录结构（Claude 兼容层，用户级共享）
+# 注意：Claude 兼容层使用复数目录名 (skills/, commands/, agents/, rules/)
 # =========================================
 _ocd_init_claude_home() {
   local CLAUDE_HOME="$HOME/opencode/claude_home"
   
-  # 创建目录结构
-  mkdir -p "$CLAUDE_HOME"/{skills,commands,agents,rules,plugins}
+  # 创建 Claude 兼容层目录结构（复数目录名）
+  mkdir -p "$CLAUDE_HOME"/{skills,commands,agents,rules}
   
   # 创建默认配置文件（如果不存在）
   if [[ ! -f "$CLAUDE_HOME/settings.json" ]]; then
@@ -403,4 +430,19 @@ _ocd_init_instance_claude() {
   local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
   
   mkdir -p "$INSTANCE_CLAUDE_DIR"/{todos,transcripts}
+}
+
+# =========================================
+# 辅助函数：初始化项目级配置目录
+# - .opencode/ = OpenCode 原生（skill/, command/, agent/）
+# - .claude/rules/ = 条件规则（仅 Claude 兼容层支持）
+# =========================================
+_ocd_init_project_config() {
+  local PROJECT_DIR="$1"
+  
+  # OpenCode 原生目录（单数）
+  mkdir -p "$PROJECT_DIR/.opencode"/{skill,command,agent}
+  
+  # Claude 兼容层（仅 rules）
+  mkdir -p "$PROJECT_DIR/.claude/rules"
 }

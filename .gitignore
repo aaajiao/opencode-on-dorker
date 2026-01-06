@@ -7,7 +7,9 @@ oh-my-opencode/
 Icon*
 
 # claude_home 运行时数据（不上传）
+# 注意：todos/ 和 transcripts/ 应该在 instances/<name>/claude/ 下，不在 claude_home/
 claude_home/todos/
 claude_home/transcripts/
+claude_home/plugins/
 claude_home/.DS_Store
 claude_home/**/.DS_Store

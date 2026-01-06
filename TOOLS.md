@@ -623,35 +623,75 @@ mcp:
 
 oh-my-opencode 完全兼容 Claude Code 的配置和命令格式，让你可以复用 Claude Code 社区的资源。
 
+### ⚠️ 两套配置系统
+
+OpenCode 支持**两套配置系统**，目录命名规则不同：
+
+| 系统 | 目录命名 | 用途 |
+|------|---------|------|
+| **OpenCode 原生** | **单数** (`skill/`, `command/`, `agent/`) | OpenCode 内置功能 |
+| **Claude 兼容层** | **复数** (`skills/`, `commands/`, `agents/`, `rules/`) | Claude Code 兼容 |
+
+> ⚠️ **写错目录名不会被加载！** OpenCode 原生用单数，Claude 兼容层用复数。
+
 ### 目录结构（OCD Docker 版）
 
-在 OCD（OpenCode Docker）环境中，Claude Code 兼容层使用以下目录结构：
+在 OCD（OpenCode Docker）环境中，配置目录结构如下：
 
 ```
 ~/opencode/
-├── claude_home/                    # 用户级共享资源（所有实例共用）
+├── claude_home/                    # Claude 兼容层（用户级共享，复数目录名）
 │   ├── skills/                     # 自定义 Skills
 │   │   └── my-skill/SKILL.md
 │   ├── commands/                   # 自定义斜杠命令
 │   │   └── my-command.md
 │   ├── agents/                     # 自定义 Agents
 │   │   └── my-agent.md
-│   ├── rules/                      # 条件规则
+│   ├── rules/                      # 条件规则（仅 Claude 兼容层支持）
 │   │   └── my-rule.md
+│   ├── todos/                      # 任务列表（仅 opencode 实例使用）
+│   ├── transcripts/                # 会话日志（仅 opencode 实例使用）
 │   ├── settings.json               # Hooks 配置
 │   └── .mcp.json                   # 额外 MCP 服务器
 │
-└── instances/<实例名>/claude/      # 实例级数据（每个实例独立）
-    ├── todos/                      # 该实例的任务列表
-    └── transcripts/                # 该实例的会话日志
+└── instances/<项目名>/claude/      # 其他项目的实例数据（注意：不会创建 instances/opencode/）
+    ├── todos/                      # 该项目的任务列表
+    └── transcripts/                # 该项目的会话日志
+
+~/.config/opencode/                 # OpenCode 原生（用户级，单数目录名）
+├── skill/                          # 全局 Skills
+├── command/                        # 全局斜杠命令
+└── agent/                          # 全局 Agents
+
+<project>/
+├── .opencode/                      # OpenCode 原生（项目级，单数目录名）
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+└── .claude/                        # Claude 兼容层（项目级，复数目录名）
+    ├── skills/
+    ├── commands/
+    ├── agents/
+    └── rules/
 ```
 
 **挂载映射**（容器内路径）：
+
+**通用挂载**：
 | 宿主机路径 | 容器内路径 |
 |------------|-----------|
 | `~/opencode/claude_home/` | `/root/.claude/` |
-| `~/opencode/instances/<name>/claude/todos/` | `/root/.claude/todos/` |
-| `~/opencode/instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` |
+
+**Todos/Transcripts 挂载**（根据运行目录不同）：
+| 运行目录 | 宿主机路径 | 容器内路径 |
+|----------|-----------|-----------|
+| `~/opencode/` | `claude_home/todos/` | `/root/.claude/todos/` |
+| `~/opencode/` | `claude_home/transcripts/` | `/root/.claude/transcripts/` |
+| 其他目录 | `instances/<name>/claude/todos/` | `/root/.claude/todos/` |
+| 其他目录 | `instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` |
+
+> ⚠️ **注意**：在 `~/opencode/` 目录下运行时，不会创建 `instances/opencode/` 目录，而是直接使用 `claude_home/` 中的 todos 和 transcripts。
 
 ### 兼容的功能
 
