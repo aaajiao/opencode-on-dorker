@@ -114,14 +114,9 @@ ocd() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
-  # 只有在 ~/opencode 目录下才初始化全局 claude_home 配置
-  if [[ "$(pwd)" == "$HOME/opencode" ]]; then
-    _ocd_init_claude_home
-  else
-    # 其他项目目录：初始化项目级配置结构和实例 Claude 目录
-    _ocd_init_project_config "$(pwd)"
-    _ocd_init_instance_claude "$INSTANCE_NAME"
-  fi
+  # 初始化配置
+  _ocd_init_global
+  _ocd_init_project "$(pwd)"
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
@@ -326,73 +321,64 @@ EOFOMOCONFIG
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "🔌 Quotio 代理: 已启用"
   echo ""
 
-  local CLAUDE_HOME="$HOME/opencode/claude_home"
-  local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
+  # 全局配置目录
+  local GLOBAL_OPENCODE="$HOME/opencode/global/opencode"
+  local GLOBAL_CLAUDE="$HOME/opencode/global/claude"
+  
+  # 项目 Claude 数据目录
+  local PROJECT_CLAUDE="$(pwd)/.claude"
 
-  if [[ "$(pwd)" == "$HOME/opencode" ]]; then
-    # ~/opencode 目录：todos/transcripts 直接在 claude_home 里
-    docker run -it --rm \
-      --name "$CONTAINER_NAME" \
-      --network host \
-      --env-file "$ENV_FILE" \
-      -e TERM=xterm-256color \
-      -e BROWSER=/usr/bin/xdg-open \
-      -e EXA_API_KEY="${EXA_API_KEY:-}" \
-      -v "$(pwd):/workspace" \
-      -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
-      -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
-      -v "${SHARE_DIR}:/root/.local/share/opencode" \
-      -v "$HOME/.ssh:/root/.ssh:ro" \
-      -v "${CLAUDE_HOME}:/root/.claude" \
-      -w /workspace \
-      "$IMAGE_NAME" "$@"
-  else
-    # 其他项目：todos/transcripts 隔离到实例目录
-    docker run -it --rm \
-      --name "$CONTAINER_NAME" \
-      --network host \
-      --env-file "$ENV_FILE" \
-      -e TERM=xterm-256color \
-      -e BROWSER=/usr/bin/xdg-open \
-      -e EXA_API_KEY="${EXA_API_KEY:-}" \
-      -v "$(pwd):/workspace" \
-      -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
-      -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
-      -v "${SHARE_DIR}:/root/.local/share/opencode" \
-      -v "$HOME/.ssh:/root/.ssh:ro" \
-      -v "${CLAUDE_HOME}:/root/.claude" \
-      -v "${INSTANCE_CLAUDE_DIR}/todos:/root/.claude/todos" \
-      -v "${INSTANCE_CLAUDE_DIR}/transcripts:/root/.claude/transcripts" \
-      -w /workspace \
-      "$IMAGE_NAME" "$@"
-  fi
+  # Docker 挂载运行
+  docker run -it --rm \
+    --name "$CONTAINER_NAME" \
+    --network host \
+    --env-file "$ENV_FILE" \
+    -e TERM=xterm-256color \
+    -e BROWSER=/usr/bin/xdg-open \
+    -e EXA_API_KEY="${EXA_API_KEY:-}" \
+    -v "$(pwd):/workspace" \
+    -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
+    -v "${SHARE_DIR}:/root/.local/share/opencode" \
+    -v "$HOME/.ssh:/root/.ssh:ro" \
+    -v "${GLOBAL_OPENCODE}/skill:/root/.config/opencode/skill" \
+    -v "${GLOBAL_OPENCODE}/command:/root/.config/opencode/command" \
+    -v "${GLOBAL_OPENCODE}/agent:/root/.config/opencode/agent" \
+    -v "${INSTANCE_CONFIG_DIR}/opencode.json:/root/.config/opencode/opencode.json" \
+    -v "${INSTANCE_CONFIG_DIR}/oh-my-opencode.json:/root/.config/opencode/oh-my-opencode.json" \
+    -v "${GLOBAL_CLAUDE}:/root/.claude" \
+    -v "${PROJECT_CLAUDE}/todos:/root/.claude/todos" \
+    -v "${PROJECT_CLAUDE}/transcripts:/root/.claude/transcripts" \
+    -w /workspace \
+    "$IMAGE_NAME" "$@"
 
   kill $WATCHER_PID 2>/dev/null
 }
 
 # =========================================
-# 辅助函数：初始化 Claude Home 目录结构（Claude 兼容层，用户级共享）
-# 注意：Claude 兼容层使用复数目录名 (skills/, commands/, agents/, rules/)
+# 辅助函数：初始化全局配置
 # =========================================
-_ocd_init_claude_home() {
-  local CLAUDE_HOME="$HOME/opencode/claude_home"
+_ocd_init_global() {
+  local GLOBAL_DIR="$HOME/opencode/global"
   
-  # 创建 Claude 兼容层目录结构（复数目录名）
-  mkdir -p "$CLAUDE_HOME"/{skills,commands,agents,rules}
+  # OpenCode 原生全局配置（单数目录名）
+  mkdir -p "$GLOBAL_DIR/opencode"/{skill,command,agent}
+  
+  # Claude 兼容层全局配置（复数目录名）
+  mkdir -p "$GLOBAL_DIR/claude"/{skills,commands,agents,rules}
   
   # 创建默认配置文件（如果不存在）
-  if [[ ! -f "$CLAUDE_HOME/settings.json" ]]; then
-    echo '{"hooks": {}}' > "$CLAUDE_HOME/settings.json"
+  if [[ ! -f "$GLOBAL_DIR/claude/settings.json" ]]; then
+    echo '{}' > "$GLOBAL_DIR/claude/settings.json"
   fi
   
-  if [[ ! -f "$CLAUDE_HOME/.mcp.json" ]]; then
-    echo '{"mcpServers": {}}' > "$CLAUDE_HOME/.mcp.json"
+  if [[ ! -f "$GLOBAL_DIR/claude/.mcp.json" ]]; then
+    echo '{"mcpServers":{}}' > "$GLOBAL_DIR/claude/.mcp.json"
   fi
   
   # 创建默认 remind skill（如果不存在）
-  if [[ ! -f "$CLAUDE_HOME/skills/remind/SKILL.md" ]]; then
-    mkdir -p "$CLAUDE_HOME/skills/remind"
-    cat > "$CLAUDE_HOME/skills/remind/SKILL.md" << 'EOF'
+  if [[ ! -f "$GLOBAL_DIR/claude/skills/remind/SKILL.md" ]]; then
+    mkdir -p "$GLOBAL_DIR/claude/skills/remind"
+    cat > "$GLOBAL_DIR/claude/skills/remind/SKILL.md" << 'EOF'
 ---
 name: task-completion-notify
 description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
@@ -423,26 +409,14 @@ EOF
 }
 
 # =========================================
-# 辅助函数：初始化实例的 Claude 数据目录（每实例独立）
+# 辅助函数：初始化项目配置
 # =========================================
-_ocd_init_instance_claude() {
-  local INSTANCE_NAME="$1"
-  local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
-  
-  mkdir -p "$INSTANCE_CLAUDE_DIR"/{todos,transcripts}
-}
-
-# =========================================
-# 辅助函数：初始化项目级配置目录
-# - .opencode/ = OpenCode 原生（skill/, command/, agent/）
-# - .claude/rules/ = 条件规则（仅 Claude 兼容层支持）
-# =========================================
-_ocd_init_project_config() {
+_ocd_init_project() {
   local PROJECT_DIR="$1"
   
-  # OpenCode 原生目录（单数）
+  # OpenCode 原生项目配置（单数目录名）
   mkdir -p "$PROJECT_DIR/.opencode"/{skill,command,agent}
   
-  # Claude 兼容层（仅 rules）
-  mkdir -p "$PROJECT_DIR/.claude/rules"
+  # Claude 兼容层项目配置 + 会话数据
+  mkdir -p "$PROJECT_DIR/.claude"/{todos,transcripts}
 }

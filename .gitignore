@@ -1,15 +1,18 @@
 .env
 .DS_Store
 *.log
-.opencode/
-instances/
 oh-my-opencode/
 Icon*
 
-# claude_home 运行时数据（不上传）
-# 注意：todos/ 和 transcripts/ 应该在 instances/<name>/claude/ 下，不在 claude_home/
-claude_home/todos/
-claude_home/transcripts/
-claude_home/plugins/
-claude_home/.DS_Store
-claude_home/**/.DS_Store
+# 项目级 OpenCode 配置（这个仓库不需要项目级配置，全局配置在 global/ 下）
+.opencode/
+
+# 会话数据（每个项目的 todos 和 transcripts）
+.claude/todos/
+.claude/transcripts/
+
+# 全局配置中的运行时数据
+global/claude/plugins/
+global/claude/.DS_Store
+global/claude/**/.DS_Store
+global/opencode/**/.DS_Store
