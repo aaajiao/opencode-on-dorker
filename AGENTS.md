@@ -15,7 +15,7 @@ OpenCode Docker environment for macOS + OrbStack. Runs OpenCode AI assistant wit
 When running inside the container:
 - `/workspace` = `~/opencode` (Mac host)
 - Editing `/workspace/opencode.sh` = Editing `~/opencode/opencode.sh`
-- Editing `/workspace/claude_home/` = Editing `~/opencode/claude_home/`
+- Editing `/workspace/global/` = Editing `~/opencode/global/`
 
 This is NOT a typical project where `/workspace` is mounted from some other directory. The workspace IS the opencode configuration folder itself.
 
@@ -43,8 +43,8 @@ shellcheck opencode.sh                            # Lint (if available)
 ```bash
 jq . ~/.config/opencode/opencode.json             # OpenCode config
 jq . ~/.config/opencode/oh-my-opencode.json       # Plugin config
-jq . ~/opencode/claude_home/settings.json         # Hooks config
-jq . ~/opencode/claude_home/.mcp.json             # MCP config
+jq . ~/opencode/global/claude/settings.json       # Hooks config
+jq . ~/opencode/global/claude/.mcp.json           # MCP config
 ```
 
 ### Test Container
@@ -61,39 +61,54 @@ notify "Test" "Hello"                             # Test notification
 - **Claude Compatibility**: plural dirs (`skills/`, `commands/`, `agents/`, `rules/`)
 
 ```
-~/opencode/
-├── Dockerfile              # Docker image (oven/bun base)
-├── docker-compose.yml      # Docker Compose config
-├── opencode.sh             # Shell function (ocd command)
-├── env.example             # Environment variable template
-├── ghostty-128.png         # Notification icon
-├── claude_home/            # Claude compatibility layer (plural dirs, user-level)
-│   ├── skills/             # Custom skills (plural = Claude compat)
-│   ├── commands/           # Slash commands (plural = Claude compat)
-│   ├── agents/             # Custom agents (plural = Claude compat)
-│   ├── rules/              # Conditional rules (Claude compat only)
-│   ├── settings.json       # Hooks configuration
-│   └── .mcp.json           # MCP servers
-├── instances/<name>/claude/ # Per-instance data
-│   ├── todos/              # Session todos
-│   └── transcripts/        # Session history
-└── README.md
-
-~/.config/opencode/         # OpenCode native global config (singular dirs)
-├── skill/                  # Global skills (singular = OpenCode native)
-├── command/                # Global commands (singular = OpenCode native)
-└── agent/                  # Global agents (singular = OpenCode native)
-
-<project>/
-├── .opencode/              # OpenCode native project config (singular dirs)
+~/opencode/                           # Config repo (also a project itself)
+│
+│  ── This project's own config ──
+│
+├── .opencode/                        # OpenCode native (this project)
 │   ├── skill/
 │   ├── command/
 │   └── agent/
-└── .claude/                # Claude compatibility project config (plural dirs)
-    ├── skills/
-    ├── commands/
-    ├── agents/
-    └── rules/
+│
+├── .claude/                          # Claude compat (this project)
+│   ├── todos/                        # Session data for opencode instance
+│   └── transcripts/
+│
+│  ── Global config (applies to all projects) ──
+│
+├── global/
+│   ├── opencode/                     # OpenCode native global config
+│   │   ├── skill/
+│   │   ├── command/
+│   │   └── agent/
+│   │
+│   └── claude/                       # Claude compat global config
+│       ├── skills/
+│       ├── commands/
+│       ├── agents/
+│       ├── rules/
+│       ├── settings.json             # Hooks
+│       └── .mcp.json                 # MCP servers
+│
+│  ── Project files ──
+│
+├── Dockerfile
+├── docker-compose.yml
+├── opencode.sh
+├── .env
+└── README.md
+
+~/my-project/                         # Other projects
+├── .opencode/                        # OpenCode native (this project)
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+├── .claude/                          # Claude compat (this project)
+│   ├── todos/                        # Session data for this project
+│   └── transcripts/
+│
+└── ... (source code)
 ```
 
 ## Code Style Guidelines
@@ -161,18 +176,24 @@ API_KEY=sk-xxx
 | `$(pwd)` | `/workspace` | Project files |
 | `~/.opencode_data/<instance>` | `/root/.opencode` | Instance data |
 | `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config |
-| `~/opencode/claude_home` | `/root/.claude` | Claude compatibility |
 
-**Todos/Transcripts mounts (differ by directory):**
+**Global config mounts:**
 
-| Running From | Host Path | Container Path |
-|--------------|-----------|----------------|
-| `~/opencode/` | `~/opencode/claude_home/todos/` | `/root/.claude/todos/` |
-| `~/opencode/` | `~/opencode/claude_home/transcripts/` | `/root/.claude/transcripts/` |
-| Other dirs | `~/opencode/instances/<name>/claude/todos/` | `/root/.claude/todos/` |
-| Other dirs | `~/opencode/instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` |
+| Host Path | Container Path | Purpose |
+|-----------|----------------|---------|
+| `~/opencode/global/opencode/skill/` | `/root/.config/opencode/skill/` | Global skills (OpenCode native) |
+| `~/opencode/global/opencode/command/` | `/root/.config/opencode/command/` | Global commands (OpenCode native) |
+| `~/opencode/global/opencode/agent/` | `/root/.config/opencode/agent/` | Global agents (OpenCode native) |
+| `~/opencode/global/claude/` | `/root/.claude/` | Claude compat global config |
 
-> **Note**: When running from `~/opencode/`, there is NO separate `instances/opencode/` directory - it uses `claude_home/` directly.
+**Session data mounts (overlay on `/root/.claude/`):**
+
+| Host Path | Container Path | Purpose |
+|-----------|----------------|---------|
+| `<project>/.claude/todos/` | `/root/.claude/todos/` | Project's todo list |
+| `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` | Project's session history |
+
+> **Note**: Session data is isolated per project. Each project's `.claude/todos/` and `.claude/transcripts/` are mounted as overlays on `/root/.claude/`.
 
 ### URL Redirection (Container → Mac)
 - Container writes to `/root/.opencode/open_url`
@@ -203,7 +224,7 @@ disown $WATCHER_PID 2>/dev/null
 4. **OAuth fails**: Ensure `--network host` is used
 5. **Skills not loading**: Check directory naming (singular vs plural)
    - OpenCode native: `~/.config/opencode/skill/` (singular)
-   - Claude compat: `~/opencode/claude_home/skills/` (plural)
+   - Claude compat: `~/opencode/global/claude/skills/` (plural)
 6. **Wrong directory name**: OpenCode native uses singular, Claude compat uses plural
 
 ## Testing Workflow

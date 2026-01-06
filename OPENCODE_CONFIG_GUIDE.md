@@ -52,17 +52,17 @@ OpenCode + oh-my-opencode 存在**两套配置系统**，理解它们的区别�
 
 ### 全局配置路径
 
-| 系统 | 项目级 | 全局 |
-|------|--------|------|
-| **OpenCode 原生** | `.opencode/agent/` | `~/.config/opencode/agent/` |
-| **OpenCode 原生** | `.opencode/skill/` | `~/.config/opencode/skill/` |
-| **OpenCode 原生** | `.opencode/command/` | `~/.config/opencode/command/` |
-| **Claude 兼容层** | `.claude/agents/` | `~/.claude/agents/` |
-| **Claude 兼容层** | `.claude/skills/` | `~/.claude/skills/` |
-| **Claude 兼容层** | `.claude/commands/` | `~/.claude/commands/` |
-| **Claude 兼容层** | `.claude/rules/` | `~/.claude/rules/` |
+| 系统 | 项目级 | 全局（宿主机） | 全局（容器内） |
+|------|--------|---------------|---------------|
+| **OpenCode 原生** | `.opencode/agent/` | `~/opencode/global/opencode/agent/` | `~/.config/opencode/agent/` |
+| **OpenCode 原生** | `.opencode/skill/` | `~/opencode/global/opencode/skill/` | `~/.config/opencode/skill/` |
+| **OpenCode 原生** | `.opencode/command/` | `~/opencode/global/opencode/command/` | `~/.config/opencode/command/` |
+| **Claude 兼容层** | `.claude/agents/` | `~/opencode/global/claude/agents/` | `~/.claude/agents/` |
+| **Claude 兼容层** | `.claude/skills/` | `~/opencode/global/claude/skills/` | `~/.claude/skills/` |
+| **Claude 兼容层** | `.claude/commands/` | `~/opencode/global/claude/commands/` | `~/.claude/commands/` |
+| **Claude 兼容层** | `.claude/rules/` | `~/opencode/global/claude/rules/` | `~/.claude/rules/` |
 
-> **Docker 环境说明**：本项目中 `~/opencode/claude_home/` 是宿主机目录，容器内挂载为 `~/.claude/`。
+> **Docker 环境说明**：本项目中 `~/opencode/global/claude/` 是宿主机目录，容器内挂载为 `~/.claude/`。
 
 ---
 
@@ -358,43 +358,43 @@ globs: ["*.test.ts", "*.spec.ts", "**/__tests__/**"]
 
 ### Commands 优先级（4 层）
 
-| 优先级 | 路径 | 说明 |
-|--------|------|------|
-| 1 (最高) | `.opencode/command/` | 项目 OpenCode 原生 |
-| 2 | `~/.config/opencode/command/` | 全局 OpenCode 原生 |
-| 3 | `.claude/commands/` | 项目 Claude 兼容 |
-| 4 (最低) | `~/.claude/commands/` | 全局 Claude 兼容 |
+| 优先级 | 项目路径 | 全局路径（容器内） | 说明 |
+|--------|---------|-----------------|------|
+| 1 (最高) | `.opencode/command/` | - | 项目 OpenCode 原生 |
+| 2 | - | `~/.config/opencode/command/` | 全局 OpenCode 原生 |
+| 3 | `.claude/commands/` | - | 项目 Claude 兼容 |
+| 4 (最低) | - | `~/.claude/commands/` | 全局 Claude 兼容 |
 
 ### Skills 优先级（4 层）
 
-| 优先级 | 路径 | 说明 |
-|--------|------|------|
-| 1 (最高) | `.opencode/skill/` | 项目 OpenCode 原生 |
-| 2 | `~/.config/opencode/skill/` | 全局 OpenCode 原生 |
-| 3 | `.claude/skills/` | 项目 Claude 兼容 |
-| 4 (最低) | `~/.claude/skills/` | 全局 Claude 兼容 |
+| 优先级 | 项目路径 | 全局路径（容器内） | 说明 |
+|--------|---------|-----------------|------|
+| 1 (最高) | `.opencode/skill/` | - | 项目 OpenCode 原生 |
+| 2 | - | `~/.config/opencode/skill/` | 全局 OpenCode 原生 |
+| 3 | `.claude/skills/` | - | 项目 Claude 兼容 |
+| 4 (最低) | - | `~/.claude/skills/` | 全局 Claude 兼容 |
 
 ### Agents 优先级
 
 **OpenCode 原生 Agents（2 层）**
 
-| 优先级 | 路径 |
-|--------|------|
-| 1 (最高) | `.opencode/agent/` |
+| 优先级 | 路径（容器内） |
+|--------|--------------|
+| 1 (最高) | `/workspace/.opencode/agent/` |
 | 2 (最低) | `~/.config/opencode/agent/` |
 
 **Claude 兼容 Agents（2 层）**
 
-| 优先级 | 路径 |
-|--------|------|
-| 1 (最高) | `.claude/agents/` |
+| 优先级 | 路径（容器内） |
+|--------|--------------|
+| 1 (最高) | `/workspace/.claude/agents/` |
 | 2 (最低) | `~/.claude/agents/` |
 
 ### Rules 优先级（2 层，仅 Claude 兼容）
 
-| 优先级 | 路径 |
-|--------|------|
-| 1 (最高) | `.claude/rules/` |
+| 优先级 | 路径（容器内） |
+|--------|--------------|
+| 1 (最高) | `/workspace/.claude/rules/` |
 | 2 (最低) | `~/.claude/rules/` |
 
 ---
@@ -402,6 +402,10 @@ globs: ["*.test.ts", "*.spec.ts", "**/__tests__/**"]
 ## .gitignore 建议
 
 ```gitignore
+# 会话数据（每个项目的 todos 和 transcripts）
+.claude/todos/
+.claude/transcripts/
+
 # Skill 运行时数据（可能包含认证信息）
 .opencode/skill/*/data/
 .claude/skills/*/data/
@@ -422,16 +426,29 @@ bun.lock
 
 ## `ocd` 自动初始化行为
 
-### 在 `~/opencode/` 目录下运行
+### 全局配置初始化
 
-- **不会**创建项目级配置目录（因为全局配置已在 `claude_home/` 中）
-- **不会**创建 `instances/opencode/` 目录
-- Todos 和 transcripts 直接使用 `claude_home/todos/` 和 `claude_home/transcripts/`
-- 仅初始化 `claude_home/` 目录结构（如果不存在）
+首次运行任意项目时，会自动创建全局配置目录：
 
-### 在其他项目目录下运行
+```
+~/opencode/global/
+├── opencode/                     # OpenCode 原生全局配置
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+└── claude/                       # Claude 兼容层全局配置
+    ├── skills/
+    ├── commands/
+    ├── agents/
+    ├── rules/
+    ├── settings.json             # 自动生成（如果不存在）
+    └── .mcp.json                 # 自动生成（如果不存在）
+```
 
-自动创建以下目录结构：
+### 项目初始化
+
+每次运行 `ocd` 时，会自动创建项目级配置目录：
 
 **OpenCode 原生配置**（在项目目录下）：
 ```
@@ -441,20 +458,16 @@ bun.lock
 └── agent/      # 项目专属 Agents
 ```
 
-**Claude 兼容层配置**（在项目目录下）：
+**会话数据**（在项目目录下）：
 ```
 .claude/
-└── rules/      # 项目专属条件规则（仅 rules，其他目录不自动创建）
+├── todos/        # 项目的任务列表
+└── transcripts/  # 项目的会话日志
 ```
 
-**实例数据**（在 `~/opencode/` 下）：
-```
-instances/<project-name>/claude/
-├── todos/        # 该项目的任务列表
-└── transcripts/  # 该项目的会话日志
-```
+> **注意**：会话数据（todos/transcripts）现在存放在每个项目自己的 `.claude/` 目录下，不再使用 `instances/` 目录。
 
-> ⚠️ **注意**：`.claude/skills/`、`.claude/commands/`、`.claude/agents/` 不会自动创建，需要手动创建。
+> ⚠️ **注意**：`.claude/skills/`、`.claude/commands/`、`.claude/agents/`、`.claude/rules/` 不会自动创建，需要手动创建。如需项目级配置，推荐使用 OpenCode 原生的 `.opencode/` 目录。
 
 ---
 

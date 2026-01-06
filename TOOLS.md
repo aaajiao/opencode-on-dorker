@@ -447,7 +447,7 @@ Hooks 允许在特定事件发生时运行自定义脚本。
 
 ### 配置位置
 
-- `~/.claude/settings.json`（用户级）
+- `~/opencode/global/claude/settings.json`（全局级，容器内 `~/.claude/settings.json`）
 - `.claude/settings.json`（项目级）
 - `.claude/settings.local.json`（本地，git 忽略）
 
@@ -583,10 +583,10 @@ Skill 是更高级的命令形式，可以包含 MCP 服务器配置。
 
 | 位置 | 说明 |
 |------|------|
-| `~/.claude/skills/*/SKILL.md` | 用户级技能 |
-| `.claude/skills/*/SKILL.md` | 项目级技能 |
-| `~/.config/opencode/skill/*/SKILL.md` | OpenCode 全局技能 |
-| `.opencode/skill/*/SKILL.md` | OpenCode 项目级技能 |
+| `~/opencode/global/claude/skills/*/SKILL.md` | 全局 Claude 兼容技能（容器内 `~/.claude/skills/`） |
+| `.claude/skills/*/SKILL.md` | 项目级 Claude 兼容技能 |
+| `~/opencode/global/opencode/skill/*/SKILL.md` | 全局 OpenCode 原生技能（容器内 `~/.config/opencode/skill/`） |
+| `.opencode/skill/*/SKILL.md` | 项目级 OpenCode 原生技能 |
 
 ### 技能格式示例
 
@@ -639,72 +639,80 @@ OpenCode 支持**两套配置系统**，目录命名规则不同：
 在 OCD（OpenCode Docker）环境中，配置目录结构如下：
 
 ```
-~/opencode/
-├── claude_home/                    # Claude 兼容层（用户级共享，复数目录名）
-│   ├── skills/                     # 自定义 Skills
-│   │   └── my-skill/SKILL.md
-│   ├── commands/                   # 自定义斜杠命令
-│   │   └── my-command.md
-│   ├── agents/                     # 自定义 Agents
-│   │   └── my-agent.md
-│   ├── rules/                      # 条件规则（仅 Claude 兼容层支持）
-│   │   └── my-rule.md
-│   ├── todos/                      # 任务列表（仅 opencode 实例使用）
-│   ├── transcripts/                # 会话日志（仅 opencode 实例使用）
-│   ├── settings.json               # Hooks 配置
-│   └── .mcp.json                   # 额外 MCP 服务器
+~/opencode/                           # 配置仓库（自身也是一个项目）
 │
-└── instances/<项目名>/claude/      # 其他项目的实例数据（注意：不会创建 instances/opencode/）
-    ├── todos/                      # 该项目的任务列表
-    └── transcripts/                # 该项目的会话日志
-
-~/.config/opencode/                 # OpenCode 原生（用户级，单数目录名）
-├── skill/                          # 全局 Skills
-├── command/                        # 全局斜杠命令
-└── agent/                          # 全局 Agents
-
-<project>/
-├── .opencode/                      # OpenCode 原生（项目级，单数目录名）
+│  ── 这个项目自身的配置 ──
+│
+├── .opencode/                        # OpenCode 原生配置（这个项目）
 │   ├── skill/
 │   ├── command/
 │   └── agent/
 │
-└── .claude/                        # Claude 兼容层（项目级，复数目录名）
-    ├── skills/
-    ├── commands/
-    ├── agents/
-    └── rules/
+├── .claude/                          # Claude 兼容层（这个项目）
+│   ├── todos/                        # opencode 实例的会话数据
+│   └── transcripts/
+│
+│  ── 全局配置（对所有项目生效） ──
+│
+├── global/
+│   ├── opencode/                     # OpenCode 原生全局配置
+│   │   ├── skill/                    # 全局 Skills（单数）
+│   │   ├── command/                  # 全局 Commands（单数）
+│   │   └── agent/                    # 全局 Agents（单数）
+│   │
+│   └── claude/                       # Claude 兼容层全局配置
+│       ├── skills/                   # 全局 Skills（复数）
+│       ├── commands/                 # 全局 Commands（复数）
+│       ├── agents/                   # 全局 Agents（复数）
+│       ├── rules/                    # 全局 Rules（复数）
+│       ├── settings.json             # 全局 Hooks
+│       └── .mcp.json                 # 全局 MCP 服务器
+│
+└── ...
+
+~/my-project/                         # 其他项目
+├── .opencode/                        # OpenCode 原生配置（这个项目）
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+├── .claude/                          # Claude 兼容层（这个项目）
+│   ├── todos/                        # 这个项目的会话数据
+│   └── transcripts/
+│
+└── ... (项目源码)
 ```
 
 **挂载映射**（容器内路径）：
 
-**通用挂载**：
-| 宿主机路径 | 容器内路径 |
-|------------|-----------|
-| `~/opencode/claude_home/` | `/root/.claude/` |
+**全局配置挂载**：
+| 宿主机路径 | 容器内路径 | 说明 |
+|------------|-----------|------|
+| `~/opencode/global/opencode/skill/` | `/root/.config/opencode/skill/` | OpenCode 原生全局 Skills |
+| `~/opencode/global/opencode/command/` | `/root/.config/opencode/command/` | OpenCode 原生全局 Commands |
+| `~/opencode/global/opencode/agent/` | `/root/.config/opencode/agent/` | OpenCode 原生全局 Agents |
+| `~/opencode/global/claude/` | `/root/.claude/` | Claude 兼容层全局配置 |
 
-**Todos/Transcripts 挂载**（根据运行目录不同）：
-| 运行目录 | 宿主机路径 | 容器内路径 |
-|----------|-----------|-----------|
-| `~/opencode/` | `claude_home/todos/` | `/root/.claude/todos/` |
-| `~/opencode/` | `claude_home/transcripts/` | `/root/.claude/transcripts/` |
-| 其他目录 | `instances/<name>/claude/todos/` | `/root/.claude/todos/` |
-| 其他目录 | `instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` |
+**会话数据挂载**（覆盖挂载到 `/root/.claude/`）：
+| 宿主机路径 | 容器内路径 | 说明 |
+|----------|-----------|------|
+| `<project>/.claude/todos/` | `/root/.claude/todos/` | 项目的任务列表 |
+| `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` | 项目的会话记录 |
 
-> ⚠️ **注意**：在 `~/opencode/` 目录下运行时，不会创建 `instances/opencode/` 目录，而是直接使用 `claude_home/` 中的 todos 和 transcripts。
+> **注意**：每个项目的会话数据存放在项目自己的 `.claude/` 目录下，通过覆盖挂载实现隔离。
 
 ### 兼容的功能
 
 | 功能 | 宿主机路径 | 用途 |
 |------|-----------|------|
-| **Skills** | `~/opencode/claude_home/skills/` | 高级技能，可包含 MCP 配置 |
-| **Commands** | `~/opencode/claude_home/commands/` | 自定义斜杠命令 |
-| **Agents** | `~/opencode/claude_home/agents/` | 自定义代理角色 |
-| **Rules** | `~/opencode/claude_home/rules/` | 条件规则（按文件类型等触发） |
-| **Hooks** | `~/opencode/claude_home/settings.json` | 工具执行前后的钩子 |
-| **MCP** | `~/opencode/claude_home/.mcp.json` | 额外的 MCP 服务器 |
-| **Todos** | `~/opencode/instances/<name>/claude/todos/` | 任务列表（实例隔离） |
-| **Transcripts** | `~/opencode/instances/<name>/claude/transcripts/` | 会话日志（实例隔离） |
+| **Skills** | `~/opencode/global/claude/skills/` | 高级技能，可包含 MCP 配置 |
+| **Commands** | `~/opencode/global/claude/commands/` | 自定义斜杠命令 |
+| **Agents** | `~/opencode/global/claude/agents/` | 自定义代理角色 |
+| **Rules** | `~/opencode/global/claude/rules/` | 条件规则（按文件类型等触发） |
+| **Hooks** | `~/opencode/global/claude/settings.json` | 工具执行前后的钩子 |
+| **MCP** | `~/opencode/global/claude/.mcp.json` | 额外的 MCP 服务器 |
+| **Todos** | `<project>/.claude/todos/` | 任务列表（项目隔离） |
+| **Transcripts** | `<project>/.claude/transcripts/` | 会话日志（项目隔离） |
 
 ---
 
@@ -718,7 +726,7 @@ OpenCode 支持**两套配置系统**，目录命名规则不同：
 
 1. 创建目录和文件：
 ```bash
-mkdir -p ~/opencode/claude_home/skills/db-migration
+mkdir -p ~/opencode/global/claude/skills/db-migration
 ```
 
 2. 创建 `SKILL.md`：
@@ -756,7 +764,7 @@ allowed-tools: "bash read write edit"
 
 1. 创建命令文件：
 ```bash
-mkdir -p ~/opencode/claude_home/commands
+mkdir -p ~/opencode/global/claude/commands
 ```
 
 2. 创建 `react-component.md`：
@@ -792,7 +800,7 @@ args:
 
 1. 创建 agent 文件：
 ```bash
-mkdir -p ~/opencode/claude_home/agents
+mkdir -p ~/opencode/global/claude/agents
 ```
 
 2. 创建 `security-auditor.md`：
@@ -830,7 +838,7 @@ model: "openai/gpt-5.2"
 
 **步骤**：
 
-1. 编辑 `~/opencode/claude_home/settings.json`：
+1. 编辑 `~/opencode/global/claude/settings.json`：
 ```json
 {
   "hooks": {
@@ -859,7 +867,7 @@ model: "openai/gpt-5.2"
 
 **步骤**：
 
-1. 编辑 `~/opencode/claude_home/.mcp.json`：
+1. 编辑 `~/opencode/global/claude/.mcp.json`：
 ```json
 {
   "mcpServers": {
@@ -889,7 +897,7 @@ INTERNAL_API_TOKEN=your-token
 
 1. 创建规则文件：
 ```bash
-mkdir -p ~/opencode/claude_home/rules
+mkdir -p ~/opencode/global/claude/rules
 ```
 
 2. 创建 `test-files.md`：
@@ -918,13 +926,13 @@ globs: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
 ```bash
 # 示例：复制某个开源 Skill
 git clone https://github.com/someone/claude-skills.git /tmp/skills
-cp -r /tmp/skills/some-skill ~/opencode/claude_home/skills/
+cp -r /tmp/skills/some-skill ~/opencode/global/claude/skills/
 ```
 
 2. **分享你的配置**：
 ```bash
 # 将你的自定义配置打包分享
-cd ~/opencode/claude_home
+cd ~/opencode/global/claude
 zip -r my-claude-config.zip skills/ commands/ agents/
 ```
 
