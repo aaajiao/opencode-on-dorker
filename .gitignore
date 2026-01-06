@@ -2,7 +2,12 @@
 .DS_Store
 *.log
 .opencode/
-claude_home/
 instances/
 oh-my-opencode/
 Icon*
+
+# claude_home 运行时数据（不上传）
+claude_home/todos/
+claude_home/transcripts/
+claude_home/.DS_Store
+claude_home/**/.DS_Store
