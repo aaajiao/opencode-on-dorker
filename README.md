@@ -28,6 +28,7 @@
 | **oracle** | `openai/gpt-5.2` | 架构设计、调试、代码审查 |
 | **librarian** | `anthropic/claude-sonnet-4-5` | 文档、开源研究、GitHub 示例 |
 | **explore** | `opencode/grok-code` | 快速上下文搜索（免费） |
+| **github** | `anthropic/claude-sonnet-4-5` | Git/GitHub 工作流助手 |
 | **frontend-ui-ux-engineer** | `google/gemini-3-pro-preview` | UI/UX 代码生成 |
 | **document-writer** | `google/gemini-3-pro-preview` | 技术文档写作 |
 | **multimodal-looker** | `google/gemini-3-flash` | PDF/图像分析 |
@@ -394,8 +395,28 @@ ultrawork / ulw    # 最大性能模式
 @oracle            # 调用调试专家
 @librarian         # 查找文档/实现
 @explore           # 快速代码搜索
+@github            # GitHub 工作流（分支/提交/PR/同步）
 ultrathink         # 深度思考模式
 ```
+
+### @github 工作流助手
+
+统一的 Git/GitHub 工作流 Agent，替代单独的命令：
+
+```
+@github branch 用户头像     # 创建功能分支
+@github commit             # 智能提交（自动生成 message）
+@github sync               # 同步 main 分支
+@github pr                 # 创建 Pull Request
+@github done               # 清理已合并的分支
+@github 提交并创建 PR       # 组合操作
+```
+
+特性：
+- 自动检测改动类型，生成 Conventional Commits 格式的 message
+- 敏感文件检测（.env、credentials 等）
+- 智能分支命名（feature/、fix/、docs/ 等前缀）
+- 冲突提示和解决建议
 
 ### Docker Compose 方式
 
