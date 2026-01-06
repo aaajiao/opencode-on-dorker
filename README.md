@@ -1,5 +1,7 @@
 # OpenCode Docker 环境配置指南
 
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](./CHANGELOG.md)
+
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
 ## 功能特性

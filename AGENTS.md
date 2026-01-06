@@ -13,66 +13,56 @@ OpenCode Docker environment for macOS + OrbStack. Runs OpenCode AI assistant wit
 ### Docker Image
 
 ```bash
-# Build image
-docker build -t opencode-bun .
-
-# Build with no cache (full rebuild)
-docker build --no-cache -t opencode-bun .
-
-# Using opencode.sh function
-opencode -r  # Rebuild image + reset config
+docker build -t opencode-bun .                    # Build image
+docker build --no-cache -t opencode-bun .         # Full rebuild
+opencode -r                                       # Rebuild + reset config
+opencode -r --keep                                # Rebuild + keep config
 ```
 
 ### Validate Shell Script
 
 ```bash
-# Syntax check
-zsh -n opencode.sh
-bash -n opencode.sh
-
-# ShellCheck (if available)
-shellcheck opencode.sh
+bash -n opencode.sh                               # Syntax check
+zsh -n opencode.sh                                # Zsh syntax check
+shellcheck opencode.sh                            # Lint (if available)
 ```
 
-### Validate Dockerfile
+### Validate JSON
 
 ```bash
-# Lint with hadolint (if available)
-hadolint Dockerfile
-
-# Test build
-docker build -t opencode-bun:test .
-```
-
-### Validate JSON Config
-
-```bash
-# Check JSON syntax
-jq . ~/.config/opencode/opencode.json
-jq . ~/.config/opencode/oh-my-opencode.json
+jq . ~/.config/opencode/opencode.json             # OpenCode config
+jq . ~/.config/opencode/oh-my-opencode.json       # Plugin config
+jq . ~/opencode/claude_home/settings.json         # Hooks config
+jq . ~/opencode/claude_home/.mcp.json             # MCP config
 ```
 
 ### Test Container
 
 ```bash
-# Run container interactively
 docker run -it --rm --network host opencode-bun bash
-
-# Test notification mechanism
-echo "Test|Hello" >> ~/.opencode_data/notifications
+notify "Test" "Hello"                             # Test notification
 ```
 
 ## File Structure
 
 ```
-├── Dockerfile           # Docker image (oven/bun base)
-├── docker-compose.yml   # Docker Compose config (host network)
-├── opencode.sh          # Shell function for ~/.zshrc
-├── env.example          # Environment variable template
-├── ghostty-128.png      # Notification icon
-├── README.md            # User documentation
-├── CLAUDE.md            # Claude Code guidance
-└── AGENTS.md            # This file
+~/opencode/
+├── Dockerfile              # Docker image (oven/bun base)
+├── docker-compose.yml      # Docker Compose config
+├── opencode.sh             # Shell function for ~/.zshrc
+├── env.example             # Environment variable template
+├── ghostty-128.png         # Notification icon
+├── claude_home/            # Claude Code compatibility (user-level, shared)
+│   ├── skills/             # Custom skills
+│   ├── commands/           # Slash commands
+│   ├── agents/             # Custom agents
+│   ├── rules/              # Conditional rules
+│   ├── settings.json       # Hooks configuration
+│   └── .mcp.json           # MCP servers
+├── instances/<name>/claude/ # Per-instance data
+│   ├── todos/              # Session todos
+│   └── transcripts/        # Session history
+└── README.md
 ```
 
 ## Code Style Guidelines
@@ -82,52 +72,37 @@ echo "Test|Hello" >> ~/.opencode_data/notifications
 **Formatting**:
 - 2-space indentation
 - Use `[[ ]]` for conditionals (not `[ ]`)
-- Quote all variable expansions: `"$VAR"` not `$VAR`
+- Quote all variables: `"$VAR"` not `$VAR`
 - Use `$()` for command substitution (not backticks)
 
 **Variables**:
 - Local variables: `local VAR_NAME="value"`
 - Constants: `UPPER_CASE` (no `local`)
-- Use `:-` for defaults: `${VAR:-default}`
+- Defaults: `${VAR:-default}`
 - NEVER use `local` inside subshells `( ... ) &`
+
+**Functions**:
+```bash
+_opencode_function_name() {
+  local ARG="$1"
+  # implementation
+}
+```
 
 **Error Handling**:
 - Redirect errors: `2>/dev/null` or `2>&1`
-- Check command existence: `command -v cmd &>/dev/null`
-- Use `|| true` for optional failures
-
-**Comments**:
-- Chinese comments are acceptable (project is bilingual)
-- Use `# ===` separators for major sections
-
-**Example**:
-```bash
-local CONFIG_FILE="$HOME/.config/opencode/opencode.json"
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "Generating config..."
-fi
-```
+- Check existence: `command -v cmd &>/dev/null`
+- Optional failures: `|| true`
 
 ### Dockerfile
 
-**Structure**:
-- Group related commands with comments
-- Use numbered steps: `# Step N:` or `# 第N步：`
-- Minimize layers: chain commands with `&&`
+- Group commands with Chinese comments: `# 第N步：描述`
+- Minimize layers: chain with `&&`
 - Clean up in same layer: `&& rm -rf /var/lib/apt/lists/*`
-
-**Environment**:
 - Set `ENV DEBIAN_FRONTEND=noninteractive` early
-- Define PATH incrementally: `ENV PATH="/new/path:$PATH"`
-
-**Scripts**:
-- Use `echo '...' > /path/script` for inline scripts
-- Always `chmod +x` after creating scripts
 
 ### JSON Configuration
 
-**Format**:
 - 2-space indentation
 - Use `$schema` when available
 - No trailing commas
@@ -135,12 +110,7 @@ fi
 
 ### Environment Variables (.env)
 
-**CRITICAL**: Must be pure `KEY=VALUE` format
-- NO `export` keyword
-- NO quotes around values
-- NO inline comments
-- NO spaces around `=`
-
+**CRITICAL**: Pure `KEY=VALUE` format only
 ```bash
 # WRONG
 export API_KEY="sk-xxx"
@@ -149,80 +119,85 @@ export API_KEY="sk-xxx"
 API_KEY=sk-xxx
 ```
 
-## Key Implementation Details
+## Key Architecture
 
-### URL Redirection (Container to Mac)
+### Mount Points (Container ↔ Host)
+
+| Host Path | Container Path | Purpose |
+|-----------|----------------|---------|
+| `$(pwd)` | `/workspace` | Project files |
+| `~/.opencode_data/<instance>` | `/root/.opencode` | Instance data |
+| `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config |
+| `~/opencode/claude_home` | `/root/.claude` | Claude compatibility |
+| `~/opencode/instances/<name>/claude/todos` | `/root/.claude/todos` | Per-instance todos |
+| `~/opencode/instances/<name>/claude/transcripts` | `/root/.claude/transcripts` | Per-instance history |
+
+### URL Redirection (Container → Mac)
 - Container writes to `/root/.opencode/open_url`
-- Host's `opencode.sh` watches file, calls `open` command
-- Custom `xdg-open` script in Dockerfile handles this
+- Host watcher calls `open` command
 
 ### Notification System
-- Container writes to `/root/.opencode/notifications`
-- Format: `TITLE|MESSAGE`
-- Host uses `terminal-notifier` (with fallback to `osascript`)
-- Icon displayed via `-contentImage` (right side small image)
+- Container: `notify "Title" "Message"`
+- Writes to `/root/.opencode/notifications` (format: `TITLE|MSG`)
+- Host uses `terminal-notifier` or `osascript`
 
-### Background Process Pattern
+### Background Watcher Pattern
 ```bash
 (
     while true; do
-        # ... watch files ...
+        # watch files
         sleep 0.5
     done
 ) &
-local WATCHER_PID=$!
-disown $WATCHER_PID 2>/dev/null  # Prevent SIGHUP on shell exit
+WATCHER_PID=$!
+disown $WATCHER_PID 2>/dev/null
 ```
-
-### Network Mode
-- Uses `--network host` for OAuth callback support
-- Container shares Mac's localhost
-- Access Web UI at `http://localhost:4096`
 
 ## Common Pitfalls
 
-1. **`local` in subshell**: Don't use `local` inside `( ... ) &`
+1. **`local` in subshell**: Never use inside `( ... ) &`
 2. **Function not updating**: Run `exec zsh` after modifying `opencode.sh`
 3. **Env file format**: No quotes, no export, no comments
-4. **terminal-notifier `-sender`**: May cause notifications to hang
-5. **OAuth fails**: Ensure `--network host` is used
+4. **OAuth fails**: Ensure `--network host` is used
+5. **Skills not loading**: Check `~/opencode/claude_home/skills/`
+
+## Testing Workflow
+
+1. Modify files in `/workspace`
+2. Exit container: `exit`
+3. Reload shell: `exec zsh`
+4. Restart: `opencode`
+5. Verify: `ls -la /root/.claude/`
 
 ## Git Workflow
 
 ```bash
-# Sync local after remote changes
-cd ~/opencode
-git pull
-exec zsh  # Reload shell function
-
-# Create PR for changes
-git checkout -b feature/my-change
+git checkout -b feature/description
 git add -A
 git commit -m "feat: description"
-git push -u origin feature/my-change
+git push -u origin feature/description
 gh pr create --title "feat: ..." --body "..."
 ```
 
-## Testing Changes
+## Multi-Instance Support
 
-1. Modify files locally
-2. Exit container: `exit`
-3. Reload shell: `exec zsh`
-4. Restart: `opencode`
-5. Test notification: Container sends `notify "Title" "Message"`
-
-## /remind - 任务完成通知
-
-当用户使用 `/remind` 命令时，在任务完成后发送 macOS 桌面通知。
-
-**用法**:
-```
-/remind              # 默认通知
-/remind 部署完成      # 自定义消息
+```bash
+opencode                    # Instance = current dir name, auto port
+opencode -n myapp           # Custom instance name
+opencode -p 5000            # Custom port
+opencode --quotio           # Enable Quotio provider
 ```
 
-**规则**:
-1. 记住用户请求了完成提醒
-2. 正常执行任务
-3. 任务完成后调用: `notify "OpenCode" "任务已完成"` 或自定义消息
-4. 任务失败时通知应说明失败原因
+## /remind - Task Completion Notification
+
+Send macOS notification when task completes:
+```
+/remind              # Default notification
+/remind 部署完成      # Custom message
+```
+
+Rules:
+1. Remember user requested reminder
+2. Execute task normally
+3. On completion: `notify "OpenCode" "任务已完成"`
+4. On failure: notify with error reason
