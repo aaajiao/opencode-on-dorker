@@ -74,6 +74,8 @@
 ├── opencode.sh         # Shell 快捷函数
 ├── ghostty-128.png     # 通知自定义图标
 ├── .env                # 环境变量配置（API 密钥等）
+├── skills/             # 全局 skills（自动生成）
+│   └── remind/SKILL.md
 └── README.md           # 本文档
 
 ~/.config/opencode/
@@ -338,6 +340,21 @@ notify "构建成功" "项目编译完成，耗时 2 分钟"
 容器内已伪造 `osascript` 和 `notify-send` 命令，oh-my-opencode 的通知 hook（`session-notification`、`background-notification`）会自动通过此机制发送 macOS 通知，无需额外配置。
 
 ## 常见问题
+
+## 全局 Skills
+
+启动时自动生成全局 skills 到 `~/opencode/skills/`，所有实例共享。
+
+### 任务完成通知
+
+当你希望任务完成后收到 macOS 桌面通知时，可以说：
+
+- "完成后提醒我"
+- "做完通知我"
+- "帮我xxx，然后提醒我"
+
+AI 会在任务结束后调用 `notify` 命令发送桌面通知。
+
 
 ### Q: 环境变量没有加载？
 

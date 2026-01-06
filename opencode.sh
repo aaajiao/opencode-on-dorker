@@ -96,6 +96,7 @@ opencode() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
+  _opencode_init_skills
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
@@ -229,7 +230,7 @@ EOF
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "google_auth": false,
   "disabled_mcps": ["websearch_exa"],
-  "disabled_hooks": ["session-notification"],
+  "disabled_hooks": [],
   "agents": {
     "Planner-Sisyphus": {
       "model": "anthropic/claude-opus-4-5"
@@ -297,8 +298,48 @@ EOFOMOCONFIG
     -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
     -v "${SHARE_DIR}:/root/.local/share/opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
+    -v "$HOME/opencode/skills:/root/.claude/skills:ro" \
     -w /workspace \
     "$IMAGE_NAME" "$@"
 
   kill $WATCHER_PID 2>/dev/null
+}
+
+# =========================================
+# 辅助函数：生成全局 skills
+# =========================================
+_opencode_init_skills() {
+  local SKILLS_DIR="$HOME/opencode/skills"
+  
+  # remind skill
+  if [[ ! -f "$SKILLS_DIR/remind/SKILL.md" ]]; then
+    mkdir -p "$SKILLS_DIR/remind"
+    cat > "$SKILLS_DIR/remind/SKILL.md" << 'EOF'
+---
+name: task-completion-notify
+description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
+---
+
+# 任务完成通知
+
+当用户要求任务完成后提醒时，在任务结束后发送 macOS 桌面通知。
+
+## 触发方式
+
+用户说"完成后提醒我"、"做完通知我"等类似表达。
+
+## 行为规则
+
+1. 记住用户请求了完成提醒
+2. 正常执行用户的任务
+3. 任务完成后调用：`notify "OpenCode" "任务已完成"`
+4. 任务失败时通知应说明失败
+
+## 通知命令
+
+```bash
+notify "标题" "内容"
+```
+EOF
+  fi
 }
