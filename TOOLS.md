@@ -75,7 +75,6 @@
 | `frontend-ui-ux-engineer` | UI/UX 设计与前端开发专家 |
 | `document-writer` | 技术文档写作专家（README、API文档、架构文档） |
 | `multimodal-looker` | 分析媒体文件（PDF、图片、图表） |
-| `general` | 通用代理，处理复杂的多步骤任务 |
 
 ### 📚 外部知识库类
 
@@ -127,7 +126,6 @@
 | `@frontend-ui-ux-engineer` | 前端专家 | 专注 UI/UX 设计与开发，即使没有设计稿也能打造精美界面 |
 | `@document-writer` | 文档写手 | 技术文档写作专家，擅长 README、API 文档、架构文档、用户指南 |
 | `@multimodal-looker` | 多媒体分析 | 分析 PDF、图片、图表等媒体文件，提取信息或描述视觉内容 |
-| `@general` | 通用代理 | 通用型代理，处理复杂的多步骤任务，支持并行执行 |
 | `@build` | 构建代理 | 构建专用代理（需用户手动调用） |
 | `@plan` | 规划代理 | 任务规划代理（需用户手动调用） |
 | `@Planner-Sisyphus` | 规划代理 | OhMyOpenCode 版本的规划代理 |
