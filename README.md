@@ -114,23 +114,49 @@
 
 ### Claude Code 兼容层说明
 
-| 目录 | 作用域 | 说明 |
-|------|--------|------|
-| `claude_home/skills/` | 全局 | 自定义 Skills，所有实例共享 |
-| `claude_home/commands/` | 全局 | 自定义斜杠命令 |
-| `claude_home/agents/` | 全局 | 自定义 Agents |
-| `claude_home/rules/` | 全局 | 条件规则（按文件类型等触发） |
-| `claude_home/settings.json` | 全局 | Hooks 配置 |
-| `claude_home/.mcp.json` | 全局 | 额外 MCP 服务器 |
-| `instances/<name>/claude/todos/` | 实例 | 任务列表（每实例独立） |
-| `instances/<name>/claude/transcripts/` | 实例 | 会话日志（每实例独立） |
+配置支持两个层级：**全局**（所有项目共享）和 **项目级**（仅当前项目）。
 
-**容器内挂载映射**：
-- `~/opencode/claude_home/` → `/root/.claude/`
-- `~/opencode/instances/<name>/claude/todos/` → `/root/.claude/todos/`
-- `~/opencode/instances/<name>/claude/transcripts/` → `/root/.claude/transcripts/`
+#### 全局配置（宿主机 `~/opencode/claude_home/`）
 
-> 详细使用场景请参考 [TOOLS.md](./TOOLS.md#-claude-code-兼容性)。
+| 目录 | 容器内路径 | 说明 |
+|------|-----------|------|
+| `claude_home/skills/` | `/root/.claude/skills/` | 自定义 Skills |
+| `claude_home/commands/` | `/root/.claude/commands/` | 自定义斜杠命令 |
+| `claude_home/agents/` | `/root/.claude/agents/` | 自定义 Agents |
+| `claude_home/rules/` | `/root/.claude/rules/` | 条件规则 |
+| `claude_home/settings.json` | `/root/.claude/settings.json` | Hooks 配置 |
+| `claude_home/.mcp.json` | `/root/.claude/.mcp.json` | 额外 MCP 服务器 |
+
+#### 项目级配置（项目目录 `.opencode/`）
+
+| 目录 | 容器内路径 | 说明 |
+|------|-----------|------|
+| `<project>/.opencode/skills/` | `/workspace/.opencode/skills/` | 项目专属 Skills |
+| `<project>/.opencode/commands/` | `/workspace/.opencode/commands/` | 项目专属斜杠命令 |
+| `<project>/.opencode/agents/` | `/workspace/.opencode/agents/` | 项目专属 Agents |
+| `<project>/.opencode/rules/` | `/workspace/.opencode/rules/` | 项目专属规则 |
+
+#### 实例数据（每实例隔离）
+
+| 目录 | 容器内路径 | 说明 |
+|------|-----------|------|
+| `instances/<name>/claude/todos/` | `/root/.claude/todos/` | 任务列表 |
+| `instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` | 会话日志 |
+
+#### 优先级
+
+当全局和项目级存在同名配置时，**项目级优先**。
+
+#### 使用场景
+
+| 场景 | 放置位置 | 示例 |
+|------|----------|------|
+| 所有项目通用的命令 | `~/opencode/claude_home/commands/` | `/dev`、`/dev-stop` |
+| 特定项目的部署命令 | `<project>/.opencode/commands/` | `/deploy`、`/migrate` |
+| 通用代码规范 | `~/opencode/claude_home/rules/` | TypeScript 规范 |
+| 项目特有的规范 | `<project>/.opencode/rules/` | 项目 API 约定 |
+
+> 详细使用场景和示例请参考 [TOOLS.md](./TOOLS.md#-claude-code-兼容性)。
 
 ## 安装步骤
 
