@@ -1,7 +1,7 @@
 ---
 name: opencode-config
 description: OpenCode 项目配置助手 - 快速设置 skill/agent/command/rule
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-opus-4-5
 tools:
   read: true
   write: true
