@@ -587,21 +587,278 @@ mcp:
 
 ## 🔗 Claude Code 兼容性
 
-oh-my-opencode 完全兼容 Claude Code 的配置和命令格式。
+oh-my-opencode 完全兼容 Claude Code 的配置和命令格式，让你可以复用 Claude Code 社区的资源。
+
+### 目录结构（OCD Docker 版）
+
+在 OCD（OpenCode Docker）环境中，Claude Code 兼容层使用以下目录结构：
+
+```
+~/opencode/
+├── claude_home/                    # 用户级共享资源（所有实例共用）
+│   ├── skills/                     # 自定义 Skills
+│   │   └── my-skill/SKILL.md
+│   ├── commands/                   # 自定义斜杠命令
+│   │   └── my-command.md
+│   ├── agents/                     # 自定义 Agents
+│   │   └── my-agent.md
+│   ├── rules/                      # 条件规则
+│   │   └── my-rule.md
+│   ├── settings.json               # Hooks 配置
+│   └── .mcp.json                   # 额外 MCP 服务器
+│
+└── instances/<实例名>/claude/      # 实例级数据（每个实例独立）
+    ├── todos/                      # 该实例的任务列表
+    └── transcripts/                # 该实例的会话日志
+```
+
+**挂载映射**（容器内路径）：
+| 宿主机路径 | 容器内路径 |
+|------------|-----------|
+| `~/opencode/claude_home/` | `/root/.claude/` |
+| `~/opencode/instances/<name>/claude/todos/` | `/root/.claude/todos/` |
+| `~/opencode/instances/<name>/claude/transcripts/` | `/root/.claude/transcripts/` |
 
 ### 兼容的功能
 
-| 功能 | 说明 |
-|------|------|
-| Commands | `~/.claude/commands/` 和 `.claude/commands/` |
-| Skills | `~/.claude/skills/` 和 `.claude/skills/` |
-| Agents | `~/.claude/agents/` 和 `.claude/agents/` |
-| MCP | `.mcp.json` 配置文件 |
-| Hooks | `settings.json` 钩子配置 |
-| Todos | `~/.claude/todos/` 任务存储 |
-| Transcripts | `~/.claude/transcripts/` 会话日志 |
+| 功能 | 宿主机路径 | 用途 |
+|------|-----------|------|
+| **Skills** | `~/opencode/claude_home/skills/` | 高级技能，可包含 MCP 配置 |
+| **Commands** | `~/opencode/claude_home/commands/` | 自定义斜杠命令 |
+| **Agents** | `~/opencode/claude_home/agents/` | 自定义代理角色 |
+| **Rules** | `~/opencode/claude_home/rules/` | 条件规则（按文件类型等触发） |
+| **Hooks** | `~/opencode/claude_home/settings.json` | 工具执行前后的钩子 |
+| **MCP** | `~/opencode/claude_home/.mcp.json` | 额外的 MCP 服务器 |
+| **Todos** | `~/opencode/instances/<name>/claude/todos/` | 任务列表（实例隔离） |
+| **Transcripts** | `~/opencode/instances/<name>/claude/transcripts/` | 会话日志（实例隔离） |
+
+---
+
+### 使用场景
+
+#### 场景 1：创建自定义 Skill（专业技能包）
+
+**需求**：你经常需要做数据库迁移，想创建一个专门的 Skill 来辅助。
+
+**步骤**：
+
+1. 创建目录和文件：
+```bash
+mkdir -p ~/opencode/claude_home/skills/db-migration
+```
+
+2. 创建 `SKILL.md`：
+```markdown
+---
+name: "db-migration"
+description: "数据库迁移助手"
+model: "anthropic/claude-sonnet-4-5"
+allowed-tools: "bash read write edit"
+---
+
+你是数据库迁移专家。帮助用户：
+1. 生成迁移文件
+2. 检查迁移安全性
+3. 执行迁移并验证
+
+始终：
+- 先备份数据库
+- 使用事务包装
+- 提供回滚方案
+```
+
+3. 在对话中使用：
+```
+/db-migration 帮我创建一个添加 user.avatar 字段的迁移
+```
+
+---
+
+#### 场景 2：创建自定义命令（快捷操作）
+
+**需求**：你想快速生成 React 组件模板。
+
+**步骤**：
+
+1. 创建命令文件：
+```bash
+mkdir -p ~/opencode/claude_home/commands
+```
+
+2. 创建 `react-component.md`：
+```markdown
+---
+description: "生成 React 组件"
+args:
+  name:
+    type: string
+    description: 组件名称
+---
+
+创建一个 React 函数组件，要求：
+- 名称：$ARGUMENTS
+- 使用 TypeScript
+- 包含 Props 类型定义
+- 使用 Tailwind CSS
+- 放在 src/components/ 目录下
+```
+
+3. 使用：
+```
+/project:react-component UserProfile
+```
+
+---
+
+#### 场景 3：创建自定义 Agent（专家角色）
+
+**需求**：你想要一个专门审查安全问题的代理。
+
+**步骤**：
+
+1. 创建 agent 文件：
+```bash
+mkdir -p ~/opencode/claude_home/agents
+```
+
+2. 创建 `security-auditor.md`：
+```markdown
+---
+name: "security-auditor"
+description: "安全审计专家"
+model: "openai/gpt-5.2"
+---
+
+你是安全审计专家，专注于：
+- SQL 注入检测
+- XSS 漏洞识别
+- 认证/授权缺陷
+- 敏感数据泄露
+- 依赖漏洞
+
+审查代码时：
+1. 逐文件扫描安全风险
+2. 按严重程度分类（Critical/High/Medium/Low）
+3. 提供修复建议和代码示例
+4. 引用 OWASP 最佳实践
+```
+
+3. 使用：
+```
+@security-auditor 审查 src/auth/ 目录的安全性
+```
+
+---
+
+#### 场景 4：配置 Hooks（自动化工作流）
+
+**需求**：每次编辑 TypeScript 文件后自动运行 ESLint。
+
+**步骤**：
+
+1. 编辑 `~/opencode/claude_home/settings.json`：
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [[ \"$FILE\" == *.ts || \"$FILE\" == *.tsx ]]; then npx eslint --fix \"$FILE\" 2>/dev/null || true; fi"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+**效果**：每次 AI 编辑 `.ts` 或 `.tsx` 文件后，自动运行 ESLint 修复。
+
+---
+
+#### 场景 5：添加额外 MCP 服务器
+
+**需求**：添加一个自定义 MCP 服务器来访问内部 API。
+
+**步骤**：
+
+1. 编辑 `~/opencode/claude_home/.mcp.json`：
+```json
+{
+  "mcpServers": {
+    "internal-api": {
+      "command": "npx",
+      "args": ["-y", "@mycompany/internal-mcp-server"],
+      "env": {
+        "API_TOKEN": "${INTERNAL_API_TOKEN}"
+      }
+    }
+  }
+}
+```
+
+2. 确保环境变量在 `.env` 中配置：
+```bash
+INTERNAL_API_TOKEN=your-token
+```
+
+---
+
+#### 场景 6：配置条件规则（按上下文应用）
+
+**需求**：处理测试文件时自动应用测试最佳实践。
+
+**步骤**：
+
+1. 创建规则文件：
+```bash
+mkdir -p ~/opencode/claude_home/rules
+```
+
+2. 创建 `test-files.md`：
+```markdown
+---
+globs: ["**/*.test.ts", "**/*.spec.ts", "**/__tests__/**"]
+---
+
+处理测试文件时，遵循：
+1. 使用 AAA 模式（Arrange-Act-Assert）
+2. 每个测试只验证一个行为
+3. 使用清晰的测试描述
+4. Mock 外部依赖
+5. 避免测试实现细节
+```
+
+**效果**：当 AI 读取或编辑匹配 glob 的文件时，自动注入这些规则。
+
+---
+
+### 复用 Claude Code 社区资源
+
+由于完全兼容 Claude Code 格式，你可以直接复用社区资源：
+
+1. **从 GitHub 复制 Skills**：
+```bash
+# 示例：复制某个开源 Skill
+git clone https://github.com/someone/claude-skills.git /tmp/skills
+cp -r /tmp/skills/some-skill ~/opencode/claude_home/skills/
+```
+
+2. **分享你的配置**：
+```bash
+# 将你的自定义配置打包分享
+cd ~/opencode/claude_home
+zip -r my-claude-config.zip skills/ commands/ agents/
+```
+
+---
 
 ### 禁用兼容性功能
+
+如需禁用特定功能，在 `oh-my-opencode.json` 中配置：
 
 ```json
 {
