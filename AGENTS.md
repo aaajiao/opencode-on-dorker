@@ -15,8 +15,8 @@ OpenCode Docker environment for macOS + OrbStack. Runs OpenCode AI assistant wit
 ```bash
 docker build -t opencode-bun .                    # Build image
 docker build --no-cache -t opencode-bun .         # Full rebuild
-opencode -r                                       # Rebuild + reset config
-opencode -r --keep                                # Rebuild + keep config
+ocd -r                                            # Rebuild + reset config
+ocd -r --keep                                     # Rebuild + keep config
 ```
 
 ### Validate Shell Script
@@ -49,7 +49,7 @@ notify "Test" "Hello"                             # Test notification
 ~/opencode/
 ├── Dockerfile              # Docker image (oven/bun base)
 ├── docker-compose.yml      # Docker Compose config
-├── opencode.sh             # Shell function for ~/.zshrc
+├── opencode.sh             # Shell function (ocd command)
 ├── env.example             # Environment variable template
 ├── ghostty-128.png         # Notification icon
 ├── claude_home/            # Claude Code compatibility (user-level, shared)
@@ -83,7 +83,7 @@ notify "Test" "Hello"                             # Test notification
 
 **Functions**:
 ```bash
-_opencode_function_name() {
+_ocd_function_name() {
   local ARG="$1"
   # implementation
 }
@@ -166,7 +166,7 @@ disown $WATCHER_PID 2>/dev/null
 1. Modify files in `/workspace`
 2. Exit container: `exit`
 3. Reload shell: `exec zsh`
-4. Restart: `opencode`
+4. Restart: `ocd`
 5. Verify: `ls -la /root/.claude/`
 
 ## Git Workflow
@@ -182,10 +182,10 @@ gh pr create --title "feat: ..." --body "..."
 ## Multi-Instance Support
 
 ```bash
-opencode                    # Instance = current dir name, auto port
-opencode -n myapp           # Custom instance name
-opencode -p 5000            # Custom port
-opencode --quotio           # Enable Quotio provider
+ocd                         # Instance = current dir name, auto port
+ocd -n myapp                # Custom instance name
+ocd -p 5000                 # Custom port
+ocd --quotio                # Enable Quotio provider
 ```
 
 ## /remind - Task Completion Notification

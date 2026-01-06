@@ -1,19 +1,19 @@
-# OpenCode Docker Shortcut (支持 oh-my-opencode + 多实例)
+# OCD - OpenCode Docker (支持 oh-my-opencode + 多实例)
 # 添加到 ~/.zshrc 或 ~/.bashrc
 #
 # 用法:
-#   opencode              # 实例名=当前目录名，自动分配端口
-#   opencode -p 5000      # 指定端口
-#   opencode -n myname    # 指定实例名
-#   opencode -r           # 重建镜像 + 清理所有实例配置
-#   opencode -r --keep    # 重建镜像 + 保留配置
-#   opencode --quotio     # 启用 Quotio 代理（需配置 QUOTIO_API_KEY）
-#   opencode -v           # 显示版本号
+#   ocd                   # 实例名=当前目录名，自动分配端口
+#   ocd -p 5000           # 指定端口
+#   ocd -n myname         # 指定实例名
+#   ocd -r                # 重建镜像 + 清理所有实例配置
+#   ocd -r --keep         # 重建镜像 + 保留配置
+#   ocd --quotio          # 启用 Quotio 代理（需配置 QUOTIO_API_KEY）
+#   ocd -v                # 显示版本号
 
 # =========================================
 # 版本号
 # =========================================
-_opencode_version() {
+_ocd_version() {
   local VERSION_FILE="$HOME/opencode/VERSION"
   if [[ -f "$VERSION_FILE" ]]; then
     cat "$VERSION_FILE"
@@ -25,14 +25,14 @@ _opencode_version() {
 # =========================================
 # 辅助函数：清理实例名 ("My Project" -> "my-project")
 # =========================================
-_opencode_sanitize_name() {
+_ocd_sanitize_name() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-_'
 }
 
 # =========================================
 # 辅助函数：查找空闲端口
 # =========================================
-_opencode_find_free_port() {
+_ocd_find_free_port() {
   local base_port=${1:-4096}
   for ((p=base_port; p<base_port+100; p++)); do
     if ! lsof -i :"$p" &>/dev/null; then
@@ -43,7 +43,7 @@ _opencode_find_free_port() {
   echo "$base_port"
 }
 
-opencode() {
+ocd() {
   local IMAGE_NAME="opencode-bun"
   local ENV_FILE="$HOME/opencode/.env"
   local SHARE_DIR="$HOME/.local/share/opencode"
@@ -57,7 +57,7 @@ opencode() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -v|--version)
-        echo "OpenCode Docker v$(_opencode_version)"
+        echo "OCD v$(_ocd_version)"
         return 0
         ;;
       -r) REBUILD=1; shift ;;
@@ -71,7 +71,7 @@ opencode() {
 
   # 默认实例名 = 当前目录名（清理后）
   if [[ -z "$INSTANCE_NAME" ]]; then
-    INSTANCE_NAME=$(_opencode_sanitize_name "$(basename "$(pwd)")")
+    INSTANCE_NAME=$(_ocd_sanitize_name "$(basename "$(pwd)")")
   fi
 
   # 容器名
@@ -92,7 +92,7 @@ opencode() {
   if [[ -n "$CUSTOM_PORT" ]]; then
     PORT="$CUSTOM_PORT"
   else
-    PORT=$(_opencode_find_free_port 4096)
+    PORT=$(_ocd_find_free_port 4096)
   fi
 
   if [[ "$REBUILD" -eq 1 ]]; then
@@ -114,8 +114,8 @@ opencode() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
-  _opencode_init_claude_home
-  _opencode_init_instance_claude "$INSTANCE_NAME"
+  _ocd_init_claude_home
+  _ocd_init_instance_claude "$INSTANCE_NAME"
   mkdir -p "$INSTANCE_DATA_DIR"
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR"
@@ -313,7 +313,7 @@ EOFOMOCONFIG
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
-  echo "🚀 OpenCode Docker v$(_opencode_version)"
+  echo "🚀 OCD v$(_ocd_version)"
   echo "📦 实例: ${INSTANCE_NAME}"
   echo "📂 工作目录: $(pwd)"
   echo "🌐 Web UI: http://localhost:${PORT}"
@@ -347,7 +347,7 @@ EOFOMOCONFIG
 # =========================================
 # 辅助函数：初始化 Claude Home 目录结构（用户级资产，所有实例共享）
 # =========================================
-_opencode_init_claude_home() {
+_ocd_init_claude_home() {
   local CLAUDE_HOME="$HOME/opencode/claude_home"
   
   # 创建目录结构
@@ -398,7 +398,7 @@ EOF
 # =========================================
 # 辅助函数：初始化实例的 Claude 数据目录（每实例独立）
 # =========================================
-_opencode_init_instance_claude() {
+_ocd_init_instance_claude() {
   local INSTANCE_NAME="$1"
   local INSTANCE_CLAUDE_DIR="$HOME/opencode/instances/${INSTANCE_NAME}/claude"
   

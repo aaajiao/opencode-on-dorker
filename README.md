@@ -1,6 +1,6 @@
-# OpenCode Docker 环境配置指南
+# OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
@@ -73,7 +73,7 @@
 ~/opencode/
 ├── Dockerfile          # Docker 镜像构建文件
 ├── docker-compose.yml  # Docker Compose 配置（可选）
-├── opencode.sh         # Shell 快捷函数
+├── opencode.sh         # Shell 快捷函数 (ocd 命令)
 ├── ghostty-128.png     # 通知自定义图标
 ├── .env                # 环境变量配置（API 密钥等）
 ├── skills/             # 全局 skills（自动生成）
@@ -147,14 +147,14 @@ source ~/.zshrc
 > 如果更新了 `opencode.sh` 文件，需要：
 > 1. `exit` 退出容器
 > 2. `exec zsh` 重新加载 shell
-> 3. `opencode` 重新启动
+> 3. `ocd` 重新启动
 >
 > 仅 `source ~/.zshrc` 可能无法覆盖已加载的函数。
 
 ### 4. 首次构建
 
 ```bash
-opencode -r
+ocd -r
 ```
 
 ### 5. 认证（在 OpenCode TUI 中）
@@ -180,13 +180,16 @@ opencode auth login
 ```bash
 # 在任意项目目录下启动（实例名自动取目录名）
 cd ~/my-project
-opencode
+ocd
 
 # 重建镜像 + 清理所有实例配置
-opencode -r
+ocd -r
 
 # 重建镜像 + 保留配置
-opencode -r --keep
+ocd -r --keep
+
+# 查看版本
+ocd -v
 
 # 访问 Web UI（端口会在启动时显示）
 open http://localhost:4096
@@ -199,16 +202,17 @@ open http://localhost:4096
 ```bash
 # 终端 1：编辑项目 A
 cd ~/project-a
-opencode              # 实例: project-a, 端口: 4096
+ocd                   # 实例: project-a, 端口: 4096
 
 # 终端 2：编辑项目 B
 cd ~/project-b
-opencode              # 实例: project-b, 端口: 4097（自动分配）
+ocd                   # 实例: project-b, 端口: 4097（自动分配）
 ```
 
 **启动时显示：**
 ```
-🚀 启动实例: project-a
+🚀 OCD v1.1.0
+📦 实例: project-a
 📂 工作目录: /Users/xxx/project-a
 🌐 Web UI: http://localhost:4096
 ```
@@ -217,11 +221,12 @@ opencode              # 实例: project-b, 端口: 4097（自动分配）
 
 | 参数 | 说明 | 示例 |
 |------|------|------|
-| `-n <name>` | 指定实例名（覆盖目录名） | `opencode -n myapp` |
-| `-p <port>` | 指定端口（覆盖自动分配） | `opencode -p 5000` |
-| `-r` | 重建镜像 + 清理所有实例配置 | `opencode -r` |
-| `-r --keep` | 重建镜像 + 保留配置 | `opencode -r --keep` |
-| `--quotio` | 启用 Quotio 代理（仅限新配置生成时） | `opencode --quotio` |
+| `-v` | 显示版本号 | `ocd -v` |
+| `-n <name>` | 指定实例名（覆盖目录名） | `ocd -n myapp` |
+| `-p <port>` | 指定端口（覆盖自动分配） | `ocd -p 5000` |
+| `-r` | 重建镜像 + 清理所有实例配置 | `ocd -r` |
+| `-r --keep` | 重建镜像 + 保留配置 | `ocd -r --keep` |
+| `--quotio` | 启用 Quotio 代理（仅限新配置生成时） | `ocd --quotio` |
 
 **查看运行中的实例：**
 ```bash
@@ -239,7 +244,7 @@ docker ps | grep opencode
 ```bash
 # 启用 Quotio 代理启动新项目
 cd ~/new-project
-opencode --quotio
+ocd --quotio
 ```
 
 启用后，`frontend-ui-ux-engineer` 等 Agent 会默认使用通过 Quotio 代理提供的模型。
@@ -310,15 +315,15 @@ docker-compose build --no-cache
 
 ```bash
 # 重建镜像 + 清理所有实例配置（推荐）
-opencode -r
+ocd -r
 
 # 重建镜像 + 保留配置（仅更新 OpenCode 版本）
-opencode -r --keep
+ocd -r --keep
 
 # 手动删除特定实例配置
 rm -rf ~/.config/opencode/my-project/
 rm -rf ~/.opencode_data/my-project/
-opencode
+ocd
 ```
 
 ## 数据持久化
