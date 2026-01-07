@@ -53,6 +53,8 @@ docker run -it --rm --network host opencode-bun bash
 ~/.config/opencode/<instance>/        # Instance config
 ~/.opencode_data/<instance>/          # Instance data
 ~/.local/share/opencode/              # Shared auth, bin, storage
+~/.local/state/opencode/              # KV store (UI settings persistence)
+~/.cache/oh-my-opencode/              # Binary cache (ast-grep, ripgrep)
 ```
 
 ## Code Style Guidelines
@@ -118,6 +120,8 @@ GITHUB_TOKEN=ghp_xxxx
 | `$(pwd)` | `/workspace` | Project files |
 | `~/.opencode_data/<instance>` | `/root/.opencode` | Instance data |
 | `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config |
+| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI 设置持久化 (KV store) |
+| `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | ast-grep/ripgrep 二进制缓存 |
 | `~/opencode/global/opencode/` | `/root/.config/opencode/{skill,command,agent}` | Global config |
 | `~/opencode/global/claude/` | `/root/.claude/` | Claude compat config |
 

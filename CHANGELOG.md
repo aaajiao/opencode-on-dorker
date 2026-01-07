@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-01-07
+
+### Fixed
+- UI settings (thinking visibility, timestamps, code concealment, etc.) now persist across container restarts
+- ast-grep and ripgrep binaries are now cached, avoiding re-download on each startup
+
+### Added
+- Complete TUI interface settings documentation in TOOLS.md
+- New mount: `~/.local/state/opencode/` for KV store persistence
+- New mount: `~/.cache/oh-my-opencode/` for binary cache
+
 ## [1.3.0] - 2026-01-07
 
 ### Added

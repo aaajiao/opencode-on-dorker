@@ -61,6 +61,8 @@ OpenCode + oh-my-opencode 存在**两套配置系统**，理解它们的区别�
 | **Claude 兼容层** | `.claude/skills/` | `~/opencode/global/claude/skills/` | `~/.claude/skills/` |
 | **Claude 兼容层** | `.claude/commands/` | `~/opencode/global/claude/commands/` | `~/.claude/commands/` |
 | **Claude 兼容层** | `.claude/rules/` | `~/opencode/global/claude/rules/` | `~/.claude/rules/` |
+| **UI 设置持久化** | - | `~/.local/state/opencode/` | `~/.local/state/opencode/` |
+| **插件二进制缓存** | - | `~/.cache/oh-my-opencode/` | `~/.cache/oh-my-opencode/` |
 
 > **Docker 环境说明**：本项目中 `~/opencode/global/claude/` 是宿主机目录，容器内挂载为 `~/.claude/`。
 
@@ -466,6 +468,8 @@ bun.lock
 ```
 
 > **注意**：会话数据（todos/transcripts）现在存放在每个项目自己的 `.claude/` 目录下，不再使用 `instances/` 目录。
+
+> **注意**：UI 设置（如思考过程可见性、代码折叠等）持久化存储在 `~/.local/state/opencode/` 中。插件二进制文件（ast-grep, ripgrep）缓存存储在 `~/.cache/oh-my-opencode/` 中。
 
 > ⚠️ **注意**：`.claude/skills/`、`.claude/commands/`、`.claude/agents/`、`.claude/rules/` 不会自动创建，需要手动创建。如需项目级配置，推荐使用 OpenCode 原生的 `.opencode/` 目录。
 

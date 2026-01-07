@@ -1,6 +1,6 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
@@ -18,8 +18,10 @@
 - ✅ **oh-my-opencode 多 Agent 协作**
 - ✅ **MCP 服务器 (Playwright, Exa)**
 
-### v1.3.0 优化
+### v1.3.1 优化
 
+- ⚡ **UI 设置持久化**：思考过程显示、代码折叠、diff 换行等设置不再因容器重启丢失
+- ⚡ **插件二进制缓存**：ast-grep 和 ripgrep 不再重复下载，大幅提升启动速度
 - ⚡ **端口检测优化**：一次性获取 + 锁机制，多实例无冲突
 - ⚡ **Watcher 智能降级**：有 fswatch 用事件驱动，无则轮询
 - 🔒 **.env 安全加载**：防止代码注入
@@ -110,7 +112,7 @@ ocd                   # 实例: project-b, 端口: 4097（自动分配）
 
 **启动输出：**
 ```
-🚀 OCD v1.3.0 │ project-a │ http://localhost:4096
+🚀 OCD v1.3.1 │ project-a │ http://localhost:4096
 ```
 
 ### 命令参数
@@ -206,6 +208,10 @@ ultrathink         # 深度思考
 
 ~/.local/share/opencode/              # 共享数据
 └── auth.json                         # OAuth 认证
+
+~/.local/state/opencode/              # KV store (UI 设置持久化)
+
+~/.cache/oh-my-opencode/              # oh-my-opencode 二进制缓存
 ```
 
 ### 配置目录命名规则
@@ -282,7 +288,7 @@ oh-my-opencode 的通知 hook 会自动使用此机制。
 
 ### Q: 多实例端口冲突？
 
-v1.3.0 已添加锁机制，正常情况不会冲突。如遇问题：
+v1.3.1 已添加锁机制，正常情况不会冲突。如遇问题：
 
 ```bash
 rm ~/.config/opencode/.port.lock
@@ -290,7 +296,7 @@ rm ~/.config/opencode/.port.lock
 
 ### Q: Watcher 进程残留？
 
-v1.3.0 已添加 trap 清理机制。如仍有残留：
+v1.3.1 已添加 trap 清理机制。如仍有残留：
 
 ```bash
 pkill -f "fswatch.*opencode"
