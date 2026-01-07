@@ -581,6 +581,7 @@ EOFOMOCONFIG
     --network host \
     --env-file "$ENV_FILE" \
     -e TERM=xterm-256color \
+    -e TZ=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC") \
     -e BROWSER=/usr/bin/xdg-open \
     -e EXA_API_KEY="${EXA_API_KEY:-}" \
     -v "$(pwd):/workspace" \
