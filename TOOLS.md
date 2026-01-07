@@ -129,6 +129,7 @@
 | `@build` | 构建代理 | 构建专用代理（需用户手动调用） |
 | `@plan` | 规划代理 | 任务规划代理（需用户手动调用） |
 | `@Planner-Sisyphus` | 规划代理 | OhMyOpenCode 版本的规划代理 |
+| `@github` | Git 工作流 | GitHub 分支/提交/PR/同步/清理助手 |
 
 ### 使用示例
 
@@ -138,6 +139,9 @@
 @librarian 查一下 Next.js 14 的 Server Actions 用法
 @frontend-ui-ux-engineer 优化这个登录页面的 UI
 @document-writer 为这个项目写一份 README
+@github commit              # 智能提交
+@github branch feature-x    # 创建功能分支
+@github pr                  # 创建 Pull Request
 ```
 
 ---
@@ -177,6 +181,39 @@
 - **功能**：停止开发服务器
 - **说明**：可以停止单个项目或所有项目
 - **示例**：`/dev-stop vocab-tracker` 或 `/dev-stop all`
+
+### 🐙 @github 工作流
+
+`@github` 是专门处理 Git/GitHub 工作流的智能代理。
+
+| 命令 | 功能 |
+|------|------|
+| `@github branch <name>` | 创建并切换到新功能分支 |
+| `@github commit` | 分析变更并生成智能提交消息 |
+| `@github sync` | 从 main/master 同步最新代码 |
+| `@github pr` | 创建 Pull Request |
+| `@github done` | 完成后清理分支（合并后删除本地分支） |
+
+**工作流示例**：
+
+```bash
+# 1. 开始新功能
+@github branch add-user-avatar
+
+# 2. 编码完成后提交
+@github commit
+
+# 3. 同步主分支（可选）
+@github sync
+
+# 4. 创建 PR
+@github pr
+
+# 5. PR 合并后清理
+@github done
+```
+
+---
 
 ### 📝 创建自定义斜杠命令
 
@@ -557,6 +594,29 @@ oh-my-opencode 内置多种自动保护机制：
 {
   "disabled_hooks": ["preemptive-compaction", "comment-checker"]
 }
+```
+
+---
+
+## 📋 剪贴板桥接
+
+容器内的剪贴板操作会自动同步到 Mac 剪贴板。
+
+### 工作原理
+
+1. 容器内使用 `xclip` 或 `/share` 命令
+2. 内容写入 `~/.opencode_data/<instance>/clipboard`
+3. Mac watcher 检测到变化后执行 `pbcopy`
+
+### 延迟
+
+- **fswatch 模式**：即时（需要安装 fswatch）
+- **轮询模式**：约 1 秒
+
+### 安装 fswatch（推荐）
+
+```bash
+brew install fswatch
 ```
 
 ---

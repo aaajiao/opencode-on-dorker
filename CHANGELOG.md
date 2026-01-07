@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-07
+
+### Added
+- **剪贴板桥接**: 容器内 `/share` 命令自动同步到 Mac 剪贴板
+  - 容器写入 `~/.opencode_data/<instance>/clipboard`
+  - Mac watcher 检测后执行 `pbcopy`
+- **版本锁定系统**: 支持 `versions.lock` 文件锁定依赖版本
+  - 支持锁定: `BUN_VERSION`, `PIP_*`, `OPENCODE_AI_VERSION` 等
+- **Playwright 缓存持久化**: 浏览器缓存保存在 `~/.cache/ms-playwright`
+- **Per-Instance Session 隔离**: 会话数据存储在 `~/.local/share/opencode/storage/<instance>/`
+- **@github Agent**: 从 Claude commands 迁移到 OpenCode agent
+  - 新工作流命令: branch, commit, sync, pr, done
+
+### Changed
+- 端口检测优化：一次性获取 + 锁机制，多实例无冲突
+- Watcher 智能降级：有 fswatch 用事件驱动，无则轮询
+- .env 安全加载：防止代码注入
+- 自动清理：trap 机制确保退出时清理进程
+- 首次运行提示安装可选依赖
+
+### Fixed
+- Zsh 兼容性修复（移除 trap RETURN）
+- macOS 兼容性修复（使用 mkdir 锁替代 flock）
+- Watcher 子进程关闭 stdout 避免命令替换阻塞
+- 移除进程替换，改用简单 while 循环读取 .env
+
 ## [1.2.0] - 2026-01-06
 
 ### Added

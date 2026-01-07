@@ -471,6 +471,59 @@ bun.lock
 
 ---
 
+## 版本锁定 (versions.lock)
+
+可以创建 `~/opencode/versions.lock` 文件来锁定依赖版本，确保构建可复现。
+
+### 文件格式
+
+```bash
+# ~/opencode/versions.lock
+# 纯 KEY=VALUE 格式，支持注释
+
+# Bun 运行时版本
+BUN_VERSION=1.3.5
+
+# Python 包版本
+PIP_REQUESTS=2.32.5
+PIP_PANDAS=2.2.3
+PIP_NUMPY=2.2.1
+PIP_MATPLOTLIB=3.10.0
+PIP_BEAUTIFULSOUP4=4.12.3
+PIP_PILLOW=11.1.0
+
+# OpenCode 版本
+OPENCODE_AI_VERSION=1.1.4
+
+# oh-my-opencode 插件版本
+OH_MY_OPENCODE_VERSION=2.14.0
+OPENCODE_ANTIGRAVITY_AUTH_VERSION=1.2.6
+
+# MCP 服务器版本
+PLAYWRIGHT_MCP_VERSION=0.0.54
+EXA_MCP_VERSION=3.1.3
+```
+
+### 支持的变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `BUN_VERSION` | Bun 运行时 | 1.3.5 |
+| `OPENCODE_AI_VERSION` | OpenCode CLI | 1.1.4 |
+| `OH_MY_OPENCODE_VERSION` | oh-my-opencode 插件 | 2.14.0 |
+| `OPENCODE_ANTIGRAVITY_AUTH_VERSION` | 认证插件 | 1.2.6 |
+| `PLAYWRIGHT_MCP_VERSION` | Playwright MCP | 0.0.54 |
+| `EXA_MCP_VERSION` | Exa MCP | 3.1.3 |
+| `PIP_*` | Python 包版本 | 见上表 |
+
+### 使用场景
+
+- 团队共享一致的开发环境
+- 锁定已知稳定的版本组合
+- 避免自动更新导致的兼容性问题
+
+---
+
 ## 注意事项
 
 1. **目录命名很重要**：OpenCode 原生用单数 (`agent/`)，Claude 兼容用复数 (`agents/`)，写错不会被加载
