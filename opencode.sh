@@ -303,7 +303,7 @@ ocd() {
 
   # 构建参数
   local BUILD_ARGS=""
-  BUILD_ARGS+=" --build-arg BUN_VERSION=${BUN_VERSION:-1.3.5}"
+  BUILD_ARGS="--build-arg BUN_VERSION=${BUN_VERSION:-1.3.5}"
   BUILD_ARGS+=" --build-arg PIP_REQUESTS=${PIP_REQUESTS:-2.32.5}"
   BUILD_ARGS+=" --build-arg PIP_PANDAS=${PIP_PANDAS:-2.2.3}"
   BUILD_ARGS+=" --build-arg PIP_NUMPY=${PIP_NUMPY:-2.2.1}"
