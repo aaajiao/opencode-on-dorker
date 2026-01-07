@@ -84,9 +84,12 @@ brew install jq fswatch terminal-notifier
 ### 基本使用
 
 ```bash
-# 在任意项目目录下启动
-cd ~/my-project
+# 在项目目录下启动（自动检测工作区）
+cd ~/projects/webapp/src
 ocd
+# → 挂载 ~/projects 到 /workspace
+# → 启动后自动在 /workspace/webapp/src
+# → 可通过 OpenCode 原生 UI 切换其他项目
 
 # 重建镜像 + 清理配置
 ocd -r
@@ -94,25 +97,49 @@ ocd -r
 # 重建镜像 + 保留配置
 ocd -r --keep
 
-# 查看版本
-ocd -v
+# 查看帮助
+ocd -h
 ```
 
-### 多实例运行
+### 工作区模式（v1.4.0+）
+
+OCD 会自动检测 Git 仓库，将其父目录作为工作区：
 
 ```bash
-# 终端 1
-cd ~/project-a
-ocd                   # 实例: project-a, 端口: 4096
+~/projects/                    # 工作区根目录（挂载到 /workspace）
+├── webapp/                    # 项目 A（有 .git）
+├── api-server/                # 项目 B（有 .git）
+└── mobile-app/                # 项目 C（有 .git）
+```
 
-# 终端 2
-cd ~/project-b
-ocd                   # 实例: project-b, 端口: 4097（自动分配）
+```bash
+# 从任意子目录启动
+cd ~/projects/webapp/src/components
+ocd
+# → 检测到 ~/projects/webapp/.git
+# → 挂载 ~/projects（父目录）到 /workspace
+# → 启动后在 /workspace/webapp/src/components
+# → Web UI 可切换到 api-server、mobile-app
+```
+
+### 兼容旧行为
+
+```bash
+# 只挂载当前目录（不检测工作区）
+ocd --here
+
+# 指定工作区目录
+ocd -w ~/work
+
+# 环境变量方式
+export OCD_WORKSPACE=~/projects
+ocd
 ```
 
 **启动输出：**
 ```
-🚀 OCD v1.3.1 │ project-a │ http://localhost:4096
+🚀 OCD v1.4.0 │ projects │ http://localhost:4096
+   └─ 项目: webapp
 ```
 
 ### 命令参数
@@ -120,11 +147,20 @@ ocd                   # 实例: project-b, 端口: 4097（自动分配）
 | 参数 | 说明 | 示例 |
 |------|------|------|
 | `-v` | 显示版本号 | `ocd -v` |
+| `-h` | 显示帮助 | `ocd -h` |
 | `-n <name>` | 指定实例名 | `ocd -n myapp` |
 | `-p <port>` | 指定端口 | `ocd -p 5000` |
+| `-w <path>` | 指定工作区目录 | `ocd -w ~/projects` |
+| `--here` | 只挂载当前目录 | `ocd --here` |
 | `-r` | 重建镜像 + 清理配置 | `ocd -r` |
 | `-r --keep` | 重建镜像 + 保留配置 | `ocd -r --keep` |
 | `--quotio` | 启用 Quotio 代理 | `ocd --quotio` |
+
+### 环境变量
+
+| 变量 | 说明 |
+|------|------|
+| `OCD_WORKSPACE` | 默认工作区根目录 |
 
 ### 查看运行中的实例
 

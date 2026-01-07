@@ -212,6 +212,10 @@ if [[ -f "$CONFIG_FILE" ]]; then\n\
     fi\n\
 fi\n\
 \n\
+if [[ -n "$OCD_START_DIR" && -d "/workspace/$OCD_START_DIR" ]]; then\n\
+    cd "/workspace/$OCD_START_DIR"\n\
+fi\n\
+\n\
 exec opencode "$@"\n\
 ' > /usr/local/bin/entrypoint.sh && \
     chmod +x /usr/local/bin/entrypoint.sh
