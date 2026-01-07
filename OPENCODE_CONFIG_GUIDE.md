@@ -1,9 +1,3 @@
-# OpenCode 项目级配置指南
-
-基于 opencode-on-docker 和 oh-my-opencode 的实际测试结果。
-
----
-
 ## 配置系统概述
 
 OpenCode + oh-my-opencode 存在**两套配置系统**，理解它们的区别是正确配置的关键：
@@ -12,17 +6,6 @@ OpenCode + oh-my-opencode 存在**两套配置系统**，理解它们的区别�
 |------|---------|------|--------|
 | **OpenCode 原生** | 单数 (`agent/`, `skill/`, `command/`) | OpenCode 内置功能 | OpenCode 核心 |
 | **Claude 兼容层** | 复数 (`agents/`, `skills/`, `commands/`, `rules/`) | Claude Code 兼容 | oh-my-opencode 插件 |
-
-### 何时使用哪套系统？
-
-| 场景 | 推荐系统 | 原因 |
-|------|---------|------|
-| 纯 OpenCode 环境 | OpenCode 原生 | 无需插件依赖 |
-| 使用 oh-my-opencode | 两者皆可 | 插件同时加载两套 |
-| 从 Claude Code 迁移 | Claude 兼容层 | 配置文件兼容 |
-| 需要条件规则 (globs) | Claude 兼容层 | OpenCode 原生不支持 |
-
----
 
 ## 目录结构
 
@@ -136,47 +119,80 @@ tools: read, bash, webfetch
 
 > ⚠️ **注意**：Claude 兼容层的 `model` 字段**不生效**，模型由 oh-my-opencode.json 配置决定。
 
-### Agent 示例
+## 📂 配置文件位置
 
-**文件**: `.opencode/agent/my-assistant.md` (OpenCode 原生)
+| 配置文件 | 路径 | 用途 |
+|---------|------|------|
+| **OpenCode 主配置** | `~/.config/opencode/opencode.json` | 配置 Provider API Key、MCP 服务器、插件设置 |
+| **OhMyOpenCode 配置** | `~/.config/opencode/oh-my-opencode.json` | 配置代理模型映射、禁用特定功能、自定义 Agent 行为 |
 
-```markdown
----
-name: my-assistant
-description: 项目专属智能助手
-model: anthropic/claude-sonnet-4-5
-tools:
-  read: true
-  bash: true
-  webfetch: true
-  grep: true
----
+## 🔧 oh-my-opencode.json 配置详解
 
-你是本项目的专属助手。
+通过修改 `~/.config/opencode/oh-my-opencode.json` 文件，你可以自定义 OpenCode 的行为。
 
-## 职责
-- 理解项目架构
-- 回答技术问题
-- 协助代码编写
+**配置示例**：
 
-## 项目背景
-[项目特定的上下文信息]
+```json
+{
+  "$schema": "https://raw.githubusercontent.com/skns2635/oh-my-opencode/main/schema.json",
+  "google_auth": {
+    "client_email": "...",
+    "private_key": "..."
+  },
+  "disabled_mcps": [
+    "gdrive"
+  ],
+  "agents": {
+    "document-writer": {
+      "model": "quotio/gemini-3-pro-preview"
+    },
+    "frontend-ui-ux-engineer": {
+      "model": "quotio/gemini-3-pro-preview"
+    }
+  }
+}
 ```
 
-**文件**: `.claude/agents/my-assistant.md` (Claude 兼容层)
+| 字段 | 说明 |
+|------|------|
+| `google_auth` | Google 服务认证信息（如使用 Google Drive MCP） |
+| `disabled_mcps` | 禁用的 MCP 服务器列表（如不需要 Google Drive 可禁用以减少启动错误） |
+| `agents` | 自定义特定代理使用的模型 |
+| `agents.<name>.model` | 指定该代理使用的模型 ID |
 
-```markdown
----
-name: my-assistant
-description: 项目专属智能助手
-tools: read, bash, webfetch, grep
----
+## 🎯 代理默认模型
 
-你是本项目的专属助手。
-...
+建议将默认的 Google 模型替换为 Quotio 提供的兼容模型，以获得更稳定的体验。
+
+| 代理 | 默认模型 | 建议替换为 |
+|------|----------|------------|
+| `document-writer` | `google/gemini-3-flash-preview` | `quotio/gemini-3-pro-preview` |
+| `frontend-ui-ux-engineer` | `google/gemini-3-pro-preview` | `quotio/gemini-3-pro-preview` |
+| `multimodal-looker` | `google/gemini-3-flash` | `quotio/gemini-3-flash-preview` |
+| `oracle` | (默认) | `openai/gpt-5.2` 或 `quotio/gemini-claude-opus-4-5-thinking` |
+
+### 模型前缀说明
+
+| 前缀 | 说明 |
+|------|------|
+| `google/` | 直接调用 Google Vertex AI / Gemini API |
+| `anthropic/` | 调用 Anthropic Claude API |
+| `openai/` | 调用 OpenAI GPT API |
+| `quotio/` | **推荐**：通过 Quotio 中转服务调用模型（兼容性更好） |
+
+### 5. 配置文件中自定义快捷键
+
+你可以在 `opencode.json` 中自定义部分快捷键：
+
+```json
+{
+  "keybinds": {
+    "username_toggle": "<leader>u",
+    "tool_details": "<leader>d",
+    "scrollbar_toggle": "<leader>s"
+  }
+}
 ```
-
----
 
 ## Skills 配置
 
@@ -218,30 +234,46 @@ description: 触发条件描述 - 功能说明
 具体命令和示例...
 ```
 
-### 示例
+## 🎨 Skill 技能系统
 
-**文件**: `.opencode/skill/notebooklm/SKILL.md`
+Skill 是更高级的命令形式，可以包含 MCP 服务器配置。
+
+### 技能文件位置
+
+| 位置 | 说明 |
+|------|------|
+| `~/opencode/global/claude/skills/*/SKILL.md` | 全局 Claude 兼容技能（容器内 `~/.claude/skills/`） |
+| `.claude/skills/*/SKILL.md` | 项目级 Claude 兼容技能 |
+| `~/opencode/global/opencode/skill/*/SKILL.md` | 全局 OpenCode 原生技能（容器内 `~/.config/opencode/skill/`） |
+| `.opencode/skill/*/SKILL.md` | 项目级 OpenCode 原生技能 |
+
+### 技能格式示例
 
 ```markdown
 ---
-name: notebooklm
-description: 查询 NotebookLM notebooks，获取基于文档的 AI 回答
+name: "my-skill"
+description: "技能描述"
+model: "anthropic/claude-opus-4-5"
+allowed-tools: "bash read write"
+mcp:
+  playwright:
+    command: npx
+    args: ["@playwright/mcp@latest"]
 ---
 
-# NotebookLM Skill
-
-## 何时使用
-
-- 用户提到 NotebookLM
-- 用户分享 NotebookLM URL
-- 用户要求查询文档/笔记本
-
-## 核心命令
-
-```bash
-cd .opencode/skill/notebooklm
-python scripts/run.py ask_question.py --question "问题" --notebook-url "URL"
+技能指令内容...
 ```
+
+### 内置技能
+
+- **playwright**：浏览器自动化、网页抓取、测试、截图
+
+### 禁用内置技能
+
+```json
+{
+  "disabled_skills": ["playwright"]
+}
 ```
 
 ---
@@ -266,28 +298,6 @@ description: 命令描述，显示在 / 菜单中
 命令执行时的提示词内容...
 可以包含 $ARGUMENTS 占位符接收用户参数。
 ```
-
-### 示例
-
-**文件**: `.opencode/command/deploy.md`
-
-```markdown
----
-name: deploy
-description: 部署项目到生产环境
----
-
-请帮我部署项目。
-
-部署参数: $ARGUMENTS
-
-## 部署步骤
-1. 运行测试
-2. 构建项目
-3. 推送到生产环境
-```
-
----
 
 ## Rules 配置（仅 Claude 兼容层）
 
@@ -320,39 +330,6 @@ TypeScript 代码规范：
 | 字段 | 必需 | 类型 | 说明 |
 |------|------|------|------|
 | `globs` | 是 | string[] | 文件匹配模式，匹配时自动注入规则内容 |
-
-### 示例
-
-**文件**: `.claude/rules/typescript.md`
-
-```markdown
----
-globs: ["*.ts", "*.tsx"]
----
-
-# TypeScript 代码规范
-
-- 使用 `strict` 模式
-- 优先使用 `interface` 而非 `type`
-- 禁止使用 `any`，使用 `unknown` 替代
-- 所有函数必须有显式返回类型
-```
-
-**文件**: `.claude/rules/testing.md`
-
-```markdown
----
-globs: ["*.test.ts", "*.spec.ts", "**/__tests__/**"]
----
-
-# 测试规范
-
-- 使用 describe/it 结构
-- 每个测试只验证一个行为
-- Mock 外部依赖
-```
-
----
 
 ## 优先级规则
 
@@ -426,6 +403,265 @@ bun.lock
 
 ---
 
+## 🪝 Hooks 系统
+
+Hooks 允许在特定事件发生时运行自定义脚本。
+
+### 配置位置
+
+- `~/opencode/global/claude/settings.json`（全局级，容器内 `~/.claude/settings.json`）
+- `.claude/settings.json`（项目级）
+- `.claude/settings.local.json`（本地，git 忽略）
+
+### 支持的 Hook 事件
+
+| 事件 | 触发时机 | 用途 |
+|------|----------|------|
+| `PreToolUse` | 工具执行前 | 阻止或修改工具输入 |
+| `PostToolUse` | 工具执行后 | 添加警告或上下文 |
+| `UserPromptSubmit` | 用户提交提示时 | 阻止或注入消息 |
+| `Stop` | 会话空闲时 | 注入后续提示 |
+
+### 配置示例
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          { "type": "command", "command": "eslint --fix $FILE" }
+        ]
+      }
+    ]
+  }
+}
+```
+### 工作原理
+
+1. 代理开始执行任务
+2. 如果代理中途停止，Ralph Loop 自动继续
+3. 检测到 `<promise>DONE</promise>` 时自动结束
+4. 达到最大迭代次数（默认 100）时结束
+
+### 配置
+
+在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "default_max_iterations": 100
+  }
+}
+```
+
+---
+
+## 📁 AGENTS.md 自动注入
+
+在目录中创建 `AGENTS.md` 文件，当读取该目录下的文件时，会自动将 AGENTS.md 的内容注入到上下文中。
+
+### 目录结构示例
+
+```
+project/
+├── AGENTS.md              # 项目级上下文（最先注入）
+├── src/
+│   ├── AGENTS.md          # src 特定上下文
+│   └── components/
+│       ├── AGENTS.md      # 组件特定上下文（最后注入）
+│       └── Button.tsx     # 读取此文件时，注入所有 3 个 AGENTS.md
+```
+
+### 注入顺序
+
+从项目根目录到文件所在目录，依次注入所有 AGENTS.md 文件。
+
+### 搜索范围说明
+
+`session_search` 会搜索 **所有项目/实例** 的会话历史，存储在 `~/.local/share/opencode/storage/message` 目录下。
+
+这意味着你可以：
+- 🔍 找回之前**任何项目**中讨论过的解决方案
+- 📚 查找跨项目的技术决策历史
+- 🔗 建立不同项目之间的知识联系
+
+### session_search 参数
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `query` | string | ✅ | 搜索关键词 |
+| `session_id` | string | ❌ | 限定在某个会话内搜索（不填则搜索所有会话） |
+| `case_sensitive` | boolean | ❌ | 是否区分大小写（默认 false） |
+| `limit` | number | ❌ | 返回结果数量限制（默认 20） |
+
+| 功能 | 说明 |
+|------|------|
+| **Todo Continuation Enforcer** | 强制代理完成所有 TODO，防止半途而废 |
+| **Comment Checker** | 防止 AI 添加过多注释，保持代码整洁 |
+| **Context Window Monitor** | 上下文使用 70%+ 时提醒，防止仓促完成 |
+| **Preemptive Compaction** | 上下文使用 85% 时主动压缩会话 |
+| **Session Recovery** | 自动从错误中恢复（缺失工具结果、思考块问题等） |
+| **Empty Task Response Detector** | 检测空任务响应，警告潜在的代理失败 |
+| **Anthropic Auto Compact** | Claude 模型超限时自动压缩会话 |
+| **Thinking Block Validator** | 验证思考块格式，防止 API 错误 |
+
+### 禁用特定保护功能
+
+在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "disabled_hooks": ["preemptive-compaction", "comment-checker"]
+}
+```
+
+---
+
+## 📋 剪贴板桥接
+
+容器内的剪贴板操作会自动同步到 Mac 剪贴板。
+
+### 工作原理
+
+1. 容器内使用 `xclip` 或 `/share` 命令
+2. 内容写入 `~/.opencode_data/<instance>/clipboard`
+3. Mac watcher 检测到变化后执行 `pbcopy`
+
+### 延迟
+
+- **fswatch 模式**：即时（需要安装 fswatch）
+- **轮询模式**：约 1 秒
+
+## 🔔 通知系统
+
+### 后台任务完成通知
+
+当后台代理任务完成时，系统会发送通知。
+
+### 会话空闲通知
+
+当代理需要输入时，发送操作系统通知，防止错过交互。
+
+**支持平台**：macOS、Linux、Windows
+
+---
+
+## 🔗 Claude Code 兼容性
+
+oh-my-opencode 完全兼容 Claude Code 的配置和命令格式，让你可以复用 Claude Code 社区的资源。
+
+### ⚠️ 两套配置系统
+
+OpenCode 支持**两套配置系统**，目录命名规则不同：
+
+| 系统 | 目录命名 | 用途 |
+|------|---------|------|
+| **OpenCode 原生** | **单数** (`skill/`, `command/`, `agent/`) | OpenCode 内置功能 |
+| **Claude 兼容层** | **复数** (`skills/`, `commands/`, `agents/`, `rules/`) | Claude Code 兼容 |
+
+> ⚠️ **写错目录名不会被加载！** OpenCode 原生用单数，Claude 兼容层用复数。
+
+### 目录结构（OCD Docker 版）
+
+在 OCD（OpenCode Docker）环境中，配置目录结构如下：
+
+```
+~/opencode/                           # 配置仓库（自身也是一个项目）
+│
+│  ── 这个项目自身的配置 ──
+│
+├── .opencode/                        # OpenCode 原生配置（这个项目）
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+├── .claude/                          # Claude 兼容层（这个项目）
+│   ├── todos/                        # opencode 实例的会话数据
+│   └── transcripts/
+│
+│  ── 全局配置（对所有项目生效） ──
+│
+├── global/
+│   ├── opencode/                     # OpenCode 原生全局配置
+│   │   ├── skill/                    # 全局 Skills（单数）
+│   │   ├── command/                  # 全局 Commands（单数）
+│   │   └── agent/                    # 全局 Agents（单数）
+│   │
+│   └── claude/                       # Claude 兼容层全局配置
+│       ├── skills/                   # 全局 Skills（复数）
+│       ├── commands/                 # 全局 Commands（复数）
+│       ├── agents/                   # 全局 Agents（复数）
+│       ├── rules/                    # 全局 Rules（复数）
+│       ├── settings.json             # 全局 Hooks
+│       └── .mcp.json                 # 全局 MCP 服务器
+│
+└── ...
+
+~/my-project/                         # 其他项目
+├── .opencode/                        # OpenCode 原生配置（这个项目）
+│   ├── skill/
+│   ├── command/
+│   └── agent/
+│
+├── .claude/                          # Claude 兼容层（这个项目）
+│   ├── todos/                        # 这个项目的会话数据
+│   └── transcripts/
+│
+└── ... (项目源码)
+```
+
+**挂载映射**（容器内路径）：
+
+**全局配置挂载**：
+| 宿主机路径 | 容器内路径 | 说明 |
+|------------|-----------|------|
+| `~/opencode/global/opencode/skill/` | `/root/.config/opencode/skill/` | OpenCode 原生全局 Skills |
+| `~/opencode/global/opencode/command/` | `/root/.config/opencode/command/` | OpenCode 原生全局 Commands |
+| `~/opencode/global/opencode/agent/` | `/root/.config/opencode/agent/` | OpenCode 原生全局 Agents |
+| `~/opencode/global/claude/` | `/root/.claude/` | Claude 兼容层全局配置 |
+
+**会话数据挂载**（覆盖挂载到 `/root/.claude/`）：
+| 宿主机路径 | 容器内路径 | 说明 |
+|----------|-----------|------|
+| `<project>/.claude/todos/` | `/root/.claude/todos/` | 项目的任务列表 |
+| `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` | 项目的会话记录 |
+
+> **注意**：每个项目的会话数据存放在项目自己的 `.claude/` 目录下，通过覆盖挂载实现隔离。
+
+### 兼容的功能
+
+| 功能 | 宿主机路径 | 用途 |
+|------|-----------|------|
+| **Skills** | `~/opencode/global/claude/skills/` | 高级技能，可包含 MCP 配置 |
+| **Commands** | `~/opencode/global/claude/commands/` | 自定义斜杠命令 |
+| **Agents** | `~/opencode/global/claude/agents/` | 自定义代理角色 |
+| **Rules** | `~/opencode/global/claude/rules/` | 条件规则（按文件类型等触发） |
+| **Hooks** | `~/opencode/global/claude/settings.json` | 工具执行前后的钩子 |
+| **MCP** | `~/opencode/global/claude/.mcp.json` | 额外的 MCP 服务器 |
+| **Todos** | `<project>/.claude/todos/` | 任务列表（项目隔离） |
+| **Transcripts** | `<project>/.claude/transcripts/` | 会话日志（项目隔离） |
+
+---
+
+### 禁用兼容性功能
+
+如需禁用特定功能，在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "claude_code": {
+    "mcp": false,
+    "commands": false,
+    "skills": false,
+    "agents": false,
+    "hooks": false
+  }
+}
+```
 ## `ocd` 自动初始化行为
 
 ### 全局配置初始化
@@ -519,14 +755,6 @@ EXA_MCP_VERSION=3.1.3
 | `PLAYWRIGHT_MCP_VERSION` | Playwright MCP | 0.0.54 |
 | `EXA_MCP_VERSION` | Exa MCP | 3.1.3 |
 | `PIP_*` | Python 包版本 | 见上表 |
-
-### 使用场景
-
-- 团队共享一致的开发环境
-- 锁定已知稳定的版本组合
-- 避免自动更新导致的兼容性问题
-
----
 
 ## 注意事项
 
