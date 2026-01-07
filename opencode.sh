@@ -74,7 +74,7 @@ _ocd_load_env() {
       value="${value#\'}" && value="${value%\'}"
       export "$key=$value"
     fi
-  done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$env_file" 2>/dev/null | grep -v '[;`$()]')
+  done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$env_file" 2>/dev/null | grep -v -e ';' -e '\$' -e '(' -e ')' -e '"' -e "'")
 }
 
 # =========================================
@@ -201,6 +201,21 @@ _ocd_start_watcher() {
   echo $!
 }
 
+# =========================================
+# 全局变量：Watcher PID（用于清理）
+# =========================================
+_OCD_WATCHER_PID=""
+
+# =========================================
+# 辅助函数：清理 Watcher 进程
+# =========================================
+_ocd_cleanup() {
+  if [[ -n "$_OCD_WATCHER_PID" ]]; then
+    kill "$_OCD_WATCHER_PID" 2>/dev/null
+    _OCD_WATCHER_PID=""
+  fi
+}
+
 ocd() {
   local IMAGE_NAME="opencode-bun"
   local ENV_FILE="$HOME/opencode/.env"
@@ -212,13 +227,8 @@ ocd() {
   local CUSTOM_PORT=""
   local USE_QUOTIO=0
 
-  # Watcher 进程 ID 和清理函数
-  local WATCHER_PID=""
-
-  _ocd_cleanup() {
-    [[ -n "$WATCHER_PID" ]] && kill "$WATCHER_PID" 2>/dev/null
-  }
-  trap '_ocd_cleanup' EXIT INT TERM HUP
+  # 设置清理 trap（使用全局函数）
+  trap '_ocd_cleanup' INT TERM HUP
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -461,8 +471,8 @@ EOFOMOCONFIG
   : > "$NOTIFY_FILE"
 
   # 启动 Watcher（自动选择 fswatch 或轮询模式）
-  WATCHER_PID=$(_ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE")
-  disown "$WATCHER_PID" 2>/dev/null
+  _OCD_WATCHER_PID=$(_ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE")
+  disown "$_OCD_WATCHER_PID" 2>/dev/null
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
@@ -508,7 +518,8 @@ EOFOMOCONFIG
     -w /workspace \
     "$IMAGE_NAME" "$@"
 
-  # trap 会自动清理 WATCHER_PID
+  # 清理 Watcher 进程
+  _ocd_cleanup
 }
 
 # =========================================
