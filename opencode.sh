@@ -23,6 +23,25 @@ _ocd_version() {
 }
 
 # =========================================
+# 辅助函数：加载版本锁定文件
+# =========================================
+_ocd_load_versions() {
+  local VERSIONS_FILE="$HOME/opencode/versions.lock"
+  [[ ! -f "$VERSIONS_FILE" ]] && return 0
+
+  local key value line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # 跳过注释和空行
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # 提取 KEY=VALUE
+    key="${line%%=*}"
+    value="${line#*=}"
+    # 验证 key 格式并导出
+    [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -n "$value" ]] && export "$key=$value"
+  done < "$VERSIONS_FILE"
+}
+
+# =========================================
 # 辅助函数：清理实例名 ("My Project" -> "my-project")
 # =========================================
 _ocd_sanitize_name() {
@@ -279,6 +298,20 @@ ocd() {
     PORT=$(_ocd_find_free_port 4096)
   fi
 
+  # 加载版本锁定文件
+  _ocd_load_versions
+
+  # 构建参数
+  local BUILD_ARGS=""
+  BUILD_ARGS+=" --build-arg BUN_VERSION=${BUN_VERSION:-1.3.5}"
+  BUILD_ARGS+=" --build-arg PIP_REQUESTS=${PIP_REQUESTS:-2.32.5}"
+  BUILD_ARGS+=" --build-arg PIP_PANDAS=${PIP_PANDAS:-2.2.3}"
+  BUILD_ARGS+=" --build-arg PIP_NUMPY=${PIP_NUMPY:-2.2.1}"
+  BUILD_ARGS+=" --build-arg PIP_MATPLOTLIB=${PIP_MATPLOTLIB:-3.10.0}"
+  BUILD_ARGS+=" --build-arg PIP_BEAUTIFULSOUP4=${PIP_BEAUTIFULSOUP4:-4.12.3}"
+  BUILD_ARGS+=" --build-arg PIP_PILLOW=${PIP_PILLOW:-11.1.0}"
+  BUILD_ARGS+=" --build-arg OPENCODE_AI_VERSION=${OPENCODE_AI_VERSION:-1.1.4}"
+
   if [[ "$REBUILD" -eq 1 ]]; then
     echo "🗑️  删除旧镜像..."
     docker rmi "$IMAGE_NAME" 2>/dev/null
@@ -292,10 +325,12 @@ ocd() {
     echo "🗑️  清除插件缓存..."
     rm -rf "$HOME/.cache/opencode/node_modules"
     echo "🏗️  正在完全重建镜像 (无缓存)..."
-    docker build --no-cache -t "$IMAGE_NAME" "$HOME/opencode"
+    echo "📦 版本: Bun=${BUN_VERSION:-1.3.5} OpenCode=${OPENCODE_AI_VERSION:-1.1.4}"
+    docker build --no-cache $BUILD_ARGS -t "$IMAGE_NAME" "$HOME/opencode"
   elif ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
     echo "🏗️  正在构建镜像..."
-    docker build -t "$IMAGE_NAME" "$HOME/opencode"
+    echo "📦 版本: Bun=${BUN_VERSION:-1.3.5} OpenCode=${OPENCODE_AI_VERSION:-1.1.4}"
+    docker build $BUILD_ARGS -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
   # 首次运行依赖提示
@@ -316,6 +351,12 @@ ocd() {
   QUOTIO_API_KEY="${QUOTIO_API_KEY:-}"
   QUOTIO_BASE_URL="${QUOTIO_BASE_URL:-http://localhost:8317/v1}"
 
+  # 设置版本变量默认值
+  local OMO_VER="${OH_MY_OPENCODE_VERSION:-2.14.0}"
+  local AUTH_VER="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
+  local PLAYWRIGHT_VER="${PLAYWRIGHT_MCP_VERSION:-0.0.54}"
+  local EXA_VER="${EXA_MCP_VERSION:-3.1.3}"
+
   if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "📝 生成 opencode.json..."
     if [[ "$USE_QUOTIO" -eq 1 ]]; then
@@ -324,8 +365,8 @@ ocd() {
   "\$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-opus-4-5",
   "plugin": [
-    "oh-my-opencode",
-    "opencode-antigravity-auth@1.2.6"
+    "oh-my-opencode@${OMO_VER}",
+    "opencode-antigravity-auth@${AUTH_VER}"
   ],
   "server": {
     "port": ${PORT},
@@ -334,12 +375,12 @@ ocd() {
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest", "--headless"],
+      "command": ["npx", "@playwright/mcp@${PLAYWRIGHT_VER}", "--headless"],
       "enabled": true
     },
     "exa": {
       "type": "local",
-      "command": ["npx", "-y", "exa-mcp-server"],
+      "command": ["npx", "-y", "exa-mcp-server@${EXA_VER}"],
       "timeout": 60000,
       "enabled": false,
       "environment": {
@@ -391,8 +432,8 @@ EOF
   "\$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-opus-4-5",
   "plugin": [
-    "oh-my-opencode",
-    "opencode-antigravity-auth@1.2.6"
+    "oh-my-opencode@${OMO_VER}",
+    "opencode-antigravity-auth@${AUTH_VER}"
   ],
   "server": {
     "port": ${PORT},
@@ -401,12 +442,12 @@ EOF
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest", "--headless"],
+      "command": ["npx", "@playwright/mcp@${PLAYWRIGHT_VER}", "--headless"],
       "enabled": true
     },
     "exa": {
       "type": "local",
-      "command": ["npx", "-y", "exa-mcp-server"],
+      "command": ["npx", "-y", "exa-mcp-server@${EXA_VER}"],
       "timeout": 60000,
       "enabled": false,
       "environment": {

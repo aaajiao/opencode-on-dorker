@@ -1,4 +1,16 @@
-FROM oven/bun:latest
+# ================================================
+# 版本参数 (从 versions.lock 读取)
+# ================================================
+ARG BUN_VERSION=1.3.5
+ARG PIP_REQUESTS=2.32.5
+ARG PIP_PANDAS=2.2.3
+ARG PIP_NUMPY=2.2.1
+ARG PIP_MATPLOTLIB=3.10.0
+ARG PIP_BEAUTIFULSOUP4=4.12.3
+ARG PIP_PILLOW=11.1.0
+ARG OPENCODE_AI_VERSION=1.1.4
+
+FROM oven/bun:${BUN_VERSION}
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -63,14 +75,28 @@ RUN mkdir -p -m 755 /etc/apt/keyrings \
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
+# 重新声明 ARG (FROM 后需要再次声明)
+ARG PIP_REQUESTS
+ARG PIP_PANDAS
+ARG PIP_NUMPY
+ARG PIP_MATPLOTLIB
+ARG PIP_BEAUTIFULSOUP4
+ARG PIP_PILLOW
+
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
-    requests pandas numpy matplotlib beautifulsoup4 pillow
+    requests==${PIP_REQUESTS} \
+    pandas==${PIP_PANDAS} \
+    numpy==${PIP_NUMPY} \
+    matplotlib==${PIP_MATPLOTLIB} \
+    beautifulsoup4==${PIP_BEAUTIFULSOUP4} \
+    pillow==${PIP_PILLOW}
 
 # -------------------------------------------------------
 # 第九步：安装 OpenCode
 # -------------------------------------------------------
-RUN bun add -g opencode-ai
+ARG OPENCODE_AI_VERSION
+RUN bun add -g opencode-ai@${OPENCODE_AI_VERSION}
 
 # -------------------------------------------------------
 # 第十步：通知系统 - 写入共享文件，宿主机监听并发送 macOS 通知
