@@ -183,19 +183,21 @@ _ocd_start_watcher() {
   local url_file="$1"
   local notify_file="$2"
 
+  # 后台启动 watcher，关闭 stdout/stderr 避免阻塞命令替换
   (
+    exec >/dev/null 2>&1
     if command -v fswatch &>/dev/null; then
       # 高效模式：fswatch 事件驱动
       fswatch -0 --event Created --event Updated "$url_file" "$notify_file" 2>/dev/null | \
-      while IFS= read -r -d '' _; do
-        _ocd_handle_url "$url_file"
-        _ocd_handle_notify "$notify_file"
+      while IFS= read -r -d '' file; do
+        [[ -s "$url_file" ]] && { while IFS= read -r u; do [[ -n "$u" ]] && open "$u"; done < "$url_file"; : > "$url_file"; }
+        [[ -s "$notify_file" ]] && { while IFS='|' read -r t m; do [[ -n "$m" ]] && osascript -e "display notification \"$m\" with title \"$t\"" 2>/dev/null; done < "$notify_file"; : > "$notify_file"; }
       done
     else
       # 兼容模式：轮询（1 秒间隔）
       while true; do
-        _ocd_handle_url "$url_file"
-        _ocd_handle_notify "$notify_file"
+        [[ -s "$url_file" ]] && { while IFS= read -r u; do [[ -n "$u" ]] && open "$u"; done < "$url_file"; : > "$url_file"; }
+        [[ -s "$notify_file" ]] && { while IFS='|' read -r t m; do [[ -n "$m" ]] && osascript -e "display notification \"$m\" with title \"$t\"" 2>/dev/null; done < "$notify_file"; : > "$notify_file"; }
         sleep 1
       done
     fi
