@@ -301,16 +301,15 @@ ocd() {
   # 加载版本锁定文件
   _ocd_load_versions
 
-  # 构建参数
-  local BUILD_ARGS=""
-  BUILD_ARGS="--build-arg BUN_VERSION=${BUN_VERSION:-1.3.5}"
-  BUILD_ARGS+=" --build-arg PIP_REQUESTS=${PIP_REQUESTS:-2.32.5}"
-  BUILD_ARGS+=" --build-arg PIP_PANDAS=${PIP_PANDAS:-2.2.3}"
-  BUILD_ARGS+=" --build-arg PIP_NUMPY=${PIP_NUMPY:-2.2.1}"
-  BUILD_ARGS+=" --build-arg PIP_MATPLOTLIB=${PIP_MATPLOTLIB:-3.10.0}"
-  BUILD_ARGS+=" --build-arg PIP_BEAUTIFULSOUP4=${PIP_BEAUTIFULSOUP4:-4.12.3}"
-  BUILD_ARGS+=" --build-arg PIP_PILLOW=${PIP_PILLOW:-11.1.0}"
-  BUILD_ARGS+=" --build-arg OPENCODE_AI_VERSION=${OPENCODE_AI_VERSION:-1.1.4}"
+  # 版本变量（带默认值）
+  local V_BUN="${BUN_VERSION:-1.3.5}"
+  local V_REQUESTS="${PIP_REQUESTS:-2.32.5}"
+  local V_PANDAS="${PIP_PANDAS:-2.2.3}"
+  local V_NUMPY="${PIP_NUMPY:-2.2.1}"
+  local V_MATPLOTLIB="${PIP_MATPLOTLIB:-3.10.0}"
+  local V_BS4="${PIP_BEAUTIFULSOUP4:-4.12.3}"
+  local V_PILLOW="${PIP_PILLOW:-11.1.0}"
+  local V_OPENCODE="${OPENCODE_AI_VERSION:-1.1.4}"
 
   if [[ "$REBUILD" -eq 1 ]]; then
     echo "🗑️  删除旧镜像..."
@@ -325,12 +324,30 @@ ocd() {
     echo "🗑️  清除插件缓存..."
     rm -rf "$HOME/.cache/opencode/node_modules"
     echo "🏗️  正在完全重建镜像 (无缓存)..."
-    echo "📦 版本: Bun=${BUN_VERSION:-1.3.5} OpenCode=${OPENCODE_AI_VERSION:-1.1.4}"
-    docker build --no-cache $BUILD_ARGS -t "$IMAGE_NAME" "$HOME/opencode"
+    echo "📦 版本: Bun=${V_BUN} OpenCode=${V_OPENCODE}"
+    docker build --no-cache \
+      --build-arg "BUN_VERSION=${V_BUN}" \
+      --build-arg "PIP_REQUESTS=${V_REQUESTS}" \
+      --build-arg "PIP_PANDAS=${V_PANDAS}" \
+      --build-arg "PIP_NUMPY=${V_NUMPY}" \
+      --build-arg "PIP_MATPLOTLIB=${V_MATPLOTLIB}" \
+      --build-arg "PIP_BEAUTIFULSOUP4=${V_BS4}" \
+      --build-arg "PIP_PILLOW=${V_PILLOW}" \
+      --build-arg "OPENCODE_AI_VERSION=${V_OPENCODE}" \
+      -t "$IMAGE_NAME" "$HOME/opencode"
   elif ! docker image inspect "$IMAGE_NAME" &> /dev/null; then
     echo "🏗️  正在构建镜像..."
-    echo "📦 版本: Bun=${BUN_VERSION:-1.3.5} OpenCode=${OPENCODE_AI_VERSION:-1.1.4}"
-    docker build $BUILD_ARGS -t "$IMAGE_NAME" "$HOME/opencode"
+    echo "📦 版本: Bun=${V_BUN} OpenCode=${V_OPENCODE}"
+    docker build \
+      --build-arg "BUN_VERSION=${V_BUN}" \
+      --build-arg "PIP_REQUESTS=${V_REQUESTS}" \
+      --build-arg "PIP_PANDAS=${V_PANDAS}" \
+      --build-arg "PIP_NUMPY=${V_NUMPY}" \
+      --build-arg "PIP_MATPLOTLIB=${V_MATPLOTLIB}" \
+      --build-arg "PIP_BEAUTIFULSOUP4=${V_BS4}" \
+      --build-arg "PIP_PILLOW=${V_PILLOW}" \
+      --build-arg "OPENCODE_AI_VERSION=${V_OPENCODE}" \
+      -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
   # 首次运行依赖提示
