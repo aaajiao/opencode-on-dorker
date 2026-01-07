@@ -30,17 +30,166 @@ _ocd_sanitize_name() {
 }
 
 # =========================================
-# 辅助函数：查找空闲端口
+# 辅助函数：首次运行依赖提示
+# =========================================
+_ocd_check_dependencies() {
+  local hint_file="$HOME/.config/opencode/.deps-hint-shown"
+
+  # 只提示一次
+  [[ -f "$hint_file" ]] && return 0
+
+  local missing=()
+
+  command -v jq &>/dev/null || missing+=("jq (智能配置更新)")
+  command -v fswatch &>/dev/null || missing+=("fswatch (降低 CPU 占用)")
+  command -v terminal-notifier &>/dev/null || missing+=("terminal-notifier (自定义通知图标)")
+
+  if [[ ${#missing[@]} -gt 0 ]]; then
+    echo ""
+    echo "💡 可选依赖（安装后体验更好）:"
+    for dep in "${missing[@]}"; do
+      echo "   • $dep"
+    done
+    echo ""
+    echo "   一键安装: brew install jq fswatch terminal-notifier"
+    echo ""
+  fi
+
+  mkdir -p "$(dirname "$hint_file")"
+  touch "$hint_file"
+}
+
+# =========================================
+# 辅助函数：安全加载环境变量
+# =========================================
+_ocd_load_env() {
+  local env_file="$1"
+  [[ ! -f "$env_file" ]] && return 0
+
+  while IFS='=' read -r key value; do
+    # 验证 key: 大写字母/数字/下划线，以字母或下划线开头
+    if [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -n "$value" ]]; then
+      # 移除可能的引号
+      value="${value#\"}" && value="${value%\"}"
+      value="${value#\'}" && value="${value%\'}"
+      export "$key=$value"
+    fi
+  done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$env_file" 2>/dev/null | grep -v '[;`$()]')
+}
+
+# =========================================
+# 辅助函数：查找空闲端口（带锁，防多实例竞争）
 # =========================================
 _ocd_find_free_port() {
   local base_port=${1:-4096}
-  for ((p=base_port; p<base_port+100; p++)); do
-    if ! lsof -i :"$p" &>/dev/null; then
-      echo "$p"
-      return
+  local lock_dir="$HOME/.config/opencode"
+  local lock_file="${lock_dir}/.port.lock"
+  local port_file="${lock_dir}/.last_port"
+
+  mkdir -p "$lock_dir"
+
+  (
+    # 获取排他锁，超时 5 秒
+    flock -x -w 5 200 2>/dev/null || { echo "$base_port"; exit; }
+
+    # 一次性获取所有监听端口
+    local used_ports
+    used_ports=$(lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null | awk 'NR>1{print $9}' | grep -oE '[0-9]+$' | sort -u)
+
+    # 从上次分配的端口+1 开始（减少冲突）
+    local start_port=$base_port
+    if [[ -f "$port_file" ]]; then
+      start_port=$(( $(cat "$port_file") + 1 ))
+      [[ $start_port -ge $((base_port + 100)) ]] && start_port=$base_port
     fi
-  done
-  echo "$base_port"
+
+    # 查找空闲端口
+    local found_port=""
+    for ((p=start_port; p<base_port+100; p++)); do
+      if ! echo "$used_ports" | grep -qw "$p"; then
+        found_port=$p
+        break
+      fi
+    done
+
+    # 回绕检查
+    if [[ -z "$found_port" ]]; then
+      for ((p=base_port; p<start_port; p++)); do
+        if ! echo "$used_ports" | grep -qw "$p"; then
+          found_port=$p
+          break
+        fi
+      done
+    fi
+
+    # 记录并输出
+    found_port=${found_port:-$base_port}
+    echo "$found_port" > "$port_file"
+    echo "$found_port"
+
+  ) 200>"$lock_file"
+}
+
+# =========================================
+# 辅助函数：处理 URL 打开
+# =========================================
+_ocd_handle_url() {
+  local url_file="$1"
+  [[ ! -s "$url_file" ]] && return
+
+  while IFS= read -r url; do
+    [[ -n "$url" ]] && open "$url"
+  done < "$url_file"
+  : > "$url_file"
+}
+
+# =========================================
+# 辅助函数：处理通知
+# =========================================
+_ocd_handle_notify() {
+  local notify_file="$1"
+  local icon_file="$HOME/opencode/ghostty-128.png"
+
+  [[ ! -s "$notify_file" ]] && return
+
+  while IFS='|' read -r title msg; do
+    if [[ -n "$msg" ]]; then
+      if command -v terminal-notifier &>/dev/null && [[ -f "$icon_file" ]]; then
+        terminal-notifier -title "$title" -message "$msg" -contentImage "$icon_file" -sound Morse
+      else
+        osascript -e "display notification \"$msg\" with title \"$title\"" 2>/dev/null || true
+      fi
+    fi
+  done < "$notify_file"
+  : > "$notify_file"
+}
+
+# =========================================
+# 辅助函数：启动 Watcher（自动选择最优方式）
+# =========================================
+_ocd_start_watcher() {
+  local url_file="$1"
+  local notify_file="$2"
+
+  (
+    if command -v fswatch &>/dev/null; then
+      # 高效模式：fswatch 事件驱动
+      fswatch -0 --event Created --event Updated "$url_file" "$notify_file" 2>/dev/null | \
+      while IFS= read -r -d '' _; do
+        _ocd_handle_url "$url_file"
+        _ocd_handle_notify "$notify_file"
+      done
+    else
+      # 兼容模式：轮询（1 秒间隔）
+      while true; do
+        _ocd_handle_url "$url_file"
+        _ocd_handle_notify "$notify_file"
+        sleep 1
+      done
+    fi
+  ) &
+
+  echo $!
 }
 
 ocd() {
@@ -53,6 +202,14 @@ ocd() {
   local INSTANCE_NAME=""
   local CUSTOM_PORT=""
   local USE_QUOTIO=0
+
+  # Watcher 进程 ID 和清理函数
+  local WATCHER_PID=""
+
+  _ocd_cleanup() {
+    [[ -n "$WATCHER_PID" ]] && kill "$WATCHER_PID" 2>/dev/null
+  }
+  trap '_ocd_cleanup' EXIT INT TERM HUP
 
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -117,6 +274,9 @@ ocd() {
     docker build -t "$IMAGE_NAME" "$HOME/opencode"
   fi
 
+  # 首次运行依赖提示
+  _ocd_check_dependencies
+
   # 初始化配置
   _ocd_init_global
   _ocd_init_project "$(pwd)"
@@ -126,11 +286,8 @@ ocd() {
   mkdir -p "$INSTANCE_STORAGE_DIR"
   touch "$SHARE_DIR/auth.json" 2>/dev/null || true
 
-  if [[ -f "$ENV_FILE" ]]; then
-    set -a
-    source "$ENV_FILE"
-    set +a
-  fi
+  # 安全加载环境变量
+  _ocd_load_env "$ENV_FILE"
 
   QUOTIO_API_KEY="${QUOTIO_API_KEY:-}"
   QUOTIO_BASE_URL="${QUOTIO_BASE_URL:-http://localhost:8317/v1}"
@@ -237,10 +394,12 @@ EOF
 EOF
     fi
   else
-    if command -v jq &> /dev/null; then
-      local TMP_FILE=$(mktemp)
-      jq --argjson port "$PORT" '.server.port = $port' \
-        "$CONFIG_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$CONFIG_FILE"
+    # 更新端口配置
+    if command -v jq &>/dev/null; then
+      local tmp_file
+      tmp_file=$(mktemp) && \
+      jq --argjson port "$PORT" '.server.port = $port' "$CONFIG_FILE" > "$tmp_file" && \
+      mv "$tmp_file" "$CONFIG_FILE" || rm -f "$tmp_file"
     else
       sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${PORT}|g" "$CONFIG_FILE"
       rm -f "${CONFIG_FILE}.bak"
@@ -292,40 +451,15 @@ EOFOMOCONFIG
   : > "$URL_FILE"
   : > "$NOTIFY_FILE"
 
-  (
-    while true; do
-      if [[ -s "$URL_FILE" ]]; then
-        while IFS= read -r url; do
-          [[ -n "$url" ]] && open "$url"
-        done < "$URL_FILE"
-        : > "$URL_FILE"
-      fi
-      if [[ -s "$NOTIFY_FILE" ]]; then
-        ICON_FILE="$HOME/opencode/ghostty-128.png"
-        while IFS='|' read -r title msg; do
-          if [[ -n "$msg" ]]; then
-            if command -v terminal-notifier &>/dev/null && [[ -f "$ICON_FILE" ]]; then
-              terminal-notifier -title "$title" -message "$msg" -contentImage "$ICON_FILE" -sound Morse
-            else
-              osascript -e "display notification \"$msg\" with title \"$title\""
-            fi
-          fi
-        done < "$NOTIFY_FILE"
-        : > "$NOTIFY_FILE"
-      fi
-      sleep 0.5
-    done
-  ) &
-  local WATCHER_PID=$!
-  disown $WATCHER_PID 2>/dev/null
+  # 启动 Watcher（自动选择 fswatch 或轮询模式）
+  WATCHER_PID=$(_ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE")
+  disown "$WATCHER_PID" 2>/dev/null
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
-  echo "🚀 OCD v$(_ocd_version)"
-  echo "📦 实例: ${INSTANCE_NAME}"
-  echo "📂 工作目录: $(pwd)"
-  echo "🌐 Web UI: http://localhost:${PORT}"
-  [[ "$USE_QUOTIO" -eq 1 ]] && echo "🔌 Quotio 代理: 已启用"
+  echo ""
+  echo "🚀 OCD v$(_ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
   echo ""
 
   # 全局配置目录
@@ -365,7 +499,7 @@ EOFOMOCONFIG
     -w /workspace \
     "$IMAGE_NAME" "$@"
 
-  kill $WATCHER_PID 2>/dev/null
+  # trap 会自动清理 WATCHER_PID
 }
 
 # =========================================
