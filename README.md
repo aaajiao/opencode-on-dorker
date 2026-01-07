@@ -10,6 +10,7 @@
 - ✅ **多实例支持**（同时编辑多个项目，自动端口分配 + 锁机制防冲突）
 - ✅ 链接自动在 Mac 浏览器打开
 - ✅ **macOS 桌面通知支持**
+- ✅ **剪贴板桥接**（`/share` 等命令自动复制到 Mac）
 - ✅ GitHub CLI 自动认证
 - ✅ OAuth 认证支持（Claude Max、Gemini Pro）
 - ✅ 配置和认证信息持久化
@@ -200,7 +201,8 @@ ultrathink         # 深度思考
 
 ~/.opencode_data/<instance>/          # 实例运行时数据
 ├── open_url
-└── notifications
+├── notifications
+└── clipboard
 
 ~/.local/share/opencode/              # 共享数据
 └── auth.json                         # OAuth 认证
@@ -251,6 +253,16 @@ notify "标题" "内容"
 oh-my-opencode 的通知 hook 会自动使用此机制。
 
 **获取自定义图标**：将 `ghostty-128.png` 放在 `~/opencode/` 目录。
+
+## 剪贴板桥接
+
+容器内的剪贴板操作（如 `/share` 命令）会自动同步到 Mac 剪贴板。
+
+**工作原理**：
+1. 容器内 `xclip` 命令写入 `~/.opencode_data/<instance>/clipboard`
+2. Mac watcher 检测到变化后执行 `pbcopy`
+
+**延迟**：约 1 秒（轮询模式）或即时（fswatch 模式）
 
 ## 网络模式
 
