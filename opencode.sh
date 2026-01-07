@@ -196,27 +196,37 @@ _ocd_handle_notify() {
 }
 
 # =========================================
+# 辅助函数：处理剪贴板
+# =========================================
+_ocd_handle_clipboard() {
+  local clipboard_file="$1"
+  [[ ! -s "$clipboard_file" ]] && return
+  pbcopy < "$clipboard_file" 2>/dev/null || true
+  : > "$clipboard_file"
+}
+
+# =========================================
 # 辅助函数：启动 Watcher（自动选择最优方式）
 # =========================================
 _ocd_start_watcher() {
   local url_file="$1"
   local notify_file="$2"
+  local clipboard_file="$3"
 
-  # 后台启动 watcher，关闭 stdout/stderr 避免阻塞命令替换
   (
-    exec >/dev/null 2>&1
+    exec </dev/null >/dev/null 2>&1
     if command -v fswatch &>/dev/null; then
-      # 高效模式：fswatch 事件驱动
-      fswatch -0 --event Created --event Updated "$url_file" "$notify_file" 2>/dev/null | \
-      while IFS= read -r -d '' file; do
-        [[ -s "$url_file" ]] && { while IFS= read -r u; do [[ -n "$u" ]] && open "$u"; done < "$url_file"; : > "$url_file"; }
-        [[ -s "$notify_file" ]] && { while IFS='|' read -r t m; do [[ -n "$m" ]] && osascript -e "display notification \"$m\" with title \"$t\"" 2>/dev/null; done < "$notify_file"; : > "$notify_file"; }
+      fswatch -o --event Created --event Updated "$url_file" "$notify_file" "$clipboard_file" 2>/dev/null | \
+      while IFS= read -r _; do
+        _ocd_handle_url "$url_file"
+        _ocd_handle_notify "$notify_file"
+        _ocd_handle_clipboard "$clipboard_file"
       done
     else
-      # 兼容模式：轮询（1 秒间隔）
       while true; do
-        [[ -s "$url_file" ]] && { while IFS= read -r u; do [[ -n "$u" ]] && open "$u"; done < "$url_file"; : > "$url_file"; }
-        [[ -s "$notify_file" ]] && { while IFS='|' read -r t m; do [[ -n "$m" ]] && osascript -e "display notification \"$m\" with title \"$t\"" 2>/dev/null; done < "$notify_file"; : > "$notify_file"; }
+        _ocd_handle_url "$url_file"
+        _ocd_handle_notify "$notify_file"
+        _ocd_handle_clipboard "$clipboard_file"
         sleep 1
       done
     fi
@@ -235,7 +245,7 @@ _OCD_WATCHER_PID=""
 # =========================================
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
-    kill "$_OCD_WATCHER_PID" 2>/dev/null
+    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
 }
@@ -287,6 +297,7 @@ ocd() {
   # 实例独立文件
   local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
   local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
+  local CLIPBOARD_FILE="${INSTANCE_DATA_DIR}/clipboard"
   local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
   local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
 
@@ -532,9 +543,10 @@ EOFOMOCONFIG
 
   : > "$URL_FILE"
   : > "$NOTIFY_FILE"
+  : > "$CLIPBOARD_FILE"
 
   # 启动 Watcher（自动选择 fswatch 或轮询模式）
-  _OCD_WATCHER_PID=$(_ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE")
+  _OCD_WATCHER_PID=$(_ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
   disown "$_OCD_WATCHER_PID" 2>/dev/null
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null

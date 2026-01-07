@@ -99,7 +99,14 @@ ARG OPENCODE_AI_VERSION
 RUN bun add -g opencode-ai@${OPENCODE_AI_VERSION}
 
 # -------------------------------------------------------
-# 第十步：通知系统 - 写入共享文件，宿主机监听并发送 macOS 通知
+# 第十步：剪贴板桥接 - 伪 xclip 将内容写入文件供 Mac pbcopy
+# -------------------------------------------------------
+COPY scripts/fake-xclip.sh /usr/local/bin/xclip
+RUN chmod +x /usr/local/bin/xclip && \
+    ln -s /usr/local/bin/xclip /usr/local/bin/xsel
+
+# -------------------------------------------------------
+# 第十一步：通知系统 - 写入共享文件，宿主机监听并发送 macOS 通知
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 TITLE="${1:-OpenCode}"\n\
@@ -124,7 +131,7 @@ MSG="${2:-}"\n\
 ' > /usr/local/bin/notify-send && chmod +x /usr/local/bin/notify-send
 
 # -------------------------------------------------------
-# 第十一步：Exa 健康检查脚本 - 检测内置 Exa 是否可用
+# 第十二步：Exa 健康检查脚本 - 检测内置 Exa 是否可用
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 # 检测 oh-my-opencode 内置 Exa 是否可用\n\
@@ -155,7 +162,7 @@ fi\n\
     chmod +x /usr/local/bin/check-exa
 
 # -------------------------------------------------------
-# 第十二步：收尾配置
+# 第十三步：收尾配置
 # -------------------------------------------------------
 WORKDIR /workspace
 
@@ -165,7 +172,7 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
 
 # -------------------------------------------------------
-# 第十三步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
+# 第十四步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
