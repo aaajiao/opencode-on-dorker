@@ -294,6 +294,12 @@ ocd() {
   # 实例独立的存储目录（session 隔离）
   local INSTANCE_STORAGE_DIR="${SHARE_DIR}/storage/${INSTANCE_NAME}"
 
+  # 全局状态目录（KV store，UI 设置持久化）
+  local STATE_DIR="$HOME/.local/state/opencode"
+
+  # oh-my-opencode 二进制缓存（ast-grep, ripgrep）
+  local OMO_BIN_CACHE="$HOME/.cache/oh-my-opencode"
+
   # 实例独立文件
   local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
   local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
@@ -371,6 +377,8 @@ ocd() {
   mkdir -p "$INSTANCE_CONFIG_DIR"
   mkdir -p "$SHARE_DIR/bin"
   mkdir -p "$INSTANCE_STORAGE_DIR"
+  mkdir -p "$STATE_DIR"
+  mkdir -p "$OMO_BIN_CACHE/bin"
   touch "$SHARE_DIR/auth.json" 2>/dev/null || true
 
   # 安全加载环境变量
@@ -581,6 +589,8 @@ EOFOMOCONFIG
     -v "${SHARE_DIR}/bin:/root/.local/share/opencode/bin" \
     -v "${INSTANCE_STORAGE_DIR}:/root/.local/share/opencode/storage" \
     -v "${PLAYWRIGHT_CACHE}:/root/.cache/ms-playwright" \
+    -v "${STATE_DIR}:/root/.local/state/opencode" \
+    -v "${OMO_BIN_CACHE}:/root/.cache/oh-my-opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
     -v "${GLOBAL_OPENCODE}/skill:/root/.config/opencode/skill" \
     -v "${GLOBAL_OPENCODE}/command:/root/.config/opencode/command" \
