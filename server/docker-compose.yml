@@ -1,0 +1,99 @@
+# OCD Server Mode - 远程开发服务器配置
+#
+# 用途：在 Mac Mini 等服务器上后台运行 OCD，从其他设备远程访问
+#
+# 启动：docker-compose up -d
+# 停止：docker-compose down
+# 日志：docker-compose logs -f
+#
+# 访问：
+#   - 局域网：http://<mac-mini-ip>:4096
+#   - Tailscale：http://<tailscale-ip>:4096
+
+services:
+  opencode:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: opencode-bun
+    container_name: opencode-server
+
+    # ===== 网络模式 =====
+    # host 模式：OAuth 回调需要，端口直接暴露
+    network_mode: host
+
+    # ===== 运行模式 =====
+    restart: unless-stopped    # 自动重启（除非手动停止）
+    stdin_open: false          # 服务器模式无需交互式输入
+    tty: false                 # 服务器模式无需伪终端
+
+    # ===== 环境变量 =====
+    env_file:
+      - ../.env
+
+    environment:
+      # 时区（自动跟随主机，或手动指定如 Asia/Shanghai）
+      - TZ=${TZ:-Asia/Shanghai}
+
+      # 终端和浏览器
+      - TERM=xterm-256color
+      - BROWSER=/usr/bin/xdg-open
+
+      # API Keys（从 .env 读取，这里显式声明以便调试）
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - EXA_API_KEY=${EXA_API_KEY:-}
+
+      # Quotio（可选）
+      - QUOTIO_API_KEY=${QUOTIO_API_KEY:-}
+      - QUOTIO_BASE_URL=${QUOTIO_BASE_URL:-}
+
+    # ===== 挂载卷 =====
+    volumes:
+      # ----- 工作目录 -----
+      # 你的项目根目录，容器内通过 /workspace/project-name 访问
+      - ~/projects:/workspace
+
+      # ----- 配置文件 -----
+      # 服务器实例独立的配置
+      - ~/.config/opencode/server/opencode.json:/root/.config/opencode/opencode.json
+      - ~/.config/opencode/server/oh-my-opencode.json:/root/.config/opencode/oh-my-opencode.json
+
+      # ----- 全局 skill/command/agent -----
+      - ~/opencode/global/opencode/skill:/root/.config/opencode/skill
+      - ~/opencode/global/opencode/command:/root/.config/opencode/command
+      - ~/opencode/global/opencode/agent:/root/.config/opencode/agent
+
+      # ----- Claude 兼容层 -----
+      - ~/opencode/global/claude:/root/.claude
+
+      # ----- 数据持久化 -----
+      # 服务器实例的运行时数据
+      - ~/.opencode_data/server:/root/.opencode
+
+      # 共享数据（认证、bin）
+      - ~/.local/share/opencode:/root/.local/share/opencode
+
+      # UI 状态持久化（思考过程显示、代码折叠等设置）
+      - ~/.local/state/opencode:/root/.local/state/opencode
+
+      # ----- 缓存（加速启动） -----
+      # Playwright 浏览器缓存
+      - ~/.cache/ms-playwright:/root/.cache/ms-playwright
+
+      # oh-my-opencode 二进制缓存（ast-grep, ripgrep）
+      - ~/.cache/oh-my-opencode:/root/.cache/oh-my-opencode
+
+      # ----- SSH 密钥（Git 操作） -----
+      - ~/.ssh:/root/.ssh:ro
+
+    working_dir: /workspace
+
+    # ===== 健康检查 =====
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4096/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
