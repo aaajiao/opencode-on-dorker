@@ -66,6 +66,8 @@ http://100.64.1.23:4096
 │   ├── server/                         # 服务器模式配置（本目录）
 │   │   ├── docker-compose.yml
 │   │   ├── init.sh
+│   │   ├── status.sh                   # 状态检测脚本
+│   │   ├── tailscale.md                # Tailscale 详细配置指南
 │   │   └── README.md
 │   ├── global/                         # 全局 skill/command/agent
 │   ├── Dockerfile
@@ -99,6 +101,10 @@ http://100.64.1.23:4096
 ### 查看状态
 
 ```bash
+# 快速状态检测（显示所有访问地址）
+./status.sh
+
+# Docker 容器状态
 docker-compose ps
 ```
 
@@ -159,6 +165,8 @@ http://192.168.1.100:4096
 ### 方式二：Tailscale（推荐）
 
 Tailscale 提供安全的点对点加密连接，无需开放端口。
+
+> 详细配置指南见 [tailscale.md](./tailscale.md)，包含 MagicDNS、HTTPS 证书、子网路由等高级功能。
 
 #### Mac Mini 端
 
