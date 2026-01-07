@@ -78,7 +78,7 @@ _ocd_load_env() {
 }
 
 # =========================================
-# 辅助函数：查找空闲端口（macOS 兼容）
+# 辅助函数：查找空闲端口（macOS/zsh 兼容）
 # =========================================
 _ocd_find_free_port() {
   local base_port=${1:-4096}
@@ -99,9 +99,6 @@ _ocd_find_free_port() {
       break
     fi
   done
-
-  # 确保退出时解锁
-  trap 'rm -rf "$lock_file" 2>/dev/null' RETURN
 
   # 一次性获取所有监听端口
   local used_ports
@@ -137,6 +134,9 @@ _ocd_find_free_port() {
   found_port=${found_port:-$base_port}
   echo "$found_port" > "$port_file"
   echo "$found_port"
+
+  # 解锁
+  rm -rf "$lock_file" 2>/dev/null
 }
 
 # =========================================
