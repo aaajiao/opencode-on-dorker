@@ -387,6 +387,133 @@ OpenCode 支持同时运行多个代理。例如，你可以让 `@explore` 搜�
 
 ---
 
+## 🎛️ TUI 界面设置
+
+### 1. 显示设置开关 (通过 `ctrl+p` 命令面板访问)
+
+| 设置 | 描述 | 快捷键 | 持久化 |
+|------|------|--------|--------|
+| Toggle Code Concealment | 切换代码块折叠/展开显示 | `ctrl+x h` | ✅ |
+| Hide/Show Thinking | 切换 AI 思考过程的显示 | 命令面板 | ✅ |
+| Toggle Diff Wrapping | 切换 diff 视图的换行模式（word/none） | 命令面板 | ✅ |
+| Hide/Show Timestamps | 切换消息时间戳显示 | 命令面板 | ✅ |
+| Hide/Show Username | 切换用户名显示 | 可配置 | ✅ |
+| Hide/Show Tool Details | 切换工具执行详情显示 | 可配置 | ✅ |
+| Hide/Show Sidebar | 切换侧边栏显示 | `ctrl+x b` | ✅ |
+| Toggle Scrollbar | 切换滚动条显示 | 可配置 | ✅ |
+| Enable/Disable Animations | 切换 UI 动画效果 | 命令面板 | ✅ |
+
+### 2. Variant Cycle（变体循环）
+
+使用 `ctrl+t` 可以在不同的模型变体（思考层级）之间切换：
+
+**Anthropic 模型**:
+- `high` - 高思考预算（默认）
+- `max` - 最大思考预算
+
+**OpenAI 模型**:
+- `none` → `minimal` → `low` → `medium` → `high` → `xhigh`
+
+**Google 模型**:
+- `low` ↔ `high`
+
+### 3. 自然语言触发思考模式
+
+除了魔法关键词外，你也可以在提示词中使用以下词汇触发：
+
+| 关键词 | 效果 |
+|--------|------|
+| `think` | 启用基础思考 |
+| `think hard` | 启用较深思考（High） |
+| `think harder` | 启用更深思考 |
+| `ultrathink` / `megathink` | 启用最大思考（Max） |
+
+### 4. 完整快捷键参考
+
+**Leader Key**: `ctrl+x`
+
+**核心操作**:
+| 操作 | 快捷键 |
+|------|--------|
+| 退出 | `ctrl+c`, `ctrl+d`, `<leader>q` |
+| 命令面板 | `ctrl+p` |
+| 帮助 | `<leader>h` |
+| 新会话 | `<leader>n` |
+| 会话列表 | `<leader>l` |
+| 导出会话 | `<leader>x` |
+| 压缩会话 | `<leader>c` |
+| 打开编辑器 | `<leader>e` |
+| 查看状态 | `<leader>s` |
+| 主题列表 | `<leader>t` |
+| 模型列表 | `<leader>m` |
+
+**消息导航**:
+| 操作 | 快捷键 |
+|------|--------|
+| 上翻页 | `PageUp` |
+| 下翻页 | `PageDown` |
+| 半页上 | `ctrl+alt+u` |
+| 半页下 | `ctrl+alt+d` |
+| 第一条 | `ctrl+g`, `Home` |
+| 最后一条 | `ctrl+alt+g`, `End` |
+| 复制消息 | `<leader>y` |
+| 撤销消息 | `<leader>u` |
+| 重做消息 | `<leader>r` |
+
+**模型和代理**:
+| 操作 | 快捷键 |
+|------|--------|
+| 切换最近模型 | `F2` / `Shift+F2` |
+| 切换变体 | `ctrl+t` |
+| 代理列表 | `<leader>a` |
+| 切换代理 | `Tab` / `Shift+Tab` |
+
+**会话导航**:
+| 操作 | 快捷键 |
+|------|--------|
+| 下一个子会话 | `<leader>→` |
+| 上一个子会话 | `<leader>←` |
+| 父会话 | `<leader>↑` |
+| 会话时间线 | `<leader>g` |
+
+**输入框（Emacs 风格）**:
+| 操作 | 快捷键 |
+|------|--------|
+| 提交 | `Enter` |
+| 换行 | `Shift+Enter`, `ctrl+Enter`, `alt+Enter`, `ctrl+j` |
+| 行首 | `ctrl+a` |
+| 行尾 | `ctrl+e` |
+| 删除到行尾 | `ctrl+k` |
+| 删除到行首 | `ctrl+u` |
+| 删除前一词 | `ctrl+w` |
+| 清空输入 | `ctrl+c` |
+| 粘贴 | `ctrl+v` |
+| 中断响应 | `Escape` |
+
+### 5. 配置文件中自定义快捷键
+
+你可以在 `opencode.json` 中自定义部分快捷键：
+
+```json
+{
+  "keybinds": {
+    "username_toggle": "<leader>u",
+    "tool_details": "<leader>d",
+    "scrollbar_toggle": "<leader>s"
+  }
+}
+```
+
+### 6. 访问 UI 设置的方式
+
+1. **命令面板** (`ctrl+p`) - 搜索任何设置名称
+2. **快捷键** - 使用配置的快捷键
+3. **斜杠命令** - `/details`, `/theme`, `/status`
+
+> ⚠️ **注意**：所有 UI 设置现在都会持久化保存（存储在 KV store 中），重启后会保留。
+
+---
+
 ## 🪄 魔法关键词
 
 在提示词中包含这些关键词，可以激活特殊模式：
