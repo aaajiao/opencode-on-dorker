@@ -66,15 +66,18 @@ _ocd_load_env() {
   local env_file="$1"
   [[ ! -f "$env_file" ]] && return 0
 
-  while IFS='=' read -r key value; do
-    # 验证 key: 大写字母/数字/下划线，以字母或下划线开头
-    if [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -n "$value" ]]; then
-      # 移除可能的引号
-      value="${value#\"}" && value="${value%\"}"
-      value="${value#\'}" && value="${value%\'}"
-      export "$key=$value"
-    fi
-  done < <(grep -E '^[A-Z_][A-Z0-9_]*=' "$env_file" 2>/dev/null | grep -v -e ';' -e '\$' -e '(' -e ')' -e '"' -e "'")
+  local key value line
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    # 跳过注释和空行
+    [[ -z "$line" || "$line" == \#* ]] && continue
+    # 跳过包含危险字符的行
+    [[ "$line" == *[\;\$\(\)\"\']* ]] && continue
+    # 提取 KEY=VALUE
+    key="${line%%=*}"
+    value="${line#*=}"
+    # 验证 key 格式
+    [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] && [[ -n "$value" ]] && export "$key=$value"
+  done < "$env_file"
 }
 
 # =========================================
