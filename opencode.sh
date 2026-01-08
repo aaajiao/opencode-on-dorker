@@ -11,11 +11,6 @@
 #   ocd -v                # 显示版本号
 
 # =========================================
-# =========================================
-# 加载本地配置文件
-# =========================================
-[[ -f "$HOME/opencode/.ocdrc" ]] && source "$HOME/opencode/.ocdrc"
-
 # 版本号
 # =========================================
 _ocd_version() {
@@ -348,6 +343,9 @@ _ocd_cleanup() {
   fi
 }
 ocd() {
+  # 加载本地配置文件（每次运行时重新加载）
+  [[ -f "$HOME/opencode/.ocdrc" ]] && source "$HOME/opencode/.ocdrc"
+
   local IMAGE_NAME="opencode-bun"
   local ENV_FILE="$HOME/opencode/.env"
   local SHARE_DIR="$HOME/.local/share/opencode"
