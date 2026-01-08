@@ -359,6 +359,7 @@ ocd() {
 
   local REBUILD=0
   local KEEP_CONFIG=0
+  local CLEAN_INSTANCE=0
   local INSTANCE_NAME=""
   local CUSTOM_PORT=""
   local USE_QUOTIO=0
@@ -384,6 +385,7 @@ ocd() {
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
+      --clean) CLEAN_INSTANCE=1; shift ;;
       -h|--help)
         echo "OCD v$(_ocd_version) - OpenCode Docker"
         echo ""
@@ -396,6 +398,7 @@ ocd() {
         echo "  -p <port>         Port number"
         echo "  -w <path>         Workspace root directory"
         echo "  --here            Mount current directory only (legacy mode)"
+        echo "  --clean           Clean current instance config and cache"
         echo "  --https           Enable HTTPS via Tailscale Serve"
         echo "  --awake           Prevent Mac from sleeping while running"
         echo "  --quotio          Enable Quotio provider"
@@ -459,6 +462,21 @@ ocd() {
   local CLIPBOARD_FILE="${INSTANCE_DATA_DIR}/clipboard"
   local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
   local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
+
+  # 清理实例配置
+  if [[ "$CLEAN_INSTANCE" -eq 1 ]]; then
+    echo "🗑️  清理实例 '${INSTANCE_NAME}' 配置..."
+    rm -rf "$INSTANCE_CONFIG_DIR"
+    rm -rf "$INSTANCE_DATA_DIR"
+    rm -rf "$INSTANCE_STORAGE_DIR"
+    echo "✅ 已清理以下目录："
+    echo "   - $INSTANCE_CONFIG_DIR"
+    echo "   - $INSTANCE_DATA_DIR"
+    echo "   - $INSTANCE_STORAGE_DIR"
+    echo ""
+    echo "💡 重新运行 ocd 将生成新配置"
+    return 0
+  fi
 
   # 端口分配
   local PORT
