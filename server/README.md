@@ -1,12 +1,28 @@
-# OCD Server Mode
+# OCD Server Mode (v1.4.0+)
 
 在 Mac Mini 等服务器上后台运行 OCD，从其他设备通过 Web UI 远程访问。
+
+## 多项目工作区
+
+服务器模式天然支持 OCD v1.4.0 的多项目管理：
+
+```
+~/projects/                    # 工作区根目录（挂载到 /workspace）
+├── webapp/                    # 项目 A（有 .git）
+├── api-server/                # 项目 B（有 .git）
+└── mobile-app/                # 项目 C（有 .git）
+```
+
+- 所有 Git 仓库在 Web UI 可见
+- 每个项目的会话独立隔离
+- 项目级 `.claude/todos` 和 `.claude/transcripts` 保留
 
 ## 与本地模式 (ocd) 的区别
 
 | 特性 | 本地模式 (ocd) | 服务器模式 (docker-compose) |
 |------|---------------|---------------------------|
 | 运行方式 | 交互式终端 | 后台守护进程 |
+| 多项目支持 | ✅ 自动检测工作区 | ✅ 挂载整个 ~/projects |
 | 多实例 | ✅ 支持 | ❌ 单实例 |
 | 自动重启 | ❌ | ✅ |
 | URL/通知桥接 | ✅ | ❌ |
@@ -220,9 +236,10 @@ cloudflared tunnel run --url http://localhost:4096 ocd
 
 服务器模式挂载整个 `~/projects` 目录，在 Web UI 中可以切换不同项目：
 
-1. 点击左上角项目名
-2. 选择其他项目目录
-3. 或使用命令 `cd /workspace/project-name`
+1. 使用 OpenCode 原生项目切换（左上角项目选择器）
+2. 或使用命令 `cd /workspace/project-name`
+
+每个项目自动识别为独立 Git 仓库，会话和 todos 按项目隔离。
 
 ## 与本地模式共存
 

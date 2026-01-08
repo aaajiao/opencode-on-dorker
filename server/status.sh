@@ -10,10 +10,12 @@ NC='\033[0m'
 
 CONTAINER_NAME="opencode-server"
 PORT=4096
+VERSION_FILE="$HOME/opencode/VERSION"
+VERSION=$(cat "$VERSION_FILE" 2>/dev/null || echo "unknown")
 
 echo ""
 echo -e "${BOLD}================================${NC}"
-echo -e "${BOLD}  OCD Server Status${NC}"
+echo -e "${BOLD}  OCD Server Status v${VERSION}${NC}"
 echo -e "${BOLD}================================${NC}"
 echo ""
 

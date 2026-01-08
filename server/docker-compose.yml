@@ -1,4 +1,4 @@
-# OCD Server Mode - 远程开发服务器配置
+# OCD Server Mode - 远程开发服务器配置 (v1.4.0+)
 #
 # 用途：在 Mac Mini 等服务器上后台运行 OCD，从其他设备远程访问
 #
@@ -9,6 +9,11 @@
 # 访问：
 #   - 局域网：http://<mac-mini-ip>:4096
 #   - Tailscale：http://<tailscale-ip>:4096
+#
+# 工作区模式：
+#   - 挂载整个 ~/projects 到 /workspace
+#   - Web UI 可切换不同项目
+#   - 每个 Git 仓库独立隔离会话
 
 services:
   opencode:
@@ -51,8 +56,9 @@ services:
 
     # ===== 挂载卷 =====
     volumes:
-      # ----- 工作目录 -----
-      # 你的项目根目录，容器内通过 /workspace/project-name 访问
+      # ----- 工作区目录（多项目模式） -----
+      # 整个工作区挂载到 /workspace，支持 OpenCode 原生多项目管理
+      # 例如：~/projects/webapp、~/projects/api 都可在 Web UI 切换
       - ~/projects:/workspace
 
       # ----- 配置文件 -----

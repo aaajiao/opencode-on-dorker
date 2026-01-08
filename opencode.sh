@@ -267,6 +267,17 @@ _ocd_handle_clipboard() {
 }
 
 # =========================================
+# 辅助函数：获取 Tailscale IP（远程访问）
+# =========================================
+_ocd_get_tailscale_ip() {
+  command -v tailscale &>/dev/null || return 1
+  local ts_status
+  ts_status=$(tailscale status --json 2>/dev/null | grep -o '"BackendState":"[^"]*"' | cut -d'"' -f4 || echo "")
+  [[ "$ts_status" != "Running" ]] && return 1
+  tailscale ip -4 2>/dev/null
+}
+
+# =========================================
 # 辅助函数：启动 Watcher（自动选择最优方式）
 # =========================================
 _ocd_start_watcher() {
@@ -660,8 +671,12 @@ EOFOMOCONFIG
 
   docker rm -f "$CONTAINER_NAME" 2>/dev/null
 
+  local TAILSCALE_IP
+  TAILSCALE_IP=$(_ocd_get_tailscale_ip)
+
   echo ""
   echo "🚀 OCD v$(_ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  [[ -n "$TAILSCALE_IP" ]] && echo "   └─ 📱 远程: http://${TAILSCALE_IP}:${PORT}"
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
   [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
   echo ""
