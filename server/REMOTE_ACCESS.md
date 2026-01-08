@@ -74,6 +74,22 @@ tailscale ip -4
 tailscale status
 ```
 
+## HTTPS 模式
+
+使用 `--https` 参数启动，自动获取 Tailscale 证书：
+
+```bash
+ocd -p 4096 --https
+```
+
+输出：
+```
+🚀 OCD v1.4.0 │ myproject │ http://localhost:4096
+   └─ 🔒 HTTPS: https://mac-mini.tail1234.ts.net
+```
+
+手机访问 HTTPS 地址即可，更安全。退出 ocd 时自动关闭 HTTPS 服务。
+
 ## 安全说明
 
 - Tailscale 使用端到端加密

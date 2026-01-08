@@ -313,12 +313,18 @@ _ocd_start_watcher() {
 _OCD_WATCHER_PID=""
 
 # =========================================
-# 辅助函数：清理 Watcher 进程
+# 辅助函数：清理 Watcher 进程和 Tailscale Serve
 # =========================================
+_OCD_HTTPS_ENABLED=""
+
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
     kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
+  fi
+  if [[ -n "$_OCD_HTTPS_ENABLED" ]]; then
+    tailscale serve off &>/dev/null
+    _OCD_HTTPS_ENABLED=""
   fi
 }
 
@@ -334,6 +340,7 @@ ocd() {
   local USE_QUOTIO=0
   local CUSTOM_WORKSPACE=""
   local USE_HERE=0
+  local USE_HTTPS=0
 
   trap '_ocd_cleanup' INT TERM HUP
 
@@ -346,6 +353,7 @@ ocd() {
       -r) REBUILD=1; shift ;;
       --keep) KEEP_CONFIG=1; shift ;;
       --quotio) USE_QUOTIO=1; shift ;;
+      --https) USE_HTTPS=1; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
@@ -362,6 +370,7 @@ ocd() {
         echo "  -p <port>         Port number"
         echo "  -w <path>         Workspace root directory"
         echo "  --here            Mount current directory only (legacy mode)"
+        echo "  --https           Enable HTTPS via Tailscale Serve"
         echo "  --quotio          Enable Quotio provider"
         echo "  -h, --help        Show this help"
         echo ""
@@ -674,9 +683,24 @@ EOFOMOCONFIG
   local TAILSCALE_IP
   TAILSCALE_IP=$(_ocd_get_tailscale_ip)
 
+  local TS_HOSTNAME=""
+  if [[ "$USE_HTTPS" -eq 1 ]]; then
+    if command -v tailscale &>/dev/null; then
+      TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//')
+      if [[ -n "$TS_HOSTNAME" ]]; then
+        tailscale serve --bg https / http://localhost:${PORT} &>/dev/null
+        _OCD_HTTPS_ENABLED=1
+      fi
+    fi
+  fi
+
   echo ""
   echo "🚀 OCD v$(_ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
-  [[ -n "$TAILSCALE_IP" ]] && echo "   └─ 📱 远程: http://${TAILSCALE_IP}:${PORT}"
+  if [[ -n "$TS_HOSTNAME" && "$USE_HTTPS" -eq 1 ]]; then
+    echo "   └─ 🔒 HTTPS: https://${TS_HOSTNAME}"
+  elif [[ -n "$TAILSCALE_IP" ]]; then
+    echo "   └─ 📱 远程: http://${TAILSCALE_IP}:${PORT}"
+  fi
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
   [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
   echo ""
