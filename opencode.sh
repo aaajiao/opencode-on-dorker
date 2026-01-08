@@ -49,6 +49,67 @@ _ocd_sanitize_name() {
 }
 
 # =========================================
+# 辅助函数：查找工作区根目录
+# 逻辑：向上查找 .git，返回其父目录的父目录
+# 例如：~/projects/webapp/src → ~/projects
+# =========================================
+_ocd_find_workspace_root() {
+  local current_dir="$1"
+  local found_git=""
+  local dir="$current_dir"
+  
+  while [[ "$dir" != "/" && "$dir" != "$HOME" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      found_git="$dir"
+      break
+    fi
+    dir="$(dirname "$dir")"
+  done
+  
+  if [[ -n "$found_git" ]]; then
+    dirname "$found_git"
+  elif [[ -n "${OCD_WORKSPACE:-}" ]]; then
+    echo "${OCD_WORKSPACE/#\~/$HOME}"
+  else
+    echo "$current_dir"
+  fi
+}
+
+# =========================================
+# 辅助函数：计算相对路径
+# =========================================
+_ocd_get_relative_path() {
+  local base="$1"
+  local target="$2"
+  
+  if [[ "$target" == "$base" ]]; then
+    echo ""
+  elif [[ "$target" == "$base"/* ]]; then
+    echo "${target#$base/}"
+  else
+    echo ""
+  fi
+}
+
+# =========================================
+# 辅助函数：查找当前项目目录（包含 .git 的目录）
+# =========================================
+_ocd_find_project_dir() {
+  local current_dir="$1"
+  local dir="$current_dir"
+  
+  while [[ "$dir" != "/" && "$dir" != "$HOME" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir="$(dirname "$dir")"
+  done
+  
+  echo "$current_dir"
+}
+
+# =========================================
 # 辅助函数：首次运行依赖提示
 # =========================================
 _ocd_check_dependencies() {
@@ -260,8 +321,9 @@ ocd() {
   local INSTANCE_NAME=""
   local CUSTOM_PORT=""
   local USE_QUOTIO=0
+  local CUSTOM_WORKSPACE=""
+  local USE_HERE=0
 
-  # 设置清理 trap（使用全局函数）
   trap '_ocd_cleanup' INT TERM HUP
 
   while [[ $# -gt 0 ]]; do
@@ -275,13 +337,52 @@ ocd() {
       --quotio) USE_QUOTIO=1; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
+      -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
+      --here) USE_HERE=1; shift ;;
+      -h|--help)
+        echo "OCD v$(_ocd_version) - OpenCode Docker"
+        echo ""
+        echo "Usage: ocd [options]"
+        echo ""
+        echo "Options:"
+        echo "  -v, --version     Show version"
+        echo "  -r                Rebuild image (add --keep to preserve config)"
+        echo "  -n <name>         Instance name"
+        echo "  -p <port>         Port number"
+        echo "  -w <path>         Workspace root directory"
+        echo "  --here            Mount current directory only (legacy mode)"
+        echo "  --quotio          Enable Quotio provider"
+        echo "  -h, --help        Show this help"
+        echo ""
+        echo "Environment:"
+        echo "  OCD_WORKSPACE     Default workspace root directory"
+        return 0
+        ;;
       *) break ;;
     esac
   done
 
-  # 默认实例名 = 当前目录名（清理后）
+  local CURRENT_DIR="$(pwd)"
+  local WORKSPACE_ROOT=""
+  local START_DIR=""
+  local PROJECT_DIR=""
+
+  if [[ "$USE_HERE" -eq 1 ]]; then
+    WORKSPACE_ROOT="$CURRENT_DIR"
+    START_DIR=""
+    PROJECT_DIR="$CURRENT_DIR"
+  elif [[ -n "$CUSTOM_WORKSPACE" ]]; then
+    WORKSPACE_ROOT="${CUSTOM_WORKSPACE/#\~/$HOME}"
+    START_DIR=$(_ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
+    PROJECT_DIR=$(_ocd_find_project_dir "$CURRENT_DIR")
+  else
+    WORKSPACE_ROOT=$(_ocd_find_workspace_root "$CURRENT_DIR")
+    START_DIR=$(_ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
+    PROJECT_DIR=$(_ocd_find_project_dir "$CURRENT_DIR")
+  fi
+
   if [[ -z "$INSTANCE_NAME" ]]; then
-    INSTANCE_NAME=$(_ocd_sanitize_name "$(basename "$(pwd)")")
+    INSTANCE_NAME=$(_ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
   fi
 
   # 容器名
@@ -562,20 +663,17 @@ EOFOMOCONFIG
   echo ""
   echo "🚀 OCD v$(_ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
+  [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
   echo ""
 
-  # 全局配置目录
   local GLOBAL_OPENCODE="$HOME/opencode/global/opencode"
   local GLOBAL_CLAUDE="$HOME/opencode/global/claude"
-  
-  # 项目 Claude 数据目录
-  local PROJECT_CLAUDE="$(pwd)/.claude"
-
-  # Playwright/Patchright 缓存目录（持久化浏览器）
+  local PROJECT_CLAUDE="${PROJECT_DIR}/.claude"
   local PLAYWRIGHT_CACHE="$HOME/.cache/ms-playwright"
-  mkdir -p "$PLAYWRIGHT_CACHE"
 
-  # Docker 挂载运行
+  mkdir -p "$PLAYWRIGHT_CACHE"
+  mkdir -p "$PROJECT_CLAUDE"/{todos,transcripts} 2>/dev/null || true
+
   docker run -it --rm \
     --name "$CONTAINER_NAME" \
     --network host \
@@ -584,7 +682,8 @@ EOFOMOCONFIG
     -e TZ=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC") \
     -e BROWSER=/usr/bin/xdg-open \
     -e EXA_API_KEY="${EXA_API_KEY:-}" \
-    -v "$(pwd):/workspace" \
+    -e OCD_START_DIR="${START_DIR}" \
+    -v "${WORKSPACE_ROOT}:/workspace" \
     -v "${INSTANCE_DATA_DIR}:/root/.opencode" \
     -v "${SHARE_DIR}/auth.json:/root/.local/share/opencode/auth.json" \
     -v "${SHARE_DIR}/bin:/root/.local/share/opencode/bin" \
