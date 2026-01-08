@@ -14,11 +14,11 @@ cd ~/opencode/server
 ### 1. Mac 安装 Tailscale
 
 ```bash
-brew install tailscale
-tailscale up
+# 安装 App 版本（推荐，更稳定）
+brew install --cask tailscale
 ```
 
-首次运行会打开浏览器登录，使用 Google/GitHub/Apple 账号即可。
+安装后打开应用程序里的 Tailscale，菜单栏会出现图标，点击登录即可。
 
 ### 2. 手机/iPad 安装 Tailscale
 
@@ -36,6 +36,21 @@ Mac 上启动 OCD 后，查看启动信息：
 ```
 
 在手机 Safari 中输入远程地址即可。
+
+## 固定端口（推荐）
+
+默认情况下 ocd 会自动分配端口，每次可能不同。固定端口后手机可以收藏地址：
+
+```bash
+# 方法一：每次手动指定
+ocd -p 4096
+
+# 方法二：设置默认端口（一劳永逸）
+echo 'alias ocd="ocd -p 4096"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+设置后手机收藏 `http://100.x.x.x:4096`，地址永远不变。
 
 ## 常见问题
 
