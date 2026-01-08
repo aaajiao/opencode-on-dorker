@@ -39,25 +39,13 @@ docker run -it --rm --network host opencode-bun bash
 ├── Dockerfile                        # Container image
 ├── .env                              # API keys (KEY=VALUE only!)
 ├── .ocdrc                            # Local config (workspace whitelist)
-├── VERSION
-├── docs/                             # Documentation
-│   ├── ROADMAP.md
-│   ├── TOOLS.md
-│   └── OPENCODE_CONFIG_GUIDE.md
-├── server/                           # Remote server deployment
-│   ├── README.md
-│   └── REMOTE_ACCESS.md
 ├── global/
 │   ├── opencode/{skill,command,agent}/   # Global OpenCode config
 │   └── claude/{skills,settings.json}     # Claude compat config
-└── scripts/                          # Utility scripts
 
 # Runtime directories (auto-created on Mac host)
-~/.config/opencode/<instance>/        # Instance config
-~/.opencode_data/<instance>/          # Instance data (IPC files)
-~/.local/share/opencode/              # Shared auth, bin, storage
-~/.local/state/opencode/              # KV store (UI settings)
-~/.cache/oh-my-opencode/              # Binary cache
+~/.config/opencode/<instance>/        # Instance config (persisted)
+~/.cache/opencode/                    # Plugin cache (shared)
 ```
 
 **Config naming**: OpenCode = singular (`skill/`), Claude compat = plural (`skills/`)
@@ -120,15 +108,18 @@ GITHUB_TOKEN=ghp_xxxx
 | Host | Container | Purpose |
 |------|-----------|---------|
 | `$(pwd)` or workspace | `/workspace` | Project files |
+| `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config (full dir) |
+| `~/.cache/opencode` | `/root/.cache/opencode` | Plugin cache |
 | `~/.opencode_data/<instance>` | `/root/.opencode` | IPC (notifications, URLs) |
-| `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config |
 | `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI settings (KV store) |
 | `~/opencode/global/opencode/` | `/root/.config/opencode/{skill,command,agent}` | Global config |
 | `~/opencode/global/claude/` | `/root/.claude/` | Claude compat |
 
+**Mount order matters**: Instance config dir mounted first, then global subdirs overlay.
+
 ## IPC (Container → Mac)
 
-- **Notifications**: `notify "Title" "Message"` → writes to `/root/.opencode/notifications`
+- **Notifications**: `notify "Title" "Message"` → `/root/.opencode/notifications`
 - **URLs**: writes to `/root/.opencode/open_url` → host watcher calls `open`
 - **Clipboard**: writes to `/root/.opencode/clipboard` → host watcher calls `pbcopy`
 
@@ -140,6 +131,7 @@ GITHUB_TOKEN=ghp_xxxx
 4. **OAuth fails**: Ensure `--network host` is used
 5. **Skills not loading**: Check directory naming (singular vs plural)
 6. **Port conflict**: `rm ~/.config/opencode/.port.lock`
+7. **MCP connection issues**: Check `~/.cache/opencode/` is mounted (plugin cache)
 
 ## Testing Workflow
 
@@ -148,7 +140,7 @@ GITHUB_TOKEN=ghp_xxxx
 # 2. Exit container: exit
 # 3. Reload shell: exec zsh
 # 4. Restart: ocd
-# 5. Verify: ls -la /root/.claude/
+# 5. Verify: ls -la /root/.config/opencode/
 ```
 
 ## CLI Reference
@@ -170,9 +162,9 @@ ocd -v                      # Show version
 ## Workspace Whitelist (.ocdrc)
 
 ```bash
-# ~/opencode/.ocdrc
+# ~/opencode/.ocdrc - reloaded on every ocd invocation
 OCD_ALLOWED_WORKSPACES="$HOME/opencode:$HOME/projects"
 ```
 
 When set, OCD blocks access to directories not in the whitelist.
-Use `--here` or `-w` to bypass.
+Use `--here` or `-w` to bypass. Supports `$HOME` and `~` expansion.
