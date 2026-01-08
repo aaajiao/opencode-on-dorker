@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+# bin/ocd - OCD 主入口
+# 用法: ocd [options]
+
+set -euo pipefail
+
+OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
+
+# 加载模块
+source "$OCD_ROOT/lib/core.sh"
+source "$OCD_ROOT/lib/port.sh"
+source "$OCD_ROOT/lib/workspace.sh"
+source "$OCD_ROOT/lib/watcher.sh"
+source "$OCD_ROOT/lib/config.sh"
+source "$OCD_ROOT/lib/docker.sh"
+
+# =========================================
+# 全局变量
+# =========================================
+IMAGE_NAME="opencode-bun"
+ENV_FILE="$OCD_ROOT/.env"
+SHARE_DIR="$HOME/.local/share/opencode"
+
+_OCD_WATCHER_PID=""
+_OCD_HTTPS_ENABLED=""
+_OCD_CAFFEINATE_PID=""
+
+# =========================================
+# 清理函数
+# =========================================
+_ocd_cleanup() {
+  if [[ -n "$_OCD_WATCHER_PID" ]]; then
+    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
+    _OCD_WATCHER_PID=""
+  fi
+  if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
+    kill "$_OCD_CAFFEINATE_PID" 2>/dev/null
+    _OCD_CAFFEINATE_PID=""
+  fi
+  if [[ -n "$_OCD_HTTPS_ENABLED" ]]; then
+    tailscale serve --https=443 off &>/dev/null
+    _OCD_HTTPS_ENABLED=""
+  fi
+}
+
+# =========================================
+# 主函数
+# =========================================
+main() {
+  # 加载本地配置
+  [[ -f "$OCD_ROOT/.ocdrc" ]] && source "$OCD_ROOT/.ocdrc"
+
+  local REBUILD=0 KEEP_CONFIG=0 CLEAN_INSTANCE=0
+  local INSTANCE_NAME="" CUSTOM_PORT=""
+  local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
+  local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
+
+  trap '_ocd_cleanup' INT TERM HUP
+
+  # 解析参数
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      -v|--version) echo "OCD v$(ocd_version)"; return 0 ;;
+      -r) REBUILD=1; shift ;;
+      --keep) KEEP_CONFIG=1; shift ;;
+      --quotio) USE_QUOTIO=1; shift ;;
+      --https) USE_HTTPS=1; shift ;;
+      --awake) USE_AWAKE=1; shift ;;
+      -n) INSTANCE_NAME="$2"; shift 2 ;;
+      -p) CUSTOM_PORT="$2"; shift 2 ;;
+      -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
+      --here) USE_HERE=1; shift ;;
+      --clean) CLEAN_INSTANCE=1; shift ;;
+      -h|--help)
+        cat << EOF
+OCD v$(ocd_version) - OpenCode Docker
+
+Usage: ocd [options]
+
+Options:
+  -v, --version     Show version
+  -r                Rebuild image (add --keep to preserve config)
+  -n <name>         Instance name
+  -p <port>         Port number
+  -w <path>         Workspace root directory
+  --here            Mount current directory only
+  --clean           Clean current instance config and cache
+  --https           Enable HTTPS via Tailscale Serve
+  --awake           Prevent Mac from sleeping
+  --quotio          Enable Quotio provider
+  -h, --help        Show this help
+EOF
+        return 0
+        ;;
+      *) break ;;
+    esac
+  done
+
+  # 工作区检测
+  local CURRENT_DIR WORKSPACE_ROOT START_DIR PROJECT_DIR
+  CURRENT_DIR="$(pwd)"
+
+  if [[ "$USE_HERE" -eq 1 ]]; then
+    WORKSPACE_ROOT="$CURRENT_DIR"
+    START_DIR=""
+    PROJECT_DIR="$CURRENT_DIR"
+  elif [[ -n "$CUSTOM_WORKSPACE" ]]; then
+    WORKSPACE_ROOT="${CUSTOM_WORKSPACE/#\~/$HOME}"
+    START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
+    PROJECT_DIR=$(ocd_find_project_dir "$CURRENT_DIR")
+  else
+    WORKSPACE_ROOT=$(ocd_find_workspace_root "$CURRENT_DIR")
+    if [[ "$WORKSPACE_ROOT" == BLOCKED:* ]]; then
+      ocd_error "工作区 ${WORKSPACE_ROOT#BLOCKED:} 不在白名单内"
+      ocd_info "允许的工作区: $OCD_ALLOWED_WORKSPACES"
+      return 1
+    fi
+    START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
+    PROJECT_DIR=$(ocd_find_project_dir "$CURRENT_DIR")
+  fi
+
+  # 实例名
+  [[ -z "$INSTANCE_NAME" ]] && INSTANCE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
+
+  local CONTAINER_NAME="opencode-${INSTANCE_NAME}"
+  local INSTANCE_CONFIG_DIR="$HOME/.config/opencode/${INSTANCE_NAME}"
+  local INSTANCE_DATA_DIR="$HOME/.opencode_data/${INSTANCE_NAME}"
+  local INSTANCE_STORAGE_DIR="${SHARE_DIR}/storage/${INSTANCE_NAME}"
+  local STATE_DIR="$HOME/.local/state/opencode"
+  local OMO_BIN_CACHE="$HOME/.cache/oh-my-opencode"
+
+  # 清理实例
+  if [[ "$CLEAN_INSTANCE" -eq 1 ]]; then
+    echo "🗑️  清理实例 '${INSTANCE_NAME}' 配置..."
+    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_DATA_DIR" "$INSTANCE_STORAGE_DIR"
+    ocd_success "已清理配置，重新运行 ocd 将生成新配置"
+    return 0
+  fi
+
+  # 端口分配
+  local PORT
+  PORT="${CUSTOM_PORT:-$(ocd_find_free_port 4096)}"
+
+  # 加载版本
+  ocd_load_versions
+
+  # 镜像构建
+  if [[ "$REBUILD" -eq 1 ]]; then
+    ocd_remove_image "$IMAGE_NAME"
+    [[ "$KEEP_CONFIG" -eq 0 ]] && rm -rf "$HOME/.config/opencode" "$HOME/.opencode_data"
+    rm -rf "$HOME/.cache/opencode/node_modules"
+    ocd_build_image "$IMAGE_NAME" 1
+  elif ! ocd_image_exists "$IMAGE_NAME"; then
+    ocd_build_image "$IMAGE_NAME" 0
+  fi
+
+  # 依赖检查
+  ocd_check_dependencies
+
+  # 初始化配置
+  ocd_init_global
+  ocd_init_project "$(pwd)"
+  mkdir -p "$INSTANCE_DATA_DIR" "$INSTANCE_CONFIG_DIR" "$SHARE_DIR/bin"
+  mkdir -p "$INSTANCE_STORAGE_DIR" "$STATE_DIR" "$OMO_BIN_CACHE/bin"
+  touch "$SHARE_DIR/auth.json" 2>/dev/null || true
+
+  # 加载环境变量
+  ocd_load_env "$ENV_FILE"
+
+  # 生成配置文件
+  local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
+  local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
+
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "📝 生成 opencode.json..."
+    ocd_generate_opencode_config "$CONFIG_FILE" "$PORT" "$USE_QUOTIO"
+  else
+    ocd_update_config_port "$CONFIG_FILE" "$PORT"
+  fi
+
+  if [[ ! -f "$OMO_CONFIG_FILE" ]]; then
+    echo "📝 生成 oh-my-opencode.json..."
+    ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
+  fi
+
+  # IPC 文件
+  local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
+  local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
+  local CLIPBOARD_FILE="${INSTANCE_DATA_DIR}/clipboard"
+  : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
+
+  # 启动 Watcher
+  _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
+  disown "$_OCD_WATCHER_PID" 2>/dev/null
+
+  # Tailscale HTTPS
+  local TS_HOSTNAME=""
+  if [[ "$USE_HTTPS" -eq 1 ]] && command -v tailscale &>/dev/null; then
+    TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//')
+    if [[ -n "$TS_HOSTNAME" ]]; then
+      tailscale serve --bg https / "http://localhost:${PORT}" &>/dev/null
+      _OCD_HTTPS_ENABLED=1
+    fi
+  fi
+
+  # 启动信息
+  echo ""
+  echo "🚀 OCD v$(ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  local TAILSCALE_IP
+  TAILSCALE_IP=$(ocd_get_tailscale_ip || echo "")
+  [[ -n "$TS_HOSTNAME" && "$USE_HTTPS" -eq 1 ]] && echo "   └─ 🔒 HTTPS: https://${TS_HOSTNAME}"
+  [[ -z "$TS_HOSTNAME" && -n "$TAILSCALE_IP" ]] && echo "   └─ 📱 远程: http://${TAILSCALE_IP}:${PORT}"
+  [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
+  [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
+  [[ "$USE_AWAKE" -eq 1 ]] && echo "   └─ ☕ 防休眠已启用"
+  echo ""
+
+  # 防休眠
+  if [[ "$USE_AWAKE" -eq 1 ]]; then
+    caffeinate -i -w $$ &
+    _OCD_CAFFEINATE_PID=$!
+  fi
+
+  # 运行容器
+  ocd_run_container "$CONTAINER_NAME" "$IMAGE_NAME" "$WORKSPACE_ROOT" "$INSTANCE_NAME" "$START_DIR" "$ENV_FILE" "$@"
+
+  # 清理
+  _ocd_cleanup
+}
+
+main "$@"

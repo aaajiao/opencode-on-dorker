@@ -1,0 +1,233 @@
+#!/usr/bin/env bash
+# lib/config.sh - 配置生成模块
+
+# =========================================
+# 渲染模板（替换占位符）
+# =========================================
+ocd_render_template() {
+  local template="$1"
+  shift
+  local content
+  content=$(cat "$template")
+
+  # 替换所有传入的变量
+  while [[ $# -gt 0 ]]; do
+    local key="$1"
+    local value="$2"
+    content="${content//__${key}__/$value}"
+    shift 2
+  done
+
+  echo "$content"
+}
+
+# =========================================
+# 生成 opencode.json
+# =========================================
+ocd_generate_opencode_config() {
+  local output_file="$1"
+  local port="$2"
+  local use_quotio="${3:-0}"
+
+  # 版本变量
+  local omo_ver="${OH_MY_OPENCODE_VERSION:-2.14.0}"
+  local auth_ver="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
+  local pw_ver="${PLAYWRIGHT_MCP_VERSION:-0.0.54}"
+  local exa_ver="${EXA_MCP_VERSION:-3.1.3}"
+  local exa_key="${EXA_API_KEY:-}"
+
+  # 基础配置
+  local config
+  config=$(cat << EOF
+{
+  "\$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-opus-4-5",
+  "plugin": [
+    "oh-my-opencode@${omo_ver}",
+    "opencode-antigravity-auth@${auth_ver}"
+  ],
+  "server": {
+    "port": ${port},
+    "hostname": "0.0.0.0"
+  },
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@playwright/mcp@${pw_ver}", "--headless"],
+      "enabled": true
+    },
+    "exa": {
+      "type": "local",
+      "command": ["npx", "-y", "exa-mcp-server@${exa_ver}"],
+      "timeout": 60000,
+      "enabled": false,
+      "environment": {
+        "EXA_API_KEY": "${exa_key}"
+      }
+    }
+  }
+EOF
+)
+
+  # Quotio provider（条件添加）
+  if [[ "$use_quotio" -eq 1 ]]; then
+    local quotio_key="${QUOTIO_API_KEY:-}"
+    local quotio_url="${QUOTIO_BASE_URL:-http://localhost:8317/v1}"
+    config+=$(cat << EOF
+,
+  "provider": {
+    "quotio": {
+      "name": "Quotio",
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "apiKey": "${quotio_key}",
+        "baseURL": "${quotio_url}"
+      },
+      "models": {
+        "gemini-claude-sonnet-4-5": {
+          "name": "Claude Sonnet 4.5",
+          "limit": { "context": 200000, "output": 64000 }
+        },
+        "gemini-claude-opus-4-5-thinking": {
+          "name": "Claude Opus 4.5 Thinking",
+          "limit": { "context": 200000, "output": 64000 },
+          "reasoning": true,
+          "options": { "thinking": { "type": "enabled", "budgetTokens": 10000 } }
+        },
+        "gemini-3-pro-preview": {
+          "name": "Gemini 3 Pro Preview",
+          "limit": { "context": 1048576, "output": 65536 }
+        },
+        "gemini-3-flash-preview": {
+          "name": "Gemini 3 Flash Preview",
+          "limit": { "context": 1048576, "output": 65536 }
+        },
+        "gpt-5.2": {
+          "name": "GPT 5.2",
+          "limit": { "context": 400000, "output": 32768 },
+          "reasoning": true,
+          "options": { "reasoning": { "effort": "medium" } }
+        }
+      }
+    }
+  }
+EOF
+)
+  fi
+
+  config+=$'\n}'
+
+  echo "$config" > "$output_file"
+}
+
+# =========================================
+# 生成 oh-my-opencode.json
+# =========================================
+ocd_generate_omo_config() {
+  local output_file="$1"
+  local use_quotio="${2:-0}"
+
+  local agents_config
+  if [[ "$use_quotio" -eq 1 ]]; then
+    agents_config='{
+    "Planner-Sisyphus": { "model": "anthropic/claude-opus-4-5" },
+    "frontend-ui-ux-engineer": { "model": "quotio/gemini-3-pro-preview" },
+    "document-writer": { "model": "quotio/gemini-3-pro-preview" },
+    "multimodal-looker": { "model": "quotio/gemini-3-flash-preview" }
+  }'
+  else
+    agents_config='{
+    "Planner-Sisyphus": { "model": "anthropic/claude-opus-4-5" }
+  }'
+  fi
+
+  cat > "$output_file" << EOF
+{
+  "\$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "google_auth": false,
+  "disabled_mcps": [],
+  "disabled_hooks": [],
+  "agents": ${agents_config}
+}
+EOF
+}
+
+# =========================================
+# 更新配置端口
+# =========================================
+ocd_update_config_port() {
+  local config_file="$1"
+  local port="$2"
+
+  if command -v jq &>/dev/null; then
+    local tmp_file
+    tmp_file=$(mktemp) && \
+    jq --argjson port "$port" '.server.port = $port' "$config_file" > "$tmp_file" && \
+    mv "$tmp_file" "$config_file" || rm -f "$tmp_file"
+  else
+    sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${port}|g" "$config_file"
+    rm -f "${config_file}.bak"
+  fi
+}
+
+# =========================================
+# 初始化全局配置目录
+# =========================================
+ocd_init_global() {
+  local global_dir="$HOME/opencode/global"
+
+  # OpenCode 原生全局配置（单数目录名）
+  mkdir -p "$global_dir/opencode"/{skill,command,agent}
+
+  # Claude 兼容层全局配置（复数目录名）
+  mkdir -p "$global_dir/claude"/{skills,commands,agents,rules}
+
+  # 默认配置文件
+  [[ ! -f "$global_dir/claude/settings.json" ]] && echo '{}' > "$global_dir/claude/settings.json"
+  [[ ! -f "$global_dir/claude/.mcp.json" ]] && echo '{"mcpServers":{}}' > "$global_dir/claude/.mcp.json"
+
+  # 默认 remind skill
+  if [[ ! -f "$global_dir/claude/skills/remind/SKILL.md" ]]; then
+    mkdir -p "$global_dir/claude/skills/remind"
+    cat > "$global_dir/claude/skills/remind/SKILL.md" << 'EOF'
+---
+name: task-completion-notify
+description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
+---
+
+# 任务完成通知
+
+当用户要求任务完成后提醒时，在任务结束后发送 macOS 桌面通知。
+
+## 触发方式
+
+用户说"完成后提醒我"、"做完通知我"等类似表达。
+
+## 行为规则
+
+1. 记住用户请求了完成提醒
+2. 正常执行用户的任务
+3. 任务完成后调用：`notify "OpenCode" "任务已完成"`
+4. 任务失败时通知应说明失败
+
+## 通知命令
+
+```bash
+notify "标题" "内容"
+```
+EOF
+  fi
+}
+
+# =========================================
+# 初始化项目配置目录
+# =========================================
+ocd_init_project() {
+  local project_dir="$1"
+
+  # OpenCode 原生项目配置（单数目录名）
+  mkdir -p "$project_dir/.opencode"/{skill,command,agent}
+
+  # Claude 兼容层项目配置 + 会话数据
+  mkdir -p "$project_dir/.claude"/{todos,transcripts}
+}
