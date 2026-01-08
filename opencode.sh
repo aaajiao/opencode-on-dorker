@@ -742,8 +742,10 @@ EOFOMOCONFIG
   local GLOBAL_CLAUDE="$HOME/opencode/global/claude"
   local PROJECT_CLAUDE="${PROJECT_DIR}/.claude"
   local PLAYWRIGHT_CACHE="$HOME/.cache/ms-playwright"
+  local OPENCODE_CACHE="$HOME/.cache/opencode"
 
   mkdir -p "$PLAYWRIGHT_CACHE"
+  mkdir -p "$OPENCODE_CACHE"
   mkdir -p "$PROJECT_CLAUDE"/{todos,transcripts} 2>/dev/null || true
 
   if [[ "$USE_AWAKE" -eq 1 ]]; then
@@ -767,14 +769,14 @@ EOFOMOCONFIG
     -v "${SHARE_DIR}/bin:/root/.local/share/opencode/bin" \
     -v "${INSTANCE_STORAGE_DIR}:/root/.local/share/opencode/storage" \
     -v "${PLAYWRIGHT_CACHE}:/root/.cache/ms-playwright" \
+    -v "${OPENCODE_CACHE}:/root/.cache/opencode" \
     -v "${STATE_DIR}:/root/.local/state/opencode" \
     -v "${OMO_BIN_CACHE}:/root/.cache/oh-my-opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
+    -v "${INSTANCE_CONFIG_DIR}:/root/.config/opencode" \
     -v "${GLOBAL_OPENCODE}/skill:/root/.config/opencode/skill" \
     -v "${GLOBAL_OPENCODE}/command:/root/.config/opencode/command" \
     -v "${GLOBAL_OPENCODE}/agent:/root/.config/opencode/agent" \
-    -v "${INSTANCE_CONFIG_DIR}/opencode.json:/root/.config/opencode/opencode.json" \
-    -v "${INSTANCE_CONFIG_DIR}/oh-my-opencode.json:/root/.config/opencode/oh-my-opencode.json" \
     -v "${GLOBAL_CLAUDE}:/root/.claude" \
     -v "${PROJECT_CLAUDE}/todos:/root/.claude/todos" \
     -v "${PROJECT_CLAUDE}/transcripts:/root/.claude/transcripts" \
