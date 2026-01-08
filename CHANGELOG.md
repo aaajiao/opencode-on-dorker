@@ -31,7 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ast-grep and ripgrep binaries are now cached, avoiding re-download on each startup
 
 ### Added
-- Complete TUI interface settings documentation in TOOLS.md
+- Complete TUI interface settings documentation in `docs/TOOLS.md`
 - New mount: `~/.local/state/opencode/` for KV store persistence
 - New mount: `~/.cache/oh-my-opencode/` for binary cache
 
