@@ -1,6 +1,6 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
