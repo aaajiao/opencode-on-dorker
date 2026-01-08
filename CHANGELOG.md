@@ -8,17 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.0] - 2026-01-08
 
 ### Added
-- **Remote Access**: Access OCD Web UI from iPhone/iPad via Tailscale
-  - Auto-detect Tailscale IP and display remote access URL on startup
-  - `--https` flag for automatic HTTPS via Tailscale Serve
-  - `--awake` flag to prevent Mac from sleeping (uses `caffeinate`)
-- **Workspace Whitelist**: `.ocdrc` config file to restrict allowed workspaces
-  - Blocks access to sensitive directories (e.g., `~/.ssh`, `/etc`)
-  - `--here` and `-w` bypass whitelist for trusted use cases
-- New documentation: `server/REMOTE_ACCESS.md`
+- **远程访问**: 通过 Tailscale 从 iPhone/iPad 访问 OCD Web UI
+  - 启动时自动检测 Tailscale IP 并显示远程访问 URL
+  - `--https` 参数：自动通过 Tailscale Serve 启用 HTTPS
+  - `--awake` 参数：防止 Mac 休眠（使用 `caffeinate`）
+- **工作区白名单**: `.ocdrc` 配置文件限制允许访问的工作区
+  - 阻止访问敏感目录（如 `~/.ssh`、`/etc`）
+  - `--here` 和 `-w` 可绕过白名单（用于可信场景）
+- 新增文档：`server/REMOTE_ACCESS.md`
 
 ### Changed
-- Startup output now shows remote access URL when Tailscale is connected:
+- 启动输出现在显示远程访问 URL（当 Tailscale 已连接时）：
   ```
   🚀 OCD v1.4.0 │ projects │ http://localhost:4096
      └─ 📱 远程: http://100.x.x.x:4096
