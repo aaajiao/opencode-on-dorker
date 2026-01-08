@@ -25,7 +25,7 @@ zsh -n opencode.sh                                # Zsh syntax check
 shellcheck opencode.sh                            # Lint (if available)
 
 # JSON validation
-jq . ~/.config/opencode/opencode.json             # OpenCode config
+jq . ~/.config/opencode/opencode.json             # Validate config
 
 # Test container
 docker run -it --rm --network host opencode-bun bash
@@ -33,29 +33,34 @@ docker run -it --rm --network host opencode-bun bash
 
 ## File Structure
 
-**Two config systems** (different naming conventions):
-- **OpenCode Native**: singular dirs (`skill/`, `command/`, `agent/`)
-- **Claude Compat**: plural dirs (`skills/`, `commands/`, `agents/`, `rules/`)
-
 ```
 ~/opencode/
 ├── opencode.sh                       # Main shell function (ocd command)
 ├── Dockerfile                        # Container image
 ├── .env                              # API keys (KEY=VALUE only!)
+├── .ocdrc                            # Local config (workspace whitelist)
 ├── VERSION
+├── docs/                             # Documentation
+│   ├── ROADMAP.md
+│   ├── TOOLS.md
+│   └── OPENCODE_CONFIG_GUIDE.md
+├── server/                           # Remote server deployment
+│   ├── README.md
+│   └── REMOTE_ACCESS.md
 ├── global/
 │   ├── opencode/{skill,command,agent}/   # Global OpenCode config
-│   └── claude/{skills,settings.json,.mcp.json}  # Global Claude compat
-├── scripts/migrate-sessions.sh
-└── .opencode/{skill,command,agent}/  # Project-level config
+│   └── claude/{skills,settings.json}     # Claude compat config
+└── scripts/                          # Utility scripts
 
-# Runtime directories (auto-created)
+# Runtime directories (auto-created on Mac host)
 ~/.config/opencode/<instance>/        # Instance config
-~/.opencode_data/<instance>/          # Instance data
+~/.opencode_data/<instance>/          # Instance data (IPC files)
 ~/.local/share/opencode/              # Shared auth, bin, storage
-~/.local/state/opencode/              # KV store (UI settings persistence)
-~/.cache/oh-my-opencode/              # Binary cache (ast-grep, ripgrep)
+~/.local/state/opencode/              # KV store (UI settings)
+~/.cache/oh-my-opencode/              # Binary cache
 ```
+
+**Config naming**: OpenCode = singular (`skill/`), Claude compat = plural (`skills/`)
 
 ## Code Style Guidelines
 
@@ -72,7 +77,6 @@ docker run -it --rm --network host opencode-bun bash
 local VAR_NAME="value"         # Local scope
 CONSTANT_NAME="value"          # No local for constants
 ${VAR:-default}                # Default value
-# NEVER use `local` inside subshells ( ... ) &
 
 # Functions
 _ocd_function_name() {
@@ -85,6 +89,8 @@ command -v cmd &>/dev/null     # Check command exists
 || true                        # Allow failure
 ```
 
+**NEVER**: Use `local` inside subshells `( ... ) &`
+
 ### Dockerfile
 
 - Chinese comments: `# 第N步：描述`
@@ -94,13 +100,11 @@ command -v cmd &>/dev/null     # Check command exists
 
 ### JSON Configuration
 
-- 2-space indentation
-- Use `$schema` when available
-- No trailing commas
+- 2-space indentation, use `$schema` when available, no trailing commas
 
 ### Environment Variables (.env)
 
-**CRITICAL**: Pure `KEY=VALUE` format only - no export, no quotes, no comments
+**CRITICAL**: Pure `KEY=VALUE` format only
 ```bash
 # WRONG
 export API_KEY="sk-xxx"
@@ -111,23 +115,22 @@ API_KEY=sk-xxx
 GITHUB_TOKEN=ghp_xxxx
 ```
 
-## Key Architecture
-
-### Container Mounts
+## Container Mounts
 
 | Host | Container | Purpose |
 |------|-----------|---------|
-| `$(pwd)` | `/workspace` | Project files |
-| `~/.opencode_data/<instance>` | `/root/.opencode` | Instance data |
+| `$(pwd)` or workspace | `/workspace` | Project files |
+| `~/.opencode_data/<instance>` | `/root/.opencode` | IPC (notifications, URLs) |
 | `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config |
-| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI 设置持久化 (KV store) |
-| `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | ast-grep/ripgrep 二进制缓存 |
+| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI settings (KV store) |
 | `~/opencode/global/opencode/` | `/root/.config/opencode/{skill,command,agent}` | Global config |
-| `~/opencode/global/claude/` | `/root/.claude/` | Claude compat config |
+| `~/opencode/global/claude/` | `/root/.claude/` | Claude compat |
 
-### IPC (Container → Mac)
+## IPC (Container → Mac)
+
 - **Notifications**: `notify "Title" "Message"` → writes to `/root/.opencode/notifications`
 - **URLs**: writes to `/root/.opencode/open_url` → host watcher calls `open`
+- **Clipboard**: writes to `/root/.opencode/clipboard` → host watcher calls `pbcopy`
 
 ## Common Pitfalls
 
@@ -148,12 +151,28 @@ GITHUB_TOKEN=ghp_xxxx
 # 5. Verify: ls -la /root/.claude/
 ```
 
-## Multi-Instance Commands
+## CLI Reference
 
 ```bash
 ocd                         # Auto: instance = dir name, port = auto
 ocd -n myapp                # Custom instance name
 ocd -p 5000                 # Custom port
+ocd -w ~/projects           # Specify workspace directory
+ocd --here                  # Mount only current directory (no workspace detection)
+ocd --https                 # Enable HTTPS via Tailscale Serve
+ocd --awake                 # Prevent Mac from sleeping
 ocd --quotio                # Enable Quotio provider
+ocd -r                      # Rebuild image + reset config
+ocd -r --keep               # Rebuild image + keep config
 ocd -v                      # Show version
 ```
+
+## Workspace Whitelist (.ocdrc)
+
+```bash
+# ~/opencode/.ocdrc
+OCD_ALLOWED_WORKSPACES="$HOME/opencode:$HOME/projects"
+```
+
+When set, OCD blocks access to directories not in the whitelist.
+Use `--here` or `-w` to bypass.
