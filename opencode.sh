@@ -68,7 +68,12 @@ _ocd_find_workspace_root() {
   
   local workspace_root=""
   if [[ -n "$found_git" ]]; then
-    workspace_root="$(dirname "$found_git")"
+    local parent_dir="$(dirname "$found_git")"
+    if [[ "$parent_dir" == "$HOME" ]]; then
+      workspace_root="$found_git"
+    else
+      workspace_root="$parent_dir"
+    fi
   elif [[ -n "${OCD_WORKSPACE:-}" ]]; then
     workspace_root="${OCD_WORKSPACE/#\~/$HOME}"
   else
