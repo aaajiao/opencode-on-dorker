@@ -81,7 +81,9 @@ _ocd_find_workspace_root() {
   fi
   
   if [[ -n "${OCD_ALLOWED_WORKSPACES:-}" ]]; then
-    if [[ ":${OCD_ALLOWED_WORKSPACES}:" == *":${workspace_root}:"* ]]; then
+    local expanded_whitelist="${OCD_ALLOWED_WORKSPACES//\$HOME/$HOME}"
+    expanded_whitelist="${expanded_whitelist//\~/$HOME}"
+    if [[ ":${expanded_whitelist}:" == *":${workspace_root}:"* ]]; then
       echo "$workspace_root"
       return 0
     else
