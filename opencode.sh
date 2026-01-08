@@ -11,6 +11,11 @@
 #   ocd -v                # 显示版本号
 
 # =========================================
+# =========================================
+# 加载本地配置文件
+# =========================================
+[[ -f "$HOME/opencode/.ocdrc" ]] && source "$HOME/opencode/.ocdrc"
+
 # 版本号
 # =========================================
 _ocd_version() {
@@ -66,18 +71,28 @@ _ocd_find_workspace_root() {
     dir="$(dirname "$dir")"
   done
   
+  local workspace_root=""
   if [[ -n "$found_git" ]]; then
-    dirname "$found_git"
+    workspace_root="$(dirname "$found_git")"
   elif [[ -n "${OCD_WORKSPACE:-}" ]]; then
-    echo "${OCD_WORKSPACE/#\~/$HOME}"
+    workspace_root="${OCD_WORKSPACE/#\~/$HOME}"
   else
-    echo "$current_dir"
+    workspace_root="$current_dir"
   fi
+  
+  if [[ -n "${OCD_ALLOWED_WORKSPACES:-}" ]]; then
+    if [[ ":${OCD_ALLOWED_WORKSPACES}:" == *":${workspace_root}:"* ]]; then
+      echo "$workspace_root"
+      return 0
+    else
+      echo "BLOCKED:$workspace_root"
+      return 1
+    fi
+  fi
+  
+  echo "$workspace_root"
 }
 
-# =========================================
-# 辅助函数：计算相对路径
-# =========================================
 _ocd_get_relative_path() {
   local base="$1"
   local target="$2"
@@ -316,18 +331,22 @@ _OCD_WATCHER_PID=""
 # 辅助函数：清理 Watcher 进程和 Tailscale Serve
 # =========================================
 _OCD_HTTPS_ENABLED=""
+_OCD_CAFFEINATE_PID=""
 
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
     kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
+  if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
+    kill "$_OCD_CAFFEINATE_PID" 2>/dev/null
+    _OCD_CAFFEINATE_PID=""
+  fi
   if [[ -n "$_OCD_HTTPS_ENABLED" ]]; then
-    tailscale serve off &>/dev/null
+    tailscale serve --https=443 off &>/dev/null
     _OCD_HTTPS_ENABLED=""
   fi
 }
-
 ocd() {
   local IMAGE_NAME="opencode-bun"
   local ENV_FILE="$HOME/opencode/.env"
@@ -341,6 +360,7 @@ ocd() {
   local CUSTOM_WORKSPACE=""
   local USE_HERE=0
   local USE_HTTPS=0
+  local USE_AWAKE=0
 
   trap '_ocd_cleanup' INT TERM HUP
 
@@ -354,6 +374,7 @@ ocd() {
       --keep) KEEP_CONFIG=1; shift ;;
       --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
+      --awake) USE_AWAKE=1; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
@@ -371,6 +392,7 @@ ocd() {
         echo "  -w <path>         Workspace root directory"
         echo "  --here            Mount current directory only (legacy mode)"
         echo "  --https           Enable HTTPS via Tailscale Serve"
+        echo "  --awake           Prevent Mac from sleeping while running"
         echo "  --quotio          Enable Quotio provider"
         echo "  -h, --help        Show this help"
         echo ""
@@ -397,6 +419,11 @@ ocd() {
     PROJECT_DIR=$(_ocd_find_project_dir "$CURRENT_DIR")
   else
     WORKSPACE_ROOT=$(_ocd_find_workspace_root "$CURRENT_DIR")
+    if [[ "$WORKSPACE_ROOT" == BLOCKED:* ]]; then
+      echo "❌ 工作区 ${WORKSPACE_ROOT#BLOCKED:} 不在白名单内"
+      echo "   允许的工作区: $OCD_ALLOWED_WORKSPACES"
+      return 1
+    fi
     START_DIR=$(_ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
     PROJECT_DIR=$(_ocd_find_project_dir "$CURRENT_DIR")
   fi
@@ -703,6 +730,7 @@ EOFOMOCONFIG
   fi
   [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
   [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
+  [[ "$USE_AWAKE" -eq 1 ]] && echo "   └─ ☕ 防休眠已启用"
   echo ""
 
   local GLOBAL_OPENCODE="$HOME/opencode/global/opencode"
@@ -712,6 +740,12 @@ EOFOMOCONFIG
 
   mkdir -p "$PLAYWRIGHT_CACHE"
   mkdir -p "$PROJECT_CLAUDE"/{todos,transcripts} 2>/dev/null || true
+
+  if [[ "$USE_AWAKE" -eq 1 ]]; then
+    caffeinate -i -w $$ &
+    _OCD_CAFFEINATE_PID=$!
+  fi
+
 
   docker run -it --rm \
     --name "$CONTAINER_NAME" \
