@@ -200,6 +200,9 @@ ocd
 | `--here` | 只挂载当前目录 | `ocd --here` |
 | `-r` | 重建镜像 + 清理配置 | `ocd -r` |
 | `-r --keep` | 重建镜像 + 保留配置 | `ocd -r --keep` |
+| `--clean` | 清理当前实例配置和缓存 | `ocd --clean` |
+| `--https` | 通过 Tailscale Serve 启用 HTTPS | `ocd --https` |
+| `--awake` | 防止 Mac 进入休眠 | `ocd --awake` |
 | `--quotio` | 启用 Quotio 代理 | `ocd --quotio` |
 
 ### 环境变量

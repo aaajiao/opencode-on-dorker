@@ -4,7 +4,7 @@
 
 ---
 
-## 📊 当前状态 (v1.3.1)
+## 📊 当前状态 (v1.4.0+)
 
 ### 已实现功能
 - ✅ 多实例支持，自动端口分配
@@ -15,6 +15,18 @@
 - ✅ oh-my-opencode 多 Agent 协作
 - ✅ MCP 服务器 (Playwright, Exa, Context7)
 - ✅ 完整文档 (TOOLS.md, OPENCODE_CONFIG_GUIDE.md)
+
+### v2.0 重构完成 ✨
+- ✅ **模块化架构**：873 行单文件拆分为 6 个独立模块
+  - `lib/core.sh` - 版本/日志/环境变量
+  - `lib/port.sh` - 端口管理（原子锁）
+  - `lib/workspace.sh` - 工作区检测
+  - `lib/watcher.sh` - IPC 文件监控
+  - `lib/config.sh` - 配置生成
+  - `lib/docker.sh` - Docker 操作
+- ✅ **CI/CD 流水线**：GitHub Actions (ShellCheck + Bats + Docker)
+- ✅ **单元测试**：27 个测试覆盖核心模块
+- ✅ **新入口点**：`bin/ocd`（旧版 `opencode.sh` 兼容保留）
 
 ---
 
