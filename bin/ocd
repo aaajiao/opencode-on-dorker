@@ -30,8 +30,15 @@ _OCD_URL_FILE=""
 # =========================================
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
-    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
-    wait "$_OCD_WATCHER_PID" 2>/dev/null  # 等待 Watcher 完全退出
+    # 先尝试杀死进程组
+    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null
+    # 再杀死单个进程（备用）
+    kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
+    # 等待一小段时间让进程退出
+    sleep 0.1
+    # 强制杀死（如果 TERM 无效）
+    kill -KILL -- -"$_OCD_WATCHER_PID" 2>/dev/null
+    kill -KILL "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
   # 清空 IPC 文件防止残留数据
@@ -273,9 +280,8 @@ EOF
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
   _OCD_URL_FILE="$URL_FILE"  # 保存到全局变量供 cleanup 使用
 
-  # 启动 Watcher
+  # 启动 Watcher（不使用 disown，保持进程可控以便 cleanup 能正确杀死）
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
-  disown "$_OCD_WATCHER_PID" 2>/dev/null || true
 
   # Tailscale HTTPS
   local TS_HOSTNAME=""
