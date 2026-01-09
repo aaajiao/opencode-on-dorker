@@ -238,7 +238,18 @@ ocd_update_omo_agents() {
   local config_file="$1"
 
   [[ ! -f "$config_file" ]] && return 0
-  ! command -v jq &>/dev/null && return 0
+
+  # 检查 jq 依赖
+  if ! command -v jq &>/dev/null; then
+    # 无 jq 时使用 sed 备用方案（仅更新 Planner 模型）
+    if [[ -n "$PLANNER_MODEL" ]]; then
+      sed -i.bak -E "s|(\"Planner-Sisyphus\"[^}]*\"model\":[[:space:]]*\")[^\"]+(\")|\1${PLANNER_MODEL}\2|" "$config_file"
+      rm -f "${config_file}.bak"
+    fi
+    echo "⚠️  Agent 模型更新受限（无 jq），仅更新 Planner 模型" >&2
+    echo "   安装 jq 以启用完整功能: brew install jq" >&2
+    return 0
+  fi
 
   local tmp_file
   tmp_file=$(mktemp)
