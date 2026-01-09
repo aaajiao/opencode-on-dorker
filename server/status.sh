@@ -108,7 +108,6 @@ fi
 
 check_port
 check_tailscale
-TAILSCALE_OK=$?
 
 echo ""
 echo -e "${BLUE}[Access URLs]${NC}"

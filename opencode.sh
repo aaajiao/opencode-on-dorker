@@ -68,7 +68,8 @@ _ocd_find_workspace_root() {
   
   local workspace_root=""
   if [[ -n "$found_git" ]]; then
-    local parent_dir="$(dirname "$found_git")"
+    local parent_dir
+    parent_dir="$(dirname "$found_git")"
     if [[ "$parent_dir" == "$HOME" ]]; then
       workspace_root="$found_git"
     else
@@ -412,7 +413,8 @@ ocd() {
     esac
   done
 
-  local CURRENT_DIR="$(pwd)"
+  local CURRENT_DIR
+  CURRENT_DIR="$(pwd)"
   local WORKSPACE_ROOT=""
   local START_DIR=""
   local PROJECT_DIR=""
@@ -777,7 +779,7 @@ EOFOMOCONFIG
     --network host \
     --env-file "$ENV_FILE" \
     -e TERM=xterm-256color \
-    -e TZ=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC") \
+    -e "TZ=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC")" \
     -e BROWSER=/usr/bin/xdg-open \
     -e EXA_API_KEY="${EXA_API_KEY:-}" \
     -e OCD_START_DIR="${START_DIR}" \
