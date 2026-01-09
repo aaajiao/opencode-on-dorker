@@ -92,7 +92,7 @@ ocd_run_container() {
 
   # 确保目录存在
   mkdir -p "$instance_config_dir" "$instance_data_dir" "$instance_state_dir"
-  mkdir -p "$playwright_cache" "$opencode_cache" "$omo_bin_cache"
+  mkdir -p "$playwright_cache" "$opencode_cache" "$omo_bin_cache/bin"
   mkdir -p "$OCD_DATA_HOME/bin" "$global_opencode"/{skill,command,agent} "$global_claude"
   mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
