@@ -48,7 +48,8 @@ needs_migration() {
   if [[ -d "$V2_CONFIG_ROOT" ]]; then
     for dir in "$V2_CONFIG_ROOT"/*/; do
       [[ ! -d "$dir" ]] && continue
-      local name=$(basename "$dir")
+      local name
+      name=$(basename "$dir")
       # 跳过 v3.0 的 instances 目录和其他非实例目录
       [[ "$name" == "instances" || "$name" == "global" ]] && continue
       # 检查是否是实例目录（包含 opencode.json）
@@ -77,12 +78,14 @@ needs_migration() {
 # 获取所有 v2.0 实例名
 get_v2_instances() {
   local instances=()
+  local name
+  local found
 
   # 从 config 目录获取
   if [[ -d "$V2_CONFIG_ROOT" ]]; then
     for dir in "$V2_CONFIG_ROOT"/*/; do
       [[ ! -d "$dir" ]] && continue
-      local name=$(basename "$dir")
+      name=$(basename "$dir")
       [[ "$name" == "instances" || "$name" == "global" ]] && continue
       [[ -f "${dir}opencode.json" ]] && instances+=("$name")
     done
@@ -92,9 +95,9 @@ get_v2_instances() {
   if [[ -d "$V2_STORAGE_ROOT" ]]; then
     for dir in "$V2_STORAGE_ROOT"/*/; do
       [[ ! -d "$dir" ]] && continue
-      local name=$(basename "$dir")
+      name=$(basename "$dir")
       # 检查是否已在列表中
-      local found=0
+      found=0
       for inst in "${instances[@]:-}"; do
         [[ "$inst" == "$name" ]] && found=1 && break
       done
@@ -106,8 +109,8 @@ get_v2_instances() {
   if [[ -d "$V2_DATA_ROOT" ]]; then
     for dir in "$V2_DATA_ROOT"/*/; do
       [[ ! -d "$dir" ]] && continue
-      local name=$(basename "$dir")
-      local found=0
+      name=$(basename "$dir")
+      found=0
       for inst in "${instances[@]:-}"; do
         [[ "$inst" == "$name" ]] && found=1 && break
       done
