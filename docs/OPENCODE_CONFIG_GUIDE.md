@@ -728,6 +728,48 @@ OpenCode 支持**两套配置系统**，目录命名规则不同：
 
 ---
 
+## 模型配置 (models.conf)
+
+通过 `~/opencode/models.conf` 配置文件自定义默认模型，无需修改代码。
+
+### 文件格式
+
+```bash
+# ~/opencode/models.conf
+# 纯 KEY=VALUE 格式，支持注释
+
+# 主模型 (opencode.json)
+MAIN_MODEL=anthropic/claude-opus-4-5
+
+# Agent 模型 (oh-my-opencode.json)
+PLANNER_MODEL=anthropic/claude-opus-4-5
+ORACLE_MODEL=openai/gpt-5.2
+DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
+FRONTEND_MODEL=quotio/gemini-3-pro-preview
+MULTIMODAL_MODEL=quotio/gemini-3-flash-preview
+```
+
+### 支持的变量
+
+| 变量 | 说明 | 默认值 |
+|------|------|--------|
+| `MAIN_MODEL` | OpenCode 主模型 | `anthropic/claude-opus-4-5` |
+| `PLANNER_MODEL` | Planner-Sisyphus 模型 | `anthropic/claude-opus-4-5` |
+| `ORACLE_MODEL` | Oracle 技术顾问模型 | （无，需手动设置） |
+| `DOCUMENT_WRITER_MODEL` | 文档写作模型 | Quotio 模式下 `quotio/gemini-3-pro-preview` |
+| `FRONTEND_MODEL` | 前端专家模型 | Quotio 模式下 `quotio/gemini-3-pro-preview` |
+| `MULTIMODAL_MODEL` | 多媒体分析模型 | Quotio 模式下 `quotio/gemini-3-flash-preview` |
+
+### 生效方式
+
+修改 `models.conf` 后，需要重新生成配置文件：
+
+```bash
+ocd --clean && ocd
+```
+
+---
+
 ## 版本锁定 (versions.lock)
 
 可以创建 `~/opencode/versions.lock` 文件来锁定依赖版本，确保构建可复现。
