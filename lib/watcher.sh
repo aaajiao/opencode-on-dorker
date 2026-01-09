@@ -6,21 +6,14 @@
 # =========================================
 ocd_handle_url() {
   local url_file="$1"
-  local lock_file="${url_file}.lock"
+  [[ ! -s "$url_file" ]] && return
 
-  # 获取排他锁，防止多 Watcher 竞态
-  exec 200>"$lock_file"
-  flock -n 200 || return  # 获取不到锁就跳过
-
-  [[ ! -s "$url_file" ]] && { exec 200>&-; return; }
-
-  # 只读取第一行（配合覆盖式写入，每次只有一个 URL）
+  # 读取第一行 URL 并打开
   local url
   read -r url < "$url_file"
   [[ -n "$url" ]] && open "$url"
 
   : > "$url_file"
-  exec 200>&-  # 释放锁
 }
 
 # =========================================
