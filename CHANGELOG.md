@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-01-09
+
+### Changed
+- **XDG Base Directory 规范**: 配置/数据/状态/缓存分离
+  - `~/.config/opencode/` - 配置目录（可版本控制）
+  - `~/.local/share/opencode/` - 数据目录（需备份）
+  - `~/.local/state/opencode/` - 状态目录（可重建）
+  - `~/.cache/opencode/` - 缓存目录（可删除）
+- **项目级 Claude 兼容层配置**: 条件覆盖挂载
+  - 只有当 `.claude/skills/` 等目录存在且非空时才覆盖全局配置
+  - 不再自动创建项目级 Claude 配置目录
+
+### Added
+- **测试套件扩展**: 105 个测试，80% 函数覆盖率
+  - `tests/bats/docker.bats` - Docker 挂载逻辑测试
+  - `tests/bats/init.bats` - 初始化函数测试
+  - `tests/bats/sete.bats` - set -e 兼容性测试
+  - `tests/bats/watcher.bats` - IPC/进程管理测试
+  - `tests/bats/core_extended.bats` - 核心函数扩展测试
+  - `tests/bats/workspace_extended.bats` - 工作区函数扩展测试
+- **CI 改进**
+  - Homebrew 缓存加速
+  - fswatch 安装（完整 watcher 测试）
+  - GitHub Actions 测试摘要
+  - 并发控制（取消旧运行）
+  - Docker Buildx 缓存
+- **文档**: `docs/MOUNT_MAPPING.md` Mac ↔ Docker 目录映射参考
+
+### Fixed
+- **fswatch 进程泄漏**: 启动时清理旧 fswatch 进程，防止多窗口 bug
+- **set -e 兼容性**: 多处 `((count++))` → `$((count + 1))`
+- **oh-my-opencode/bin 目录**: 预创建防止 ENOENT 错误
+- **非可写目录处理**: `ocd_init_project` 静默处理错误
+
+### Removed
+- `REFACTOR_EXEC.md` - 重构执行文档（已完成）
+
 ## [2.0.0] - 2026-01-09
 
 ### Changed
@@ -33,7 +70,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation
 - 更新 README 添加架构章节
 - 更新 docs/ 目录反映新的模块化结构
-- 新增 `REFACTOR_EXEC.md` 重构执行方案
 
 ## [1.4.0] - 2026-01-08
 

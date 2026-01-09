@@ -211,7 +211,8 @@ ocd_update_config_port() {
 # 初始化全局配置目录
 # =========================================
 ocd_init_global() {
-  local global_dir="$HOME/opencode/global"
+  # v3.0: 使用 XDG 标准路径
+  local global_dir="$OCD_CONFIG_GLOBAL"
 
   # OpenCode 原生全局配置（单数目录名）
   mkdir -p "$global_dir/opencode"/{skill,command,agent}
@@ -219,41 +220,11 @@ ocd_init_global() {
   # Claude 兼容层全局配置（复数目录名）
   mkdir -p "$global_dir/claude"/{skills,commands,agents,rules}
 
-  # 默认配置文件
+  # 默认配置文件（空）
   [[ ! -f "$global_dir/claude/settings.json" ]] && echo '{}' > "$global_dir/claude/settings.json"
   [[ ! -f "$global_dir/claude/.mcp.json" ]] && echo '{"mcpServers":{}}' > "$global_dir/claude/.mcp.json"
 
-  # 默认 remind skill
-  if [[ ! -f "$global_dir/claude/skills/remind/SKILL.md" ]]; then
-    mkdir -p "$global_dir/claude/skills/remind"
-    cat > "$global_dir/claude/skills/remind/SKILL.md" << 'EOF'
----
-name: task-completion-notify
-description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
----
-
-# 任务完成通知
-
-当用户要求任务完成后提醒时，在任务结束后发送 macOS 桌面通知。
-
-## 触发方式
-
-用户说"完成后提醒我"、"做完通知我"等类似表达。
-
-## 行为规则
-
-1. 记住用户请求了完成提醒
-2. 正常执行用户的任务
-3. 任务完成后调用：`notify "OpenCode" "任务已完成"`
-4. 任务失败时通知应说明失败
-
-## 通知命令
-
-```bash
-notify "标题" "内容"
-```
-EOF
-  fi
+  return 0  # 防止 set -e 因条件判断返回 false 而退出
 }
 
 # =========================================
@@ -263,8 +234,11 @@ ocd_init_project() {
   local project_dir="$1"
 
   # OpenCode 原生项目配置（单数目录名）
-  mkdir -p "$project_dir/.opencode"/{skill,command,agent}
+  # 静默处理不可写目录（如 /nonexistent）
+  mkdir -p "$project_dir/.opencode"/{skill,command,agent} 2>/dev/null || true
 
-  # Claude 兼容层项目配置 + 会话数据
-  mkdir -p "$project_dir/.claude"/{todos,transcripts}
+  # Claude 兼容层会话数据目录
+  # 注意：不自动创建 skills/commands/agents/rules/
+  # 用户需手动创建才会启用项目级覆盖（覆盖全局配置）
+  mkdir -p "$project_dir/.claude"/{todos,transcripts} 2>/dev/null || true
 }

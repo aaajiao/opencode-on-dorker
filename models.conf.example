@@ -17,32 +17,37 @@ MAIN_MODEL=anthropic/claude-opus-4-5
 PLANNER_MODEL=anthropic/claude-opus-4-5
 
 # Oracle - 技术顾问（深度思考、架构设计）
-# 默认未设置，建议设置为推理模型
+# oh-my-opencode 默认未设置，建议设置为推理模型
 # ORACLE_MODEL=openai/gpt-5.2
 
 # Document Writer - 文档写作专家
-# 默认未设置，--quotio 模式下自动使用 quotio/gemini-3-pro-preview
-# DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
+# oh-my-opencode 默认: google/gemini-3-flash-preview
+# DOCUMENT_WRITER_MODEL=google/gemini-3-flash-preview
 
 # Frontend UI/UX Engineer - 前端专家
-# 默认未设置，--quotio 模式下自动使用 quotio/gemini-3-pro-preview
-# FRONTEND_MODEL=quotio/gemini-3-pro-preview
+# oh-my-opencode 默认: google/gemini-3-pro-preview
+# FRONTEND_MODEL=google/gemini-3-pro-preview
 
 # Multimodal Looker - 多媒体分析（PDF、图片、图表）
-# 默认未设置，--quotio 模式下自动使用 quotio/gemini-3-flash-preview
-# MULTIMODAL_MODEL=quotio/gemini-3-flash-preview
+# oh-my-opencode 默认: google/gemini-3-flash
+# MULTIMODAL_MODEL=google/gemini-3-flash
 
 # =========================================
 # 可用模型列表
 # =========================================
 #
 # Anthropic:
-#   - anthropic/claude-opus-4-5      (最强，默认)
+#   - anthropic/claude-opus-4-5      (最强，默认主模型)
 #   - anthropic/claude-sonnet-4-5    (快速)
 #
 # OpenAI:
 #   - openai/gpt-5.2                 (推理)
 #   - openai/gpt-4.1
+#
+# Google:
+#   - google/gemini-3-pro-preview
+#   - google/gemini-3-flash-preview
+#   - google/gemini-3-flash
 #
 # Quotio (需要 --quotio 启动):
 #   - quotio/gemini-claude-opus-4-5-thinking

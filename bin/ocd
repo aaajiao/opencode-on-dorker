@@ -19,20 +19,30 @@ source "$OCD_ROOT/lib/docker.sh"
 # =========================================
 IMAGE_NAME="opencode-bun"
 ENV_FILE="$OCD_ROOT/.env"
-SHARE_DIR="$HOME/.local/share/opencode"
 
 _OCD_WATCHER_PID=""
 _OCD_HTTPS_ENABLED=""
 _OCD_CAFFEINATE_PID=""
+_OCD_URL_FILE=""
 
 # =========================================
 # 清理函数
 # =========================================
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
-    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
+    # 先尝试杀死进程组
+    kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null
+    # 再杀死单个进程（备用）
+    kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
+    # 等待一小段时间让进程退出
+    sleep 0.1
+    # 强制杀死（如果 TERM 无效）
+    kill -KILL -- -"$_OCD_WATCHER_PID" 2>/dev/null
+    kill -KILL "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
+  # 清空 IPC 文件防止残留数据
+  [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]] && : > "$_OCD_URL_FILE"
   if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
     kill "$_OCD_CAFFEINATE_PID" 2>/dev/null
     _OCD_CAFFEINATE_PID=""
@@ -50,7 +60,10 @@ main() {
   # 加载本地配置
   [[ -f "$OCD_ROOT/.ocdrc" ]] && source "$OCD_ROOT/.ocdrc"
 
-  local REBUILD=0 KEEP_CONFIG=0 CLEAN_INSTANCE=0
+  # v2.x → v3.0 自动迁移
+  ocd_auto_migrate
+
+  local REBUILD=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0 MERGE_UP=0
   local INSTANCE_NAME="" CUSTOM_PORT=""
   local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
@@ -62,7 +75,6 @@ main() {
     case "$1" in
       -v|--version) echo "OCD v$(ocd_version)"; return 0 ;;
       -r) REBUILD=1; shift ;;
-      --keep) KEEP_CONFIG=1; shift ;;
       --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
@@ -71,6 +83,8 @@ main() {
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
       --clean) CLEAN_INSTANCE=1; shift ;;
+      --purge) PURGE_INSTANCE=1; shift ;;
+      --merge-up) MERGE_UP=1; shift ;;
       -h|--help)
         cat << EOF
 OCD v$(ocd_version) - OpenCode Docker
@@ -79,12 +93,14 @@ Usage: ocd [options]
 
 Options:
   -v, --version     Show version
-  -r                Rebuild image (add --keep to preserve config)
+  -r                Rebuild image and clear cache
   -n <name>         Instance name
   -p <port>         Port number
   -w <path>         Workspace root directory
   --here            Mount current directory only
-  --clean           Clean current instance config and cache
+  --merge-up        Merge transcripts to parent project (undo --here)
+  --clean           Clean instance config (preserve conversations)
+  --purge           Clean ALL instance data including conversations
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
@@ -95,6 +111,68 @@ EOF
       *) break ;;
     esac
   done
+
+  # --merge-up: 合并 transcripts 到父项目（仅适用于 OCD 用户）
+  if [[ "$MERGE_UP" -eq 1 ]]; then
+    local current_dir current_transcripts
+    current_dir="$(pwd)"
+    current_transcripts="${current_dir}/.claude/transcripts"
+
+    if [[ ! -d "$current_transcripts" ]]; then
+      ocd_error "当前目录没有 .claude/transcripts/"
+      ocd_info "提示: 需要先在此目录通过 ocd --here 使用过 OpenCode"
+      return 1
+    fi
+
+    # 向上查找父项目（优先找 .git 项目，否则用直接父目录）
+    local parent_project
+    parent_project=$(ocd_find_parent_project "$current_dir")
+
+    if [[ -z "$parent_project" ]]; then
+      local direct_parent
+      direct_parent=$(dirname "$current_dir")
+
+      if [[ "$direct_parent" == "$HOME" || "$direct_parent" == "/" ]]; then
+        ocd_error "已在根目录，无法向上合并"
+        return 1
+      fi
+
+      echo "⚠️  未找到父级 git 项目，将合并到直接父目录:"
+      echo "   $direct_parent"
+      read -r -p "   确认? [y/N] " confirm
+      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "已取消"
+        return 0
+      fi
+      parent_project="$direct_parent"
+    fi
+
+    local parent_transcripts="${parent_project}/.claude/transcripts"
+    mkdir -p "$parent_transcripts"
+
+    echo "📦 合并 transcripts..."
+    echo "   从: $current_transcripts"
+    echo "   到: $parent_transcripts"
+
+    # 统计 .jsonl 文件数
+    local count
+    count=$(find "$current_transcripts" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
+
+    if [[ "$count" -gt 0 ]]; then
+      # OCD 用户: cwd 都是 /workspace（容器内路径），无需修改
+      mv "$current_transcripts"/*.jsonl "$parent_transcripts/" 2>/dev/null || true
+      ocd_success "已合并 $count 个文件"
+    else
+      ocd_info "没有需要合并的 .jsonl 文件"
+    fi
+
+    # 清理空目录
+    rmdir "$current_transcripts" 2>/dev/null || true
+    rmdir "${current_dir}/.claude/todos" 2>/dev/null || true
+    rmdir "${current_dir}/.claude" 2>/dev/null && ocd_info "已清理 ${current_dir}/.claude/" || true
+
+    return 0
+  fi
 
   # 工作区检测
   local CURRENT_DIR WORKSPACE_ROOT START_DIR
@@ -120,17 +198,30 @@ EOF
   [[ -z "$INSTANCE_NAME" ]] && INSTANCE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
 
   local CONTAINER_NAME="opencode-${INSTANCE_NAME}"
-  local INSTANCE_CONFIG_DIR="$HOME/.config/opencode/${INSTANCE_NAME}"
-  local INSTANCE_DATA_DIR="$HOME/.opencode_data/${INSTANCE_NAME}"
-  local INSTANCE_STORAGE_DIR="${SHARE_DIR}/storage/${INSTANCE_NAME}"
-  local STATE_DIR="$HOME/.local/state/opencode"
-  local OMO_BIN_CACHE="$HOME/.cache/oh-my-opencode"
+  # XDG 标准路径 (v3.0)
+  local INSTANCE_CONFIG_DIR="$OCD_CONFIG_INSTANCES/${INSTANCE_NAME}"
+  local INSTANCE_DATA_DIR="$OCD_DATA_INSTANCES/${INSTANCE_NAME}"
+  local INSTANCE_STATE_DIR="$OCD_STATE_INSTANCES/${INSTANCE_NAME}"
 
-  # 清理实例
+  # 清理实例（保留对话历史）
   if [[ "$CLEAN_INSTANCE" -eq 1 ]]; then
     echo "🗑️  清理实例 '${INSTANCE_NAME}' 配置..."
-    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_DATA_DIR" "$INSTANCE_STORAGE_DIR"
-    ocd_success "已清理配置，重新运行 ocd 将生成新配置"
+    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_STATE_DIR"
+    ocd_success "已清理配置（对话历史已保留），重新运行 ocd 将生成新配置"
+    return 0
+  fi
+
+  # 完全清理实例（包括对话历史）
+  if [[ "$PURGE_INSTANCE" -eq 1 ]]; then
+    echo "⚠️  完全清理实例 '${INSTANCE_NAME}'..."
+    echo "   将删除: 配置、状态、对话历史"
+    read -r -p "   确认删除? [y/N] " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+      rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_STATE_DIR" "$INSTANCE_DATA_DIR"
+      ocd_success "已完全清理实例 '${INSTANCE_NAME}'"
+    else
+      echo "已取消"
+    fi
     return 0
   fi
 
@@ -145,8 +236,9 @@ EOF
   # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then
     ocd_remove_image "$IMAGE_NAME"
-    [[ "$KEEP_CONFIG" -eq 0 ]] && rm -rf "$HOME/.config/opencode" "$HOME/.opencode_data"
-    rm -rf "$HOME/.cache/opencode/node_modules"
+    # 清理缓存 (与镜像版本相关)
+    echo "🗑️  清理缓存..."
+    rm -rf "$OCD_CACHE_HOME"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
     ocd_build_image "$IMAGE_NAME" 0
@@ -158,14 +250,13 @@ EOF
   # 初始化配置
   ocd_init_global
   ocd_init_project "$(pwd)"
-  mkdir -p "$INSTANCE_DATA_DIR" "$INSTANCE_CONFIG_DIR" "$SHARE_DIR/bin"
-  mkdir -p "$INSTANCE_STORAGE_DIR" "$STATE_DIR" "$OMO_BIN_CACHE/bin"
-  touch "$SHARE_DIR/auth.json" 2>/dev/null || true
+  # 目录创建已移至 lib/docker.sh 中统一处理
 
   # 加载环境变量
   ocd_load_env "$ENV_FILE"
 
   # 生成配置文件
+  mkdir -p "$INSTANCE_CONFIG_DIR"
   local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
   local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
 
@@ -181,22 +272,26 @@ EOF
     ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
   fi
 
-  # IPC 文件
-  local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
-  local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
-  local CLIPBOARD_FILE="${INSTANCE_DATA_DIR}/clipboard"
+  # IPC 文件 (状态目录，与容器内 /root/.opencode 对应)
+  mkdir -p "$INSTANCE_STATE_DIR"
+  local URL_FILE="${INSTANCE_STATE_DIR}/open_url"
+  local NOTIFY_FILE="${INSTANCE_STATE_DIR}/notifications"
+  local CLIPBOARD_FILE="${INSTANCE_STATE_DIR}/clipboard"
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
+  _OCD_URL_FILE="$URL_FILE"  # 保存到全局变量供 cleanup 使用
 
-  # 启动 Watcher
+  # 清理可能泄漏的旧 fswatch 进程（防止多窗口 bug）
+  pkill -f "fswatch.*open_url" 2>/dev/null || true
+
+  # 启动 Watcher（不使用 disown，保持进程可控以便 cleanup 能正确杀死）
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
-  disown "$_OCD_WATCHER_PID" 2>/dev/null
 
   # Tailscale HTTPS
   local TS_HOSTNAME=""
   if [[ "$USE_HTTPS" -eq 1 ]] && command -v tailscale &>/dev/null; then
-    TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//')
+    TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//' || echo "")
     if [[ -n "$TS_HOSTNAME" ]]; then
-      tailscale serve --bg https / "http://localhost:${PORT}" &>/dev/null
+      tailscale serve --bg https / "http://localhost:${PORT}" &>/dev/null || true
       _OCD_HTTPS_ENABLED=1
     fi
   fi

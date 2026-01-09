@@ -8,9 +8,11 @@ ocd_handle_url() {
   local url_file="$1"
   [[ ! -s "$url_file" ]] && return
 
-  while IFS= read -r url; do
-    [[ -n "$url" ]] && open "$url"
-  done < "$url_file"
+  # 读取第一行 URL 并打开
+  local url
+  read -r url < "$url_file"
+  [[ -n "$url" ]] && open "$url"
+
   : > "$url_file"
 }
 
