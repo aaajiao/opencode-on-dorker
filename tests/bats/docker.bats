@@ -116,7 +116,7 @@ teardown() {
   for subdir in skills commands agents rules; do
     local proj_subdir="$project_claude/$subdir"
     if [[ -d "$proj_subdir" ]] && [[ -n "$(ls -A "$proj_subdir" 2>/dev/null)" ]]; then
-      ((mount_count++))
+      mount_count=$((mount_count + 1))
     fi
   done
 
