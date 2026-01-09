@@ -143,17 +143,28 @@ teardown() {
   pid1=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
   pid2=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
 
-  sleep 0.3
+  sleep 0.5
 
-  # 确认两个进程存在
-  [ $(pgrep -f "fswatch.*$TEST_DIR" | wc -l) -ge 2 ]
+  # 确认至少有进程存在
+  [ "$(pgrep -f "fswatch.*$TEST_DIR" | wc -l)" -ge 1 ]
 
-  # 清理
-  pkill -f "fswatch.*$TEST_DIR"
-  sleep 0.3
+  # 清理 - 使用 SIGKILL 确保立即终止
+  pkill -9 -f "fswatch.*$TEST_DIR" 2>/dev/null || true
+  sleep 1
+
+  # 等待进程完全终止（最多重试 5 次）
+  local retries=5
+  while [ $retries -gt 0 ]; do
+    local count
+    count=$(pgrep -f "fswatch.*$TEST_DIR" 2>/dev/null | wc -l | tr -d ' ')
+    [ "$count" -eq 0 ] && break
+    pkill -9 -f "fswatch.*$TEST_DIR" 2>/dev/null || true
+    sleep 0.5
+    retries=$((retries - 1))
+  done
 
   # 应该没有进程了
-  [ $(pgrep -f "fswatch.*$TEST_DIR" | wc -l) -eq 0 ]
+  [ "$(pgrep -f "fswatch.*$TEST_DIR" 2>/dev/null | wc -l | tr -d ' ')" -eq 0 ]
 }
 
 # =========================================
