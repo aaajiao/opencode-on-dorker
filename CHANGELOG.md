@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-01-09
+
+### Changed
+- **模块化架构重构**: 将 873 行单文件 `opencode.sh` 拆分为 6 个独立模块
+  - `lib/core.sh` - 版本、日志、环境变量加载、名称清理
+  - `lib/port.sh` - 端口分配、原子锁机制
+  - `lib/workspace.sh` - 工作区检测、白名单验证
+  - `lib/watcher.sh` - IPC 文件监控（剪贴板/通知/URL）
+  - `lib/config.sh` - 配置文件生成（消除 heredoc 重复）
+  - `lib/docker.sh` - Docker 构建与运行
+- **新入口点**: `bin/ocd` 替代旧版 `opencode.sh`（旧版保留兼容）
+
+### Added
+- **CI/CD 流水线**: GitHub Actions 自动化
+  - ShellCheck 静态分析
+  - Bats 单元测试
+  - Bash 语法检查
+  - Docker 构建验证
+- **单元测试套件**: 27 个测试覆盖核心模块
+  - `tests/bats/core.bats` - 核心模块测试
+  - `tests/bats/port.bats` - 端口模块测试
+  - `tests/bats/workspace.bats` - 工作区测试
+  - `tests/bats/config.bats` - 配置测试
+- **ShellCheck 配置**: `.shellcheckrc` 配置文件
+
+### Documentation
+- 更新 README 添加架构章节
+- 更新 docs/ 目录反映新的模块化结构
+- 新增 `REFACTOR_EXEC.md` 重构执行方案
+
 ## [1.4.0] - 2026-01-08
 
 ### Added
