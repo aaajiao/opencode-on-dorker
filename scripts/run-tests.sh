@@ -75,11 +75,11 @@ run_tests() {
     echo -e "${YELLOW}▶ $name${NC}"
 
     if bats "$test_file"; then
-      ((passed++))
+      passed=$((passed + 1))
     else
-      ((failed++))
+      failed=$((failed + 1))
     fi
-    ((total++))
+    total=$((total + 1))
     echo ""
   done
 
