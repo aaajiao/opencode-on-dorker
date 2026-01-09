@@ -138,8 +138,9 @@ EOF
   local PORT
   PORT="${CUSTOM_PORT:-$(ocd_find_free_port 4096)}"
 
-  # 加载版本
+  # 加载版本和模型配置
   ocd_load_versions
+  ocd_load_models
 
   # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then

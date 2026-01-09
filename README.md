@@ -284,6 +284,8 @@ ultrathink         # 深度思考
 ├── Dockerfile                        # Docker 镜像
 ├── .env                              # 环境变量
 ├── VERSION                           # 版本号
+├── models.conf.example               # 模型配置模板
+├── versions.lock                     # 版本锁定（可选）
 │
 ├── global/
 │   ├── opencode/                     # OpenCode 全局配置
@@ -350,6 +352,41 @@ KEY=$(cmd)            # 不要命令替换
 | `EXA_API_KEY` | Exa AI 密钥 | 否 |
 | `QUOTIO_API_KEY` | Quotio 密钥 | 否 |
 | `QUOTIO_BASE_URL` | Quotio 地址 | 否 |
+
+## 模型配置
+
+通过 `models.conf` 配置文件自定义默认模型，无需修改代码：
+
+```bash
+cp models.conf.example ~/opencode/models.conf
+nano ~/opencode/models.conf
+```
+
+### 配置格式
+
+```bash
+# ~/opencode/models.conf
+
+# 主模型 (opencode.json)
+MAIN_MODEL=anthropic/claude-opus-4-5
+
+# Agent 模型 (oh-my-opencode.json)
+PLANNER_MODEL=anthropic/claude-opus-4-5
+ORACLE_MODEL=openai/gpt-5.2
+DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
+FRONTEND_MODEL=quotio/gemini-3-pro-preview
+MULTIMODAL_MODEL=quotio/gemini-3-flash-preview
+```
+
+### 可用模型
+
+| 前缀 | 来源 | 示例 |
+|------|------|------|
+| `anthropic/` | Anthropic Claude | `anthropic/claude-opus-4-5`, `anthropic/claude-sonnet-4-5` |
+| `openai/` | OpenAI GPT | `openai/gpt-5.2`, `openai/gpt-4.1` |
+| `quotio/` | Quotio 代理 | `quotio/gemini-3-pro-preview`, `quotio/gemini-claude-opus-4-5-thinking` |
+
+> **注意**：修改后需删除实例配置重新生成：`ocd --clean && ocd`
 
 ## macOS 桌面通知
 
