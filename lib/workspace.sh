@@ -87,6 +87,26 @@ ocd_find_project_dir() {
 }
 
 # =========================================
+# 查找父级项目（跳过当前目录）
+# 用于 --merge-up 功能
+# =========================================
+ocd_find_parent_project() {
+  local current_dir="$1"
+  local dir
+  dir=$(dirname "$current_dir")
+
+  while [[ "$dir" != "/" && "$dir" != "$HOME" ]]; do
+    if [[ -d "$dir/.git" ]]; then
+      echo "$dir"
+      return 0
+    fi
+    dir=$(dirname "$dir")
+  done
+
+  echo ""
+}
+
+# =========================================
 # 验证工作区是否在白名单
 # =========================================
 ocd_validate_workspace() {

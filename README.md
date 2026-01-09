@@ -124,6 +124,7 @@ ocd
 | `-p <port>` | 指定端口 | `ocd -p 5000` |
 | `-w <path>` | 指定工作区目录 | `ocd -w ~/projects` |
 | `--here` | 只挂载当前目录 | `ocd --here` |
+| `--merge-up` | 合并 transcripts 到父项目（撤销 --here） | `ocd --merge-up` |
 | `-r` | 重建镜像 + 清理缓存 | `ocd -r` |
 | `--clean` | 清理当前实例配置（保留对话） | `ocd --clean` |
 | `--purge` | 完全清理当前实例（需确认） | `ocd --purge` |
