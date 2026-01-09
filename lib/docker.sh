@@ -80,8 +80,14 @@ ocd_run_container() {
   local opencode_cache="$OCD_CACHE_HOME"
   local global_opencode="$OCD_CONFIG_GLOBAL/opencode"
   local global_claude="$OCD_CONFIG_GLOBAL/claude"
+
+  # 根据实际启动目录确定项目（确保 TUI/WebUI 看到相同的 transcripts）
   local project_dir
-  project_dir=$(ocd_find_project_dir "$workspace_root")
+  if [[ -n "$start_dir" && "$start_dir" != "." ]]; then
+    project_dir=$(ocd_find_project_dir "${workspace_root}/${start_dir}")
+  else
+    project_dir=$(ocd_find_project_dir "$workspace_root")
+  fi
   local project_claude="${project_dir}/.claude"
 
   # 确保目录存在
