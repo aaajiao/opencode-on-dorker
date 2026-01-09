@@ -112,7 +112,7 @@ EOF
     WORKSPACE_ROOT=$(ocd_find_workspace_root "$CURRENT_DIR")
     if [[ "$WORKSPACE_ROOT" == BLOCKED:* ]]; then
       ocd_error "工作区 ${WORKSPACE_ROOT#BLOCKED:} 不在白名单内"
-      ocd_info "允许的工作区: $OCD_ALLOWED_WORKSPACES"
+      ocd_info "允许的工作区: ${OCD_ALLOWED_WORKSPACES:-未设置}"
       return 1
     fi
     START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")

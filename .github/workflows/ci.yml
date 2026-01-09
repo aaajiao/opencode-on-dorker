@@ -31,8 +31,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install bats-core
-        run: brew install bats-core
+      - name: Install dependencies
+        run: brew install bats-core jq
 
       - name: Run tests
         run: bats tests/bats/*.bats
