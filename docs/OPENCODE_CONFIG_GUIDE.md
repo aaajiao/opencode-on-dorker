@@ -80,9 +80,18 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 ├── oh-my-opencode/                    # ast-grep, ripgrep
 └── ms-playwright/                     # 浏览器
 
-<project>/.claude/                     # 项目级对话（跟随项目）
+<project>/.opencode/                   # 项目级配置（OpenCode 原生）
+├── skill/                             # 项目 Skills
+├── command/                           # 项目 Commands
+└── agent/                             # 项目 Agents
+
+<project>/.claude/                     # 项目级对话 + Claude 兼容层
 ├── todos/                             # 任务列表
-└── transcripts/                       # 会话记录
+├── transcripts/                       # 会话记录
+├── skills/                            # 项目 Skills（手动创建）
+├── commands/                          # 项目 Commands（手动创建）
+├── agents/                            # 项目 Agents（手动创建）
+└── rules/                             # 项目 Rules（手动创建）
 ```
 
 ### 2.3 容器内映射
