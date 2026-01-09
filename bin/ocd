@@ -189,7 +189,7 @@ EOF
 
   # 启动 Watcher
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
-  disown "$_OCD_WATCHER_PID" 2>/dev/null
+  disown "$_OCD_WATCHER_PID" 2>/dev/null || true
 
   # Tailscale HTTPS
   local TS_HOSTNAME=""
