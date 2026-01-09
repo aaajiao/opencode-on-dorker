@@ -28,6 +28,49 @@
 - 🧹 **自动清理**：trap 机制确保退出时清理进程
 - 💡 **依赖提示**：首次运行提示安装可选依赖
 
+## 架构
+
+### 模块化设计
+
+OCD 采用模块化架构，将 873 行单文件拆分为 6 个独立模块：
+
+| 模块 | 职责 | 行数 |
+|------|------|------|
+| `lib/core.sh` | 版本、日志、环境加载、名称清理 | ~60 |
+| `lib/port.sh` | 端口分配、原子锁机制 | ~50 |
+| `lib/workspace.sh` | 工作区检测、白名单验证 | ~80 |
+| `lib/watcher.sh` | IPC 文件监控（剪贴板/通知/URL） | ~100 |
+| `lib/config.sh` | 配置文件生成（消除 heredoc 重复） | ~120 |
+| `lib/docker.sh` | Docker 构建与运行 | ~80 |
+
+**优势**：
+- 单一职责，易于维护
+- 可独立测试每个模块
+- 新功能可作为独立模块添加
+
+### CI/CD
+
+项目集成 GitHub Actions 自动化流水线：
+
+```yaml
+# .github/workflows/ci.yml
+jobs:
+  lint:      # ShellCheck 静态分析
+  test:      # Bats 单元测试
+  syntax:    # Bash 语法检查
+  docker:    # Docker 构建验证
+```
+
+本地运行测试：
+
+```bash
+# 安装 bats-core
+brew install bats-core jq
+
+# 运行测试
+bats tests/bats/
+```
+
 ## 快速开始
 
 ### 1. 克隆项目
@@ -52,16 +95,15 @@ GITHUB_TOKEN=ghp_xxxx
 EXA_API_KEY=your-exa-api-key
 ```
 
-### 3. 添加到 PATH
+### 3. 添加 Shell 函数
 
 ```bash
-# 新版（推荐）
+# 添加 bin 目录到 PATH（推荐）
 echo 'export PATH="$HOME/opencode/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
-
-# 或旧版（兼容）
-# echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
 ```
+
+> **旧版兼容**：`opencode.sh` 仍可用，但推荐使用模块化的 `bin/ocd`
 
 ### 4. 首次构建
 
@@ -217,7 +259,25 @@ ultrathink         # 深度思考
 
 ```
 ~/opencode/                           # 配置仓库
-├── opencode.sh                       # Shell 函数（ocd 命令）
+├── bin/
+│   └── ocd                           # 入口脚本（添加到 PATH）
+│
+├── lib/                              # 模块化核心库
+│   ├── core.sh                       # 核心工具（日志、env加载、sanitize）
+│   ├── port.sh                       # 端口管理（原子锁机制）
+│   ├── workspace.sh                  # 工作区检测（git仓库遍历）
+│   ├── watcher.sh                    # IPC监控（剪贴板、通知、URL）
+│   ├── config.sh                     # 配置生成（opencode.json等）
+│   └── docker.sh                     # Docker构建与运行
+│
+├── tests/                            # 测试套件
+│   └── bats/                         # Bats 单元测试
+│       ├── core.bats
+│       ├── port.bats
+│       ├── workspace.bats
+│       └── config.bats
+│
+├── opencode.sh                       # 旧版入口（兼容）
 ├── Dockerfile                        # Docker 镜像
 ├── .env                              # 环境变量
 ├── VERSION                           # 版本号
