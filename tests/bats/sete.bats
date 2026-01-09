@@ -153,12 +153,11 @@ run_with_set_e() {
 # lib/port.sh 函数测试
 # =========================================
 
-@test "set -e: ocd_is_port_in_use with unused port" {
-  # 选择一个不太可能被使用的端口
-  run run_with_set_e ocd_is_port_in_use 59999
-  # 函数返回 1 表示端口未使用，但不应导致 set -e 退出
-  # 因为我们用 run 包装了它
-  true  # 只要脚本能执行到这里就是成功
+@test "set -e: ocd_find_free_port" {
+  run run_with_set_e ocd_find_free_port 4096
+  [ "$status" -eq 0 ]
+  # 应返回一个端口号
+  [[ "$output" =~ ^[0-9]+$ ]]
 }
 
 # =========================================
