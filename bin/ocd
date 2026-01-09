@@ -97,17 +97,15 @@ EOF
   done
 
   # 工作区检测
-  local CURRENT_DIR WORKSPACE_ROOT START_DIR PROJECT_DIR
+  local CURRENT_DIR WORKSPACE_ROOT START_DIR
   CURRENT_DIR="$(pwd)"
 
   if [[ "$USE_HERE" -eq 1 ]]; then
     WORKSPACE_ROOT="$CURRENT_DIR"
     START_DIR=""
-    PROJECT_DIR="$CURRENT_DIR"
   elif [[ -n "$CUSTOM_WORKSPACE" ]]; then
     WORKSPACE_ROOT="${CUSTOM_WORKSPACE/#\~/$HOME}"
     START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
-    PROJECT_DIR=$(ocd_find_project_dir "$CURRENT_DIR")
   else
     WORKSPACE_ROOT=$(ocd_find_workspace_root "$CURRENT_DIR")
     if [[ "$WORKSPACE_ROOT" == BLOCKED:* ]]; then
@@ -116,7 +114,6 @@ EOF
       return 1
     fi
     START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
-    PROJECT_DIR=$(ocd_find_project_dir "$CURRENT_DIR")
   fi
 
   # 实例名

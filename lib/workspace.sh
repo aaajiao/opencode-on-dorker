@@ -62,7 +62,7 @@ ocd_get_relative_path() {
   if [[ "$target" == "$base" ]]; then
     echo ""
   elif [[ "$target" == "$base"/* ]]; then
-    echo "${target#$base/}"
+    echo "${target#"$base"/}"
   else
     echo ""
   fi

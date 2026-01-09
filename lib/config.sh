@@ -161,9 +161,12 @@ ocd_update_config_port() {
 
   if command -v jq &>/dev/null; then
     local tmp_file
-    tmp_file=$(mktemp) && \
-    jq --argjson port "$port" '.server.port = $port' "$config_file" > "$tmp_file" && \
-    mv "$tmp_file" "$config_file" || rm -f "$tmp_file"
+    tmp_file=$(mktemp)
+    if jq --argjson port "$port" '.server.port = $port' "$config_file" > "$tmp_file"; then
+      mv "$tmp_file" "$config_file"
+    else
+      rm -f "$tmp_file"
+    fi
   else
     sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${port}|g" "$config_file"
     rm -f "${config_file}.bak"
