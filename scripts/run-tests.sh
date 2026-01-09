@@ -70,7 +70,8 @@ run_tests() {
   local failed=0
 
   for test_file in "${test_files[@]}"; do
-    local name=$(basename "$test_file" .bats)
+    local name
+    name=$(basename "$test_file" .bats)
     echo -e "${YELLOW}▶ $name${NC}"
 
     if bats "$test_file"; then
