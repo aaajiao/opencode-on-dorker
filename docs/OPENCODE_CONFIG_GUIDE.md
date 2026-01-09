@@ -96,16 +96,35 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 
 ### 2.3 容器内映射
 
-| 宿主机路径 | 容器内路径 |
-|------------|-----------|
-| `~/.config/opencode/global/opencode/` | `/root/.config/opencode/` |
-| `~/.config/opencode/global/claude/` | `/root/.claude/` |
+**全局配置挂载**（AI 可读写）：
+
+| 宿主机 (Mac) | 容器内 | 说明 |
+|--------------|--------|------|
+| `~/.config/opencode/global/opencode/skill/` | `/root/.config/opencode/skill/` | OpenCode 原生 Skills |
+| `~/.config/opencode/global/opencode/command/` | `/root/.config/opencode/command/` | OpenCode 原生 Commands |
+| `~/.config/opencode/global/opencode/agent/` | `/root/.config/opencode/agent/` | OpenCode 原生 Agents |
+| `~/.config/opencode/global/claude/` | `/root/.claude/` | Claude 兼容层全部 |
+
+**实例配置挂载**：
+
+| 宿主机 (Mac) | 容器内 |
+|--------------|--------|
 | `~/.config/opencode/instances/<inst>/` | `/root/.config/opencode/` |
 | `~/.local/share/opencode/instances/<inst>/` | `/root/.local/share/opencode/storage/` |
 | `~/.local/state/opencode/instances/<inst>/` | `/root/.opencode/` |
+
+**项目数据挂载**（覆盖 `/root/.claude/` 的子目录）：
+
+| 宿主机 (Mac) | 容器内 |
+|--------------|--------|
 | `<project>/.claude/todos/` | `/root/.claude/todos/` |
 | `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` |
 | `<workspace>/` | `/workspace/` |
+
+> **重要**：容器内的 OpenCode AI 可以直接创建/编辑以下路径的文件：
+> - `/root/.claude/agents/*.md` → 保存到 Mac `~/.config/opencode/global/claude/agents/`
+> - `/root/.claude/skills/*/SKILL.md` → 保存到 Mac `~/.config/opencode/global/claude/skills/`
+> - `/root/.config/opencode/agent/*.md` → 保存到 Mac `~/.config/opencode/global/opencode/agent/`
 
 ---
 

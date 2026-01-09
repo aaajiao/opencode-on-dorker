@@ -168,16 +168,72 @@ migrate_global() {
   echo ""
   echo "  迁移全局配置..."
 
-  if [[ -d "$V2_GLOBAL_ROOT" && ! -d "$V3_GLOBAL_ROOT" ]]; then
-    mkdir -p "$(dirname "$V3_GLOBAL_ROOT")"
-    cp -r "$V2_GLOBAL_ROOT" "$V3_GLOBAL_ROOT"
-    log_info "    全局配置: $V2_GLOBAL_ROOT → $V3_GLOBAL_ROOT (复制)"
-    log_info "    原位置保留作为备份，可手动删除: rm -rf $V2_GLOBAL_ROOT"
-  elif [[ -d "$V2_GLOBAL_ROOT" && -d "$V3_GLOBAL_ROOT" ]]; then
-    log_warn "    全局配置: v3 目录已存在，跳过"
-  else
-    log_info "    全局配置: 无需迁移"
+  if [[ ! -d "$V2_GLOBAL_ROOT" ]]; then
+    log_info "    全局配置: 无需迁移 (v2 目录不存在)"
+    return 0
   fi
+
+  mkdir -p "$V3_GLOBAL_ROOT"
+
+  # 合并 claude 目录（复数目录名：skills, commands, agents, rules）
+  if [[ -d "$V2_GLOBAL_ROOT/claude" ]]; then
+    local v2_claude="$V2_GLOBAL_ROOT/claude"
+    local v3_claude="$V3_GLOBAL_ROOT/claude"
+    mkdir -p "$v3_claude"
+
+    for subdir in skills commands agents rules; do
+      if [[ -d "$v2_claude/$subdir" ]]; then
+        mkdir -p "$v3_claude/$subdir"
+        # 复制不存在的文件（不覆盖）
+        local count=0
+        for file in "$v2_claude/$subdir"/*; do
+          [[ ! -e "$file" ]] && continue
+          local name
+          name=$(basename "$file")
+          if [[ ! -e "$v3_claude/$subdir/$name" ]]; then
+            cp -r "$file" "$v3_claude/$subdir/"
+            ((count++))
+          fi
+        done
+        [[ $count -gt 0 ]] && log_info "    claude/$subdir: 合并 $count 个文件"
+      fi
+    done
+
+    # 复制配置文件（不覆盖）
+    for cfg in settings.json .mcp.json; do
+      if [[ -f "$v2_claude/$cfg" && ! -f "$v3_claude/$cfg" ]]; then
+        cp "$v2_claude/$cfg" "$v3_claude/"
+        log_info "    claude/$cfg: 已复制"
+      fi
+    done
+  fi
+
+  # 合并 opencode 目录（单数目录名：skill, command, agent）
+  if [[ -d "$V2_GLOBAL_ROOT/opencode" ]]; then
+    local v2_opencode="$V2_GLOBAL_ROOT/opencode"
+    local v3_opencode="$V3_GLOBAL_ROOT/opencode"
+    mkdir -p "$v3_opencode"
+
+    for subdir in skill command agent; do
+      if [[ -d "$v2_opencode/$subdir" ]]; then
+        mkdir -p "$v3_opencode/$subdir"
+        local count=0
+        for file in "$v2_opencode/$subdir"/*; do
+          [[ ! -e "$file" ]] && continue
+          local name
+          name=$(basename "$file")
+          if [[ ! -e "$v3_opencode/$subdir/$name" ]]; then
+            cp -r "$file" "$v3_opencode/$subdir/"
+            ((count++))
+          fi
+        done
+        [[ $count -gt 0 ]] && log_info "    opencode/$subdir: 合并 $count 个文件"
+      fi
+    done
+  fi
+
+  log_info "    全局配置迁移完成"
+  log_info "    原位置保留作为备份: $V2_GLOBAL_ROOT"
 }
 
 # 清理空的 v2 目录

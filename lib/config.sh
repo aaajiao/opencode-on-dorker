@@ -224,7 +224,9 @@ ocd_init_global() {
   [[ ! -f "$global_dir/claude/settings.json" ]] && echo '{}' > "$global_dir/claude/settings.json"
   [[ ! -f "$global_dir/claude/.mcp.json" ]] && echo '{"mcpServers":{}}' > "$global_dir/claude/.mcp.json"
 
-  # 默认 remind skill
+  # =========================================
+  # 默认 Skill: remind
+  # =========================================
   if [[ ! -f "$global_dir/claude/skills/remind/SKILL.md" ]]; then
     mkdir -p "$global_dir/claude/skills/remind"
     cat > "$global_dir/claude/skills/remind/SKILL.md" << 'EOF'
@@ -253,6 +255,98 @@ description: (user - Skill) 任务完成后发送 macOS 桌面通知提醒
 ```bash
 notify "标题" "内容"
 ```
+EOF
+  fi
+
+  # =========================================
+  # 默认 Agent (Claude 兼容层): github
+  # =========================================
+  if [[ ! -f "$global_dir/claude/agents/github.md" ]]; then
+    cat > "$global_dir/claude/agents/github.md" << 'EOF'
+---
+name: github
+description: (user - Agent) Git/GitHub 工作流助手
+tools: bash, read, write, edit, glob, grep
+---
+
+# GitHub 工作流助手
+
+你是 Git/GitHub 工作流专家，帮助用户管理分支、提交、PR。
+
+## 命令
+
+| 命令 | 功能 |
+|------|------|
+| `@github branch <name>` | 创建并切换到新分支 |
+| `@github commit` | 分析变更并生成智能提交消息 |
+| `@github sync` | 从 main/master 同步最新代码 |
+| `@github pr` | 创建 Pull Request |
+| `@github done` | 合并后清理分支 |
+
+## 行为规则
+
+1. commit 前始终运行 `git diff --staged` 分析变更
+2. 生成简洁有意义的提交消息（中文或英文取决于项目）
+3. PR 描述包含变更摘要和测试计划
+4. 危险操作（force push、reset）需要用户确认
+EOF
+  fi
+
+  # =========================================
+  # 默认 Agent (OpenCode 原生): github
+  # =========================================
+  if [[ ! -f "$global_dir/opencode/agent/github.md" ]]; then
+    cat > "$global_dir/opencode/agent/github.md" << 'EOF'
+---
+name: github
+description: (user - Agent) Git/GitHub 工作流助手
+model: anthropic/claude-sonnet-4-5
+tools:
+  bash: true
+  read: true
+  write: true
+  edit: true
+  glob: true
+  grep: true
+---
+
+# GitHub 工作流助手
+
+你是 Git/GitHub 工作流专家，帮助用户管理分支、提交、PR。
+
+## 命令
+
+| 命令 | 功能 |
+|------|------|
+| `@github branch <name>` | 创建并切换到新分支 |
+| `@github commit` | 分析变更并生成智能提交消息 |
+| `@github sync` | 从 main/master 同步最新代码 |
+| `@github pr` | 创建 Pull Request |
+| `@github done` | 合并后清理分支 |
+
+## 行为规则
+
+1. commit 前始终运行 `git diff --staged` 分析变更
+2. 生成简洁有意义的提交消息（中文或英文取决于项目）
+3. PR 描述包含变更摘要和测试计划
+4. 危险操作（force push、reset）需要用户确认
+EOF
+  fi
+
+  # =========================================
+  # 默认 Command (Claude 兼容层): share
+  # =========================================
+  if [[ ! -f "$global_dir/claude/commands/share.md" ]]; then
+    cat > "$global_dir/claude/commands/share.md" << 'EOF'
+---
+description: 复制内容到 Mac 剪贴板
+---
+
+将以下内容复制到 Mac 剪贴板：
+
+$ARGUMENTS
+
+使用命令：`echo "内容" > /root/.opencode/clipboard`
 EOF
   fi
 }
