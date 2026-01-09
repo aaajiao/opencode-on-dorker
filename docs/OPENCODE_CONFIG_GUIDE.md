@@ -572,6 +572,23 @@ OpenCode 支持**两套配置系统**，目录命名规则不同：
 ```
 ~/opencode/                           # 配置仓库（自身也是一个项目）
 │
+│  ── 核心脚本（模块化架构 v2.0）──
+│
+├── bin/
+│   └── ocd                           # 入口脚本（添加到 PATH）
+│
+├── lib/                              # 模块化核心库
+│   ├── core.sh                       # 版本/日志/环境变量
+│   ├── port.sh                       # 端口管理（原子锁）
+│   ├── workspace.sh                  # 工作区检测
+│   ├── watcher.sh                    # IPC 文件监控
+│   ├── config.sh                     # 配置生成
+│   └── docker.sh                     # Docker 操作
+│
+├── tests/bats/                       # 单元测试（Bats）
+│
+├── opencode.sh                       # 旧版入口（兼容）
+│
 │  ── 这个项目自身的配置 ──
 │
 ├── .opencode/                        # OpenCode 原生配置（这个项目）

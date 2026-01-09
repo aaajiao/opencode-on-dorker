@@ -21,7 +21,7 @@
 |------|-----------------|--------------|----------------|
 | **定位** | Docker 运行环境 + 配置管理 | AI 编程助手 CLI | AI 编程助手 CLI |
 | **目录命名** | 同时支持两套 | **单数优先** (`skill/`, `command/`, `agent/`) | **复数** (`skills/`, `commands/`, `agents/`) |
-| **配置入口** | `opencode.sh` + Docker | `~/.config/opencode/` | `~/.claude/` |
+| **配置入口** | `bin/ocd` + Docker (模块化) | `~/.config/opencode/` | `~/.claude/` |
 | **存储规范** | XDG + 多实例隔离 | XDG Base Directory | 集中存储 |
 | **特殊能力** | 跨系统桥接、多实例 | 插件系统、远程配置 | Rules、Hooks、沙箱 |
 
@@ -110,7 +110,25 @@ project/CLAUDE.local.md                # 个人指令 (gitignore)
 
 ```
 ~/opencode/                            # 配置仓库（宿主机）
-├── opencode.sh                        # Shell 函数 (ocd 命令)
+├── bin/
+│   └── ocd                            # 入口脚本（添加到 PATH）
+│
+├── lib/                               # 模块化核心库
+│   ├── core.sh                        # 版本/日志/环境变量加载
+│   ├── port.sh                        # 端口管理（原子锁机制）
+│   ├── workspace.sh                   # 工作区检测/白名单验证
+│   ├── watcher.sh                     # IPC 监控（剪贴板/通知/URL）
+│   ├── config.sh                      # 配置生成（消除 heredoc 重复）
+│   └── docker.sh                      # Docker 构建与运行
+│
+├── tests/                             # 测试套件
+│   └── bats/                          # Bats 单元测试
+│       ├── core.bats
+│       ├── port.bats
+│       ├── workspace.bats
+│       └── config.bats
+│
+├── opencode.sh                        # 旧版入口（兼容）
 ├── Dockerfile                         # 镜像定义
 ├── .env                               # API Keys (KEY=VALUE 格式)
 ├── VERSION                            # 版本号
