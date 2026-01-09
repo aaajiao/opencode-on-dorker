@@ -23,6 +23,7 @@ ENV_FILE="$OCD_ROOT/.env"
 _OCD_WATCHER_PID=""
 _OCD_HTTPS_ENABLED=""
 _OCD_CAFFEINATE_PID=""
+_OCD_URL_FILE=""
 
 # =========================================
 # 清理函数
@@ -30,8 +31,11 @@ _OCD_CAFFEINATE_PID=""
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
     kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null || kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
+    wait "$_OCD_WATCHER_PID" 2>/dev/null  # 等待 Watcher 完全退出
     _OCD_WATCHER_PID=""
   fi
+  # 清空 IPC 文件防止残留数据
+  [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]] && : > "$_OCD_URL_FILE"
   if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
     kill "$_OCD_CAFFEINATE_PID" 2>/dev/null
     _OCD_CAFFEINATE_PID=""
@@ -267,6 +271,7 @@ EOF
   local NOTIFY_FILE="${INSTANCE_STATE_DIR}/notifications"
   local CLIPBOARD_FILE="${INSTANCE_STATE_DIR}/clipboard"
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
+  _OCD_URL_FILE="$URL_FILE"  # 保存到全局变量供 cleanup 使用
 
   # 启动 Watcher
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")

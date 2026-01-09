@@ -48,7 +48,7 @@ RUN echo '#!/bin/bash\n\
 URL="$1"\n\
 [[ -z "$URL" ]] && exit 0\n\
 \n\
-echo "$URL" >> /root/.opencode/open_url\n\
+echo "$URL" > /root/.opencode/open_url\n\
 echo "🔗 正在打开: $URL"\n\
 ' > /usr/local/bin/xdg-open-custom && \
     chmod +x /usr/local/bin/xdg-open-custom
