@@ -113,7 +113,7 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 | `~/.local/share/opencode/instances/<inst>/` | `/root/.local/share/opencode/storage/` |
 | `~/.local/state/opencode/instances/<inst>/` | `/root/.opencode/` |
 
-**项目数据挂载**（覆盖 `/root/.claude/` 的子目录）：
+**项目数据挂载**（始终覆盖 `/root/.claude/` 的子目录）：
 
 | 宿主机 (Mac) | 容器内 |
 |--------------|--------|
@@ -121,9 +121,24 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 | `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` |
 | `<workspace>/` | `/workspace/` |
 
+**项目配置挂载**（条件覆盖，仅当目录存在且非空时）：
+
+| 宿主机 (Mac) | 容器内 | 条件 |
+|--------------|--------|------|
+| `<project>/.claude/skills/` | `/root/.claude/skills/` | 目录存在且非空 |
+| `<project>/.claude/commands/` | `/root/.claude/commands/` | 目录存在且非空 |
+| `<project>/.claude/agents/` | `/root/.claude/agents/` | 目录存在且非空 |
+| `<project>/.claude/rules/` | `/root/.claude/rules/` | 目录存在且非空 |
+
+> **条件覆盖说明**：
+> - 如果项目的 `.claude/skills/` 等目录存在且包含文件，将**完全覆盖**全局配置
+> - 如果目录不存在或为空，则使用全局配置
+> - OCD **不会自动创建**这些目录，需用户手动创建以启用项目级覆盖
+> - 覆盖是**替换**而非**合并**，项目级配置生效时全局配置不可见
+
 > **重要**：容器内的 OpenCode AI 可以直接创建/编辑以下路径的文件：
-> - `/root/.claude/agents/*.md` → 保存到 Mac `~/.config/opencode/global/claude/agents/`
-> - `/root/.claude/skills/*/SKILL.md` → 保存到 Mac `~/.config/opencode/global/claude/skills/`
+> - `/root/.claude/agents/*.md` → 保存到 Mac（全局或项目，取决于挂载）
+> - `/root/.claude/skills/*/SKILL.md` → 保存到 Mac（全局或项目，取决于挂载）
 > - `/root/.config/opencode/agent/*.md` → 保存到 Mac `~/.config/opencode/global/opencode/agent/`
 
 ---
@@ -379,15 +394,23 @@ TypeScript 代码规范：
 
 当同名配置存在于多个位置时，按以下优先级（高 → 低）：
 
-**Commands / Skills**：
-1. 项目 OpenCode 原生 (`.opencode/`)
-2. 全局 OpenCode 原生 (`~/.config/opencode/global/opencode/`)
-3. 项目 Claude 兼容 (`.claude/`)
-4. 全局 Claude 兼容 (`~/.config/opencode/global/claude/`)
+**OpenCode 原生配置**（通过 `/workspace/` 访问）：
+1. 项目级 (`.opencode/skill/command/agent/`)
+2. 全局级 (`~/.config/opencode/global/opencode/skill/command/agent/`)
 
-**Agents / Rules**：
-1. 项目级
-2. 全局级
+**Claude 兼容层配置**（通过 `/root/.claude/` 访问）：
+- 项目级 (`.claude/skills/commands/agents/rules/`) - **条件覆盖**
+- 全局级 (`~/.config/opencode/global/claude/skills/commands/agents/rules/`)
+
+> **Claude 兼容层优先级说明**：
+> - 项目级目录存在且非空时 → **完全覆盖**全局配置
+> - 项目级目录不存在或为空时 → 使用全局配置
+> - 这是**替换**关系，不是**合并**关系
+
+**推荐做法**：
+- 项目特有配置 → 使用 OpenCode 原生 `.opencode/`（始终可用）
+- 通用/共享配置 → 使用全局 Claude 兼容层
+- 需要项目级 Claude 兼容层时 → 手动创建 `.claude/skills/` 等目录
 
 ---
 

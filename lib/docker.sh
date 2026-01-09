@@ -104,6 +104,39 @@ ocd_run_container() {
   local tz
   tz=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC")
 
+  # 构建挂载参数数组
+  local mount_args=(
+    -v "${workspace_root}:/workspace"
+    -v "${instance_state_dir}:/root/.opencode"
+    -v "$OCD_DATA_HOME/auth.json:/root/.local/share/opencode/auth.json"
+    -v "$OCD_DATA_HOME/bin:/root/.local/share/opencode/bin"
+    -v "${instance_data_dir}:/root/.local/share/opencode/storage"
+    -v "${playwright_cache}:/root/.cache/ms-playwright"
+    -v "${opencode_cache}:/root/.cache/opencode"
+    -v "${omo_bin_cache}:/root/.cache/oh-my-opencode"
+    -v "${state_dir}:/root/.local/state/opencode"
+    -v "$HOME/.ssh:/root/.ssh:ro"
+    -v "${instance_config_dir}:/root/.config/opencode"
+    -v "${global_opencode}/skill:/root/.config/opencode/skill"
+    -v "${global_opencode}/command:/root/.config/opencode/command"
+    -v "${global_opencode}/agent:/root/.config/opencode/agent"
+    # 全局 Claude 兼容层（基础挂载）
+    -v "${global_claude}:/root/.claude"
+    # 项目级会话数据（覆盖挂载）
+    -v "${project_claude}/todos:/root/.claude/todos"
+    -v "${project_claude}/transcripts:/root/.claude/transcripts"
+  )
+
+  # 项目级 Claude 兼容层配置（条件覆盖挂载）
+  # 只有当项目目录存在且非空时才覆盖全局配置
+  local subdir proj_subdir
+  for subdir in skills commands agents rules; do
+    proj_subdir="${project_claude}/${subdir}"
+    if [[ -d "$proj_subdir" ]] && [[ -n "$(ls -A "$proj_subdir" 2>/dev/null)" ]]; then
+      mount_args+=(-v "${proj_subdir}:/root/.claude/${subdir}")
+    fi
+  done
+
   docker run -it --rm \
     --name "$container_name" \
     --network host \
@@ -113,23 +146,7 @@ ocd_run_container() {
     -e BROWSER=/usr/bin/xdg-open \
     -e "EXA_API_KEY=${EXA_API_KEY:-}" \
     -e "OCD_START_DIR=${start_dir}" \
-    -v "${workspace_root}:/workspace" \
-    -v "${instance_state_dir}:/root/.opencode" \
-    -v "$OCD_DATA_HOME/auth.json:/root/.local/share/opencode/auth.json" \
-    -v "$OCD_DATA_HOME/bin:/root/.local/share/opencode/bin" \
-    -v "${instance_data_dir}:/root/.local/share/opencode/storage" \
-    -v "${playwright_cache}:/root/.cache/ms-playwright" \
-    -v "${opencode_cache}:/root/.cache/opencode" \
-    -v "${omo_bin_cache}:/root/.cache/oh-my-opencode" \
-    -v "${state_dir}:/root/.local/state/opencode" \
-    -v "$HOME/.ssh:/root/.ssh:ro" \
-    -v "${instance_config_dir}:/root/.config/opencode" \
-    -v "${global_opencode}/skill:/root/.config/opencode/skill" \
-    -v "${global_opencode}/command:/root/.config/opencode/command" \
-    -v "${global_opencode}/agent:/root/.config/opencode/agent" \
-    -v "${global_claude}:/root/.claude" \
-    -v "${project_claude}/todos:/root/.claude/todos" \
-    -v "${project_claude}/transcripts:/root/.claude/transcripts" \
+    "${mount_args[@]}" \
     -w /workspace \
     "$image_name" "$@"
 }

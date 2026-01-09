@@ -360,6 +360,8 @@ ocd_init_project() {
   # OpenCode 原生项目配置（单数目录名）
   mkdir -p "$project_dir/.opencode"/{skill,command,agent}
 
-  # Claude 兼容层项目配置 + 会话数据
+  # Claude 兼容层会话数据目录
+  # 注意：不自动创建 skills/commands/agents/rules/
+  # 用户需手动创建才会启用项目级覆盖（覆盖全局配置）
   mkdir -p "$project_dir/.claude"/{todos,transcripts}
 }
