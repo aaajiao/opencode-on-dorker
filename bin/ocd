@@ -280,6 +280,9 @@ EOF
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
   _OCD_URL_FILE="$URL_FILE"  # 保存到全局变量供 cleanup 使用
 
+  # 清理可能泄漏的旧 fswatch 进程（防止多窗口 bug）
+  pkill -f "fswatch.*open_url" 2>/dev/null || true
+
   # 启动 Watcher（不使用 disown，保持进程可控以便 cleanup 能正确杀死）
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
 
