@@ -47,9 +47,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-brew-
 
+      - name: Setup Homebrew PATH
+        run: echo "$(brew --prefix)/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
-        run: |
-          brew install bats-core jq fswatch
+        run: brew install bats-core jq fswatch
 
       - name: Run tests
         run: |
