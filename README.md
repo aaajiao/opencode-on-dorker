@@ -52,11 +52,15 @@ GITHUB_TOKEN=ghp_xxxx
 EXA_API_KEY=your-exa-api-key
 ```
 
-### 3. 添加 Shell 函数
+### 3. 添加到 PATH
 
 ```bash
-echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
+# 新版（推荐）
+echo 'export PATH="$HOME/opencode/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
+
+# 或旧版（兼容）
+# echo 'source ~/opencode/opencode.sh' >> ~/.zshrc
 ```
 
 ### 4. 首次构建
