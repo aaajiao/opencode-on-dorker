@@ -197,10 +197,11 @@ EOF
     ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
   fi
 
-  # IPC 文件
-  local URL_FILE="${INSTANCE_DATA_DIR}/open_url"
-  local NOTIFY_FILE="${INSTANCE_DATA_DIR}/notifications"
-  local CLIPBOARD_FILE="${INSTANCE_DATA_DIR}/clipboard"
+  # IPC 文件 (状态目录，与容器内 /root/.opencode 对应)
+  mkdir -p "$INSTANCE_STATE_DIR"
+  local URL_FILE="${INSTANCE_STATE_DIR}/open_url"
+  local NOTIFY_FILE="${INSTANCE_STATE_DIR}/notifications"
+  local CLIPBOARD_FILE="${INSTANCE_STATE_DIR}/clipboard"
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
 
   # 启动 Watcher
