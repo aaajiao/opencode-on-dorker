@@ -75,3 +75,49 @@ teardown() {
   result=$(jq '.server.port' "$config_file")
   [ "$result" = "5000" ]
 }
+
+# update_config_model tests
+@test "update_config_model updates model value" {
+  local config_file="$TEST_DIR/test.json"
+  echo '{"model":"anthropic/claude-sonnet-4-5"}' > "$config_file"
+
+  ocd_update_config_model "$config_file" "opencode/claude-opus-4-5"
+
+  result=$(jq -r '.model' "$config_file")
+  [ "$result" = "opencode/claude-opus-4-5" ]
+}
+
+@test "update_config_model handles empty model gracefully" {
+  local config_file="$TEST_DIR/test.json"
+  echo '{"model":"original"}' > "$config_file"
+
+  ocd_update_config_model "$config_file" ""
+
+  # Should not change when empty
+  result=$(jq -r '.model' "$config_file")
+  [ "$result" = "original" ]
+}
+
+# update_omo_agents tests
+@test "update_omo_agents updates Planner-Sisyphus model" {
+  local config_file="$TEST_DIR/omo.json"
+  echo '{"agents":{"Planner-Sisyphus":{"model":"old-model"}}}' > "$config_file"
+
+  export PLANNER_MODEL="new-planner-model"
+  ocd_update_omo_agents "$config_file"
+
+  result=$(jq -r '.agents."Planner-Sisyphus".model' "$config_file")
+  [ "$result" = "new-planner-model" ]
+}
+
+@test "update_omo_agents adds oracle agent when ORACLE_MODEL is set" {
+  local config_file="$TEST_DIR/omo.json"
+  echo '{"agents":{"Planner-Sisyphus":{"model":"planner"}}}' > "$config_file"
+
+  export PLANNER_MODEL="planner"
+  export ORACLE_MODEL="openai/gpt-5.2"
+  ocd_update_omo_agents "$config_file"
+
+  result=$(jq -r '.agents.oracle.model' "$config_file")
+  [ "$result" = "openai/gpt-5.2" ]
+}
