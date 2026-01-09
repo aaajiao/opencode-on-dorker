@@ -111,13 +111,28 @@ EOF
       return 1
     fi
 
-    # 向上查找父项目
+    # 向上查找父项目（优先找 .git 项目，否则用直接父目录）
     local parent_project
     parent_project=$(ocd_find_parent_project "$(pwd)")
 
     if [[ -z "$parent_project" ]]; then
-      ocd_error "未找到父级项目（需要有 .git 的上级目录）"
-      return 1
+      # 没有 git 项目，使用直接父目录
+      local direct_parent
+      direct_parent=$(dirname "$(pwd)")
+
+      if [[ "$direct_parent" == "$HOME" || "$direct_parent" == "/" ]]; then
+        ocd_error "已在根目录，无法向上合并"
+        return 1
+      fi
+
+      echo "⚠️  未找到父级 git 项目，将合并到直接父目录:"
+      echo "   $direct_parent"
+      read -r -p "   确认? [y/N] " confirm
+      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
+        echo "已取消"
+        return 0
+      fi
+      parent_project="$direct_parent"
     fi
 
     local parent_claude="$parent_project/.claude"
