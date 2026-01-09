@@ -70,24 +70,26 @@ ocd_run_container() {
   local env_file="$6"
   shift 6
 
-  # 目录变量
-  local share_dir="$HOME/.local/share/opencode"
-  local instance_config_dir="$HOME/.config/opencode/${instance_name}"
-  local instance_data_dir="$HOME/.opencode_data/${instance_name}"
-  local instance_storage_dir="${share_dir}/storage/${instance_name}"
-  local state_dir="$HOME/.local/state/opencode"
-  local omo_bin_cache="$HOME/.cache/oh-my-opencode"
-  local playwright_cache="$HOME/.cache/ms-playwright"
-  local opencode_cache="$HOME/.cache/opencode"
-  local global_opencode="$HOME/opencode/global/opencode"
-  local global_claude="$HOME/opencode/global/claude"
+  # XDG 标准目录 (v3.0)
+  local instance_config_dir="$OCD_CONFIG_INSTANCES/${instance_name}"    # 配置
+  local instance_data_dir="$OCD_DATA_INSTANCES/${instance_name}"        # 数据 (会话历史)
+  local instance_state_dir="$OCD_STATE_INSTANCES/${instance_name}"      # 状态 (IPC 文件)
+  local state_dir="$OCD_STATE_HOME"
+  local omo_bin_cache="$OCD_CACHE_HOME/oh-my-opencode"
+  local playwright_cache="$OCD_CACHE_HOME/ms-playwright"
+  local opencode_cache="$OCD_CACHE_HOME"
+  local global_opencode="$OCD_CONFIG_GLOBAL/opencode"
+  local global_claude="$OCD_CONFIG_GLOBAL/claude"
   local project_dir
   project_dir=$(ocd_find_project_dir "$workspace_root")
   local project_claude="${project_dir}/.claude"
 
   # 确保目录存在
-  mkdir -p "$playwright_cache" "$opencode_cache"
+  mkdir -p "$instance_config_dir" "$instance_data_dir" "$instance_state_dir"
+  mkdir -p "$playwright_cache" "$opencode_cache" "$omo_bin_cache"
+  mkdir -p "$OCD_DATA_HOME/bin" "$global_opencode"/{skill,command,agent} "$global_claude"
   mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
+  touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
 
   # 删除旧容器
   docker rm -f "$container_name" 2>/dev/null
@@ -106,14 +108,14 @@ ocd_run_container() {
     -e "EXA_API_KEY=${EXA_API_KEY:-}" \
     -e "OCD_START_DIR=${start_dir}" \
     -v "${workspace_root}:/workspace" \
-    -v "${instance_data_dir}:/root/.opencode" \
-    -v "${share_dir}/auth.json:/root/.local/share/opencode/auth.json" \
-    -v "${share_dir}/bin:/root/.local/share/opencode/bin" \
-    -v "${instance_storage_dir}:/root/.local/share/opencode/storage" \
+    -v "${instance_state_dir}:/root/.opencode" \
+    -v "$OCD_DATA_HOME/auth.json:/root/.local/share/opencode/auth.json" \
+    -v "$OCD_DATA_HOME/bin:/root/.local/share/opencode/bin" \
+    -v "${instance_data_dir}:/root/.local/share/opencode/storage" \
     -v "${playwright_cache}:/root/.cache/ms-playwright" \
     -v "${opencode_cache}:/root/.cache/opencode" \
-    -v "${state_dir}:/root/.local/state/opencode" \
     -v "${omo_bin_cache}:/root/.cache/oh-my-opencode" \
+    -v "${state_dir}:/root/.local/state/opencode" \
     -v "$HOME/.ssh:/root/.ssh:ro" \
     -v "${instance_config_dir}:/root/.config/opencode" \
     -v "${global_opencode}/skill:/root/.config/opencode/skill" \

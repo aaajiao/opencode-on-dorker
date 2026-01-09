@@ -1,6 +1,6 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
@@ -17,6 +17,13 @@
 - ✅ Web UI 可访问
 - ✅ **oh-my-opencode 多 Agent 协作**
 - ✅ **MCP 服务器 (Playwright, Exa)**
+
+### v3.0.0 更新
+
+- 🏗️ **XDG 标准目录结构**：遵循 XDG Base Directory 规范，目录结构更清晰
+- 🔄 **自动迁移**：首次运行自动从 v2.x 迁移数据，保留所有对话历史
+- ✅ **安全清理**：`--clean` 只删配置，保留对话；`--purge` 完全清理需确认
+- 📁 **配置分离**：全局配置移至 `~/.config/opencode/global/`
 
 ### v1.3.1 优化
 
@@ -407,10 +414,45 @@ oh-my-opencode 的通知 hook 会自动使用此机制。
 容器内的剪贴板操作（如 `/share` 命令）会自动同步到 Mac 剪贴板。
 
 **工作原理**：
-1. 容器内 `xclip` 命令写入 `~/.opencode_data/<instance>/clipboard`
+1. 容器内 `xclip` 命令写入 IPC 文件
 2. Mac watcher 检测到变化后执行 `pbcopy`
 
 **延迟**：约 1 秒（轮询模式）或即时（fswatch 模式）
+
+## 目录结构 (v3.0)
+
+OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)：
+
+```
+~/.config/opencode/                    # 配置 (可版本控制)
+├── global/                            # 全局配置
+│   ├── opencode/{skill,command,agent}/
+│   └── claude/{skills,commands,...}
+└── instances/<instance>/              # 实例配置
+    ├── opencode.json
+    └── oh-my-opencode.json
+
+~/.local/share/opencode/               # 数据 (必须备份)
+├── auth.json                          # 认证令牌 (共享)
+└── instances/<instance>/              # 对话历史
+    ├── session/
+    ├── message/
+    └── part/
+
+~/.local/state/opencode/               # 状态 (可重建)
+└── instances/<instance>/              # IPC 文件
+    ├── open_url
+    ├── notifications
+    └── clipboard
+
+~/.cache/opencode/                     # 缓存 (可删除)
+├── oh-my-opencode/
+└── ms-playwright/
+```
+
+**清理操作**：
+- `ocd --clean` - 删除配置，保留对话历史
+- `ocd --purge` - 完全删除实例（需确认）
 
 ## 网络模式
 

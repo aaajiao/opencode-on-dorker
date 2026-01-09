@@ -5,6 +5,59 @@
 OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 
 # =========================================
+# XDG 标准路径定义 (v3.0)
+# =========================================
+# 配置目录 - 可版本控制
+OCD_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OCD_CONFIG_INSTANCES="$OCD_CONFIG_HOME/instances"
+OCD_CONFIG_GLOBAL="$OCD_CONFIG_HOME/global"
+
+# 数据目录 - 必须备份
+OCD_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+OCD_DATA_INSTANCES="$OCD_DATA_HOME/instances"
+
+# 状态目录 - 可重建
+OCD_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+OCD_STATE_INSTANCES="$OCD_STATE_HOME/instances"
+
+# 缓存目录 - 可删除
+OCD_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/opencode"
+
+# =========================================
+# 实例路径获取函数
+# =========================================
+ocd_instance_config_dir() {
+  echo "$OCD_CONFIG_INSTANCES/${1:-opencode}"
+}
+
+ocd_instance_data_dir() {
+  echo "$OCD_DATA_INSTANCES/${1:-opencode}"
+}
+
+ocd_instance_state_dir() {
+  echo "$OCD_STATE_INSTANCES/${1:-opencode}"
+}
+
+# =========================================
+# 自动迁移 v2.x → v3.0
+# =========================================
+ocd_auto_migrate() {
+  local migrate_script="$OCD_ROOT/scripts/migrate-v3.sh"
+  [[ ! -f "$migrate_script" ]] && return 0
+
+  # 检测 v2.x 结构
+  local v2_data="$HOME/.opencode_data"
+  local v2_storage="$OCD_DATA_HOME/storage"
+
+  if [[ -d "$v2_data" || -d "$v2_storage" ]]; then
+    # source 迁移脚本并执行自动迁移
+    # shellcheck disable=SC1090
+    source "$migrate_script"
+    auto_migrate
+  fi
+}
+
+# =========================================
 # 版本管理
 # =========================================
 ocd_version() {

@@ -211,7 +211,8 @@ ocd_update_config_port() {
 # 初始化全局配置目录
 # =========================================
 ocd_init_global() {
-  local global_dir="$HOME/opencode/global"
+  # v3.0: 使用 XDG 标准路径
+  local global_dir="$OCD_CONFIG_GLOBAL"
 
   # OpenCode 原生全局配置（单数目录名）
   mkdir -p "$global_dir/opencode"/{skill,command,agent}
