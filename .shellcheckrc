@@ -1,0 +1,11 @@
+# ShellCheck 配置
+# https://www.shellcheck.net/wiki/
+
+# 允许 source 外部文件
+external-sources=true
+
+# 指定 source 路径
+source-path=lib
+
+# 默认 shell
+shell=bash

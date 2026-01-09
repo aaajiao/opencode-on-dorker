@@ -48,6 +48,7 @@ OMO_CONFIG_FILE="$HOME/.config/opencode/server/oh-my-opencode.json"
 # 版本号（可从 versions.lock 读取）
 VERSIONS_FILE="$HOME/opencode/versions.lock"
 if [[ -f "$VERSIONS_FILE" ]]; then
+  # shellcheck disable=SC1090
   source <(grep -E '^[A-Z_]+=' "$VERSIONS_FILE" 2>/dev/null || true)
 fi
 
