@@ -386,7 +386,9 @@ MULTIMODAL_MODEL=quotio/gemini-3-flash-preview
 | `openai/` | OpenAI GPT | `openai/gpt-5.2`, `openai/gpt-4.1` |
 | `quotio/` | Quotio 代理 | `quotio/gemini-3-pro-preview`, `quotio/gemini-claude-opus-4-5-thinking` |
 
-> **注意**：修改后需删除实例配置重新生成：`ocd --clean && ocd`
+> **注意**：修改后需重新生成配置：`ocd --clean && ocd`（对话历史会保留）
+>
+> 如需完全清理包括对话历史：`ocd --purge`
 
 ## macOS 桌面通知
 

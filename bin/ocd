@@ -50,7 +50,7 @@ main() {
   # 加载本地配置
   [[ -f "$OCD_ROOT/.ocdrc" ]] && source "$OCD_ROOT/.ocdrc"
 
-  local REBUILD=0 KEEP_CONFIG=0 CLEAN_INSTANCE=0
+  local REBUILD=0 KEEP_CONFIG=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0
   local INSTANCE_NAME="" CUSTOM_PORT=""
   local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
@@ -71,6 +71,7 @@ main() {
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
       --clean) CLEAN_INSTANCE=1; shift ;;
+      --purge) PURGE_INSTANCE=1; shift ;;
       -h|--help)
         cat << EOF
 OCD v$(ocd_version) - OpenCode Docker
@@ -84,7 +85,8 @@ Options:
   -p <port>         Port number
   -w <path>         Workspace root directory
   --here            Mount current directory only
-  --clean           Clean current instance config and cache
+  --clean           Clean config only (preserve conversation history)
+  --purge           Clean ALL data including conversation history
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
@@ -126,11 +128,25 @@ EOF
   local STATE_DIR="$HOME/.local/state/opencode"
   local OMO_BIN_CACHE="$HOME/.cache/oh-my-opencode"
 
-  # 清理实例
+  # 清理实例（保留对话历史）
   if [[ "$CLEAN_INSTANCE" -eq 1 ]]; then
     echo "🗑️  清理实例 '${INSTANCE_NAME}' 配置..."
-    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_DATA_DIR" "$INSTANCE_STORAGE_DIR"
-    ocd_success "已清理配置，重新运行 ocd 将生成新配置"
+    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_DATA_DIR"
+    ocd_success "已清理配置（对话历史已保留），重新运行 ocd 将生成新配置"
+    return 0
+  fi
+
+  # 完全清理实例（包括对话历史）
+  if [[ "$PURGE_INSTANCE" -eq 1 ]]; then
+    echo "⚠️  完全清理实例 '${INSTANCE_NAME}'..."
+    echo "   将删除: 配置、缓存、对话历史"
+    read -r -p "   确认删除? [y/N] " confirm
+    if [[ "$confirm" =~ ^[Yy]$ ]]; then
+      rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_DATA_DIR" "$INSTANCE_STORAGE_DIR"
+      ocd_success "已完全清理实例 '${INSTANCE_NAME}'"
+    else
+      echo "已取消"
+    fi
     return 0
   fi
 
