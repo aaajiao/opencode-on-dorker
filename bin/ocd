@@ -239,6 +239,8 @@ EOF
     # 清理缓存 (与镜像版本相关)
     echo "🗑️  清理缓存..."
     rm -rf "$OCD_CACHE_HOME"
+    # 立即重建缓存目录结构（oh-my-opencode 需要）
+    mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
     ocd_build_image "$IMAGE_NAME" 0
