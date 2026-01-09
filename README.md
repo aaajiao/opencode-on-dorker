@@ -450,9 +450,23 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 └── ms-playwright/
 ```
 
-**清理操作**：
-- `ocd --clean` - 删除配置，保留对话历史
-- `ocd --purge` - 完全删除实例（需确认）
+### 目录清理对照表
+
+| 目录 | 内容 | `-r` | `--clean` | `--purge` | 手动 |
+|------|------|:----:|:---------:|:---------:|:----:|
+| `~/.cache/opencode/` | 缓存 (playwright, ast-grep) | ✅ | - | - | ✅ |
+| `~/.config/opencode/instances/<inst>/` | 实例配置 | - | ✅ | ✅ | ✅ |
+| `~/.local/state/opencode/instances/<inst>/` | IPC 文件 | - | ✅ | ✅ | ✅ |
+| `~/.local/share/opencode/instances/<inst>/` | 对话历史 | - | - | ✅ | ✅ |
+| `~/.config/opencode/global/` | 全局配置 (skills) | - | - | - | ✅ |
+| `~/.local/share/opencode/auth.json` | 认证令牌 | - | - | - | ✅ |
+
+**图例**：✅ = 会删除，- = 不删除
+
+**命令说明**：
+- `ocd -r` - 重建镜像，清理缓存（所有实例共享）
+- `ocd --clean` - 清理当前实例配置，保留对话历史
+- `ocd --purge` - 完全删除当前实例（需确认）
 
 ## 网络模式
 

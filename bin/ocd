@@ -52,7 +52,7 @@ main() {
   # v2.x → v3.0 自动迁移
   ocd_auto_migrate
 
-  local REBUILD=0 KEEP_CONFIG=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0
+  local REBUILD=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0
   local INSTANCE_NAME="" CUSTOM_PORT=""
   local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
@@ -64,7 +64,6 @@ main() {
     case "$1" in
       -v|--version) echo "OCD v$(ocd_version)"; return 0 ;;
       -r) REBUILD=1; shift ;;
-      --keep) KEEP_CONFIG=1; shift ;;
       --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
@@ -82,13 +81,13 @@ Usage: ocd [options]
 
 Options:
   -v, --version     Show version
-  -r                Rebuild image (add --keep to preserve config)
+  -r                Rebuild image and clear cache
   -n <name>         Instance name
   -p <port>         Port number
   -w <path>         Workspace root directory
   --here            Mount current directory only
-  --clean           Clean config only (preserve conversation history)
-  --purge           Clean ALL data including conversation history
+  --clean           Clean instance config (preserve conversations)
+  --purge           Clean ALL instance data including conversations
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
@@ -162,8 +161,9 @@ EOF
   # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then
     ocd_remove_image "$IMAGE_NAME"
-    [[ "$KEEP_CONFIG" -eq 0 ]] && rm -rf "$HOME/.config/opencode" "$HOME/.opencode_data"
-    rm -rf "$HOME/.cache/opencode/node_modules"
+    # 清理缓存 (与镜像版本相关)
+    echo "🗑️  清理缓存..."
+    rm -rf "$OCD_CACHE_HOME"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
     ocd_build_image "$IMAGE_NAME" 0
