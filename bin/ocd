@@ -181,6 +181,7 @@ EOF
   ocd_load_env "$ENV_FILE"
 
   # 生成配置文件
+  mkdir -p "$INSTANCE_CONFIG_DIR"
   local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
   local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
 
