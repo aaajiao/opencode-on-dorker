@@ -101,14 +101,15 @@ EOF
     esac
   done
 
-  # --merge-up: 合并 transcripts 到父项目
+  # --merge-up: 合并 transcripts 到父项目（仅适用于 OCD 用户）
   if [[ "$MERGE_UP" -eq 1 ]]; then
-    local current_dir current_claude
+    local current_dir current_transcripts
     current_dir="$(pwd)"
-    current_claude="${current_dir}/.claude"
+    current_transcripts="${current_dir}/.claude/transcripts"
 
-    if [[ ! -d "$current_claude/transcripts" ]]; then
+    if [[ ! -d "$current_transcripts" ]]; then
       ocd_error "当前目录没有 .claude/transcripts/"
+      ocd_info "提示: 需要先在此目录通过 ocd --here 使用过 OpenCode"
       return 1
     fi
 
@@ -117,7 +118,6 @@ EOF
     parent_project=$(ocd_find_parent_project "$current_dir")
 
     if [[ -z "$parent_project" ]]; then
-      # 没有 git 项目，使用直接父目录
       local direct_parent
       direct_parent=$(dirname "$current_dir")
 
@@ -136,43 +136,29 @@ EOF
       parent_project="$direct_parent"
     fi
 
-    local parent_claude="$parent_project/.claude"
-    mkdir -p "$parent_claude/transcripts"
+    local parent_transcripts="${parent_project}/.claude/transcripts"
+    mkdir -p "$parent_transcripts"
 
     echo "📦 合并 transcripts..."
-    echo "   从: $current_claude/transcripts/"
-    echo "   到: $parent_claude/transcripts/"
+    echo "   从: $current_transcripts"
+    echo "   到: $parent_transcripts"
 
     # 统计 .jsonl 文件数
     local count
-    count=$(find "$current_claude/transcripts" -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
+    count=$(find "$current_transcripts" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
 
     if [[ "$count" -gt 0 ]]; then
-      # 关键：更新每个 .jsonl 文件内的 cwd 路径，否则 OpenCode 会异常
-      echo "   更新 $count 个文件的 cwd 路径..."
-
-      # 转义路径用于 sed（处理特殊字符）
-      local old_path_escaped new_path_escaped
-      old_path_escaped=$(printf '%s\n' "$current_dir" | sed 's/[&/\]/\\&/g')
-      new_path_escaped=$(printf '%s\n' "$parent_project" | sed 's/[&/\]/\\&/g')
-
-      for file in "$current_claude/transcripts"/*.jsonl; do
-        [[ -f "$file" ]] || continue
-        # 替换 "cwd":"/old/path" 为 "cwd":"/new/path"
-        sed -i "s|\"cwd\":\"${old_path_escaped}\"|\"cwd\":\"${new_path_escaped}\"|g" "$file"
-      done
-
-      # 移动文件
-      mv "$current_claude/transcripts"/*.jsonl "$parent_claude/transcripts/" 2>/dev/null || true
-      ocd_success "已合并 $count 个文件到 $parent_claude/transcripts/"
+      # OCD 用户: cwd 都是 /workspace（容器内路径），无需修改
+      mv "$current_transcripts"/*.jsonl "$parent_transcripts/" 2>/dev/null || true
+      ocd_success "已合并 $count 个文件"
     else
       ocd_info "没有需要合并的 .jsonl 文件"
     fi
 
     # 清理空目录
-    rmdir "$current_claude/transcripts" 2>/dev/null || true
-    rmdir "$current_claude/todos" 2>/dev/null || true
-    rmdir "$current_claude" 2>/dev/null && ocd_info "已清理 $current_claude/" || true
+    rmdir "$current_transcripts" 2>/dev/null || true
+    rmdir "${current_dir}/.claude/todos" 2>/dev/null || true
+    rmdir "${current_dir}/.claude" 2>/dev/null && ocd_info "已清理 ${current_dir}/.claude/" || true
 
     return 0
   fi
