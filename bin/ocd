@@ -103,8 +103,9 @@ EOF
 
   # --merge-up: 合并 transcripts 到父项目
   if [[ "$MERGE_UP" -eq 1 ]]; then
-    local current_claude
-    current_claude="$(pwd)/.claude"
+    local current_dir current_claude
+    current_dir="$(pwd)"
+    current_claude="${current_dir}/.claude"
 
     if [[ ! -d "$current_claude/transcripts" ]]; then
       ocd_error "当前目录没有 .claude/transcripts/"
@@ -113,12 +114,12 @@ EOF
 
     # 向上查找父项目（优先找 .git 项目，否则用直接父目录）
     local parent_project
-    parent_project=$(ocd_find_parent_project "$(pwd)")
+    parent_project=$(ocd_find_parent_project "$current_dir")
 
     if [[ -z "$parent_project" ]]; then
       # 没有 git 项目，使用直接父目录
       local direct_parent
-      direct_parent=$(dirname "$(pwd)")
+      direct_parent=$(dirname "$current_dir")
 
       if [[ "$direct_parent" == "$HOME" || "$direct_parent" == "/" ]]; then
         ocd_error "已在根目录，无法向上合并"
@@ -142,14 +143,30 @@ EOF
     echo "   从: $current_claude/transcripts/"
     echo "   到: $parent_claude/transcripts/"
 
-    # 移动文件
+    # 统计 .jsonl 文件数
     local count
-    count=$(find "$current_claude/transcripts" -type f 2>/dev/null | wc -l | tr -d ' ')
+    count=$(find "$current_claude/transcripts" -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
+
     if [[ "$count" -gt 0 ]]; then
-      mv "$current_claude/transcripts"/* "$parent_claude/transcripts/" 2>/dev/null || true
+      # 关键：更新每个 .jsonl 文件内的 cwd 路径，否则 OpenCode 会异常
+      echo "   更新 $count 个文件的 cwd 路径..."
+
+      # 转义路径用于 sed（处理特殊字符）
+      local old_path_escaped new_path_escaped
+      old_path_escaped=$(printf '%s\n' "$current_dir" | sed 's/[&/\]/\\&/g')
+      new_path_escaped=$(printf '%s\n' "$parent_project" | sed 's/[&/\]/\\&/g')
+
+      for file in "$current_claude/transcripts"/*.jsonl; do
+        [[ -f "$file" ]] || continue
+        # 替换 "cwd":"/old/path" 为 "cwd":"/new/path"
+        sed -i "s|\"cwd\":\"${old_path_escaped}\"|\"cwd\":\"${new_path_escaped}\"|g" "$file"
+      done
+
+      # 移动文件
+      mv "$current_claude/transcripts"/*.jsonl "$parent_claude/transcripts/" 2>/dev/null || true
       ocd_success "已合并 $count 个文件到 $parent_claude/transcripts/"
     else
-      ocd_info "没有需要合并的文件"
+      ocd_info "没有需要合并的 .jsonl 文件"
     fi
 
     # 清理空目录
