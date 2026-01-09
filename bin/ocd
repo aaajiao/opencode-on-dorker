@@ -194,9 +194,9 @@ EOF
   # Tailscale HTTPS
   local TS_HOSTNAME=""
   if [[ "$USE_HTTPS" -eq 1 ]] && command -v tailscale &>/dev/null; then
-    TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//')
+    TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//' || echo "")
     if [[ -n "$TS_HOSTNAME" ]]; then
-      tailscale serve --bg https / "http://localhost:${PORT}" &>/dev/null
+      tailscale serve --bg https / "http://localhost:${PORT}" &>/dev/null || true
       _OCD_HTTPS_ENABLED=1
     fi
   fi
