@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/bats/sete.bats - set -e 兼容性测试
+# tests/bats/sete.bats - set -e 兼容性测试 (v4.0)
 #
 # 确保所有函数在 set -e 模式下正确工作，
 # 不会因为条件判断返回 false 而导致脚本退出
@@ -8,19 +8,16 @@ setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录
+  # 模拟 XDG 目录 (v4.0 - 无 instance 概念)
   export OCD_CONFIG_HOME="$TEST_DIR/config"
-  export OCD_CONFIG_GLOBAL="$TEST_DIR/config/global"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
-  export OCD_CONFIG_INSTANCES="$TEST_DIR/config/instances"
-  export OCD_DATA_INSTANCES="$TEST_DIR/data/instances"
-  export OCD_STATE_INSTANCES="$TEST_DIR/state/instances"
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
+  export OCD_IPC_HOME="$TEST_DIR/state/ipc"
 
   # 创建必要目录
-  mkdir -p "$OCD_CONFIG_GLOBAL/claude"
-  mkdir -p "$OCD_CONFIG_GLOBAL/opencode"
+  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
 
   source "$OCD_ROOT/lib/core.sh"
   source "$OCD_ROOT/lib/config.sh"
@@ -50,18 +47,17 @@ run_with_set_e() {
 # lib/config.sh 函数测试
 # =========================================
 
-@test "set -e: ocd_init_global with existing files" {
-  # 预创建文件（模拟已存在的情况）
-  mkdir -p "$OCD_CONFIG_GLOBAL/claude"
-  echo '{}' > "$OCD_CONFIG_GLOBAL/claude/settings.json"
-  echo '{}' > "$OCD_CONFIG_GLOBAL/claude/.mcp.json"
+@test "set -e: ocd_init_global with existing directories" {
+  # 预创建目录（模拟已存在的情况）
+  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
 
   # 在 set -e 下运行应该成功
   run run_with_set_e ocd_init_global
   [ "$status" -eq 0 ]
 }
 
-@test "set -e: ocd_init_global without existing files" {
+@test "set -e: ocd_init_global without existing directories" {
+  rm -rf "$OCD_CONFIG_HOME"
   run run_with_set_e ocd_init_global
   [ "$status" -eq 0 ]
 }

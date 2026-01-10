@@ -120,12 +120,12 @@ main() {
   # 加载本地配置
   [[ -f "$OCD_ROOT/.ocdrc" ]] && source "$OCD_ROOT/.ocdrc"
 
-  # v2.x → v3.0 自动迁移
+  # v3.x → v4.0 自动迁移
   ocd_auto_migrate
 
-  local REBUILD=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0 MERGE_UP=0
-  local INSTANCE_NAME="" CUSTOM_PORT=""
-  local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
+  local REBUILD=0 CLEAN_CONFIG=0 MERGE_UP=0
+  local CUSTOM_PORT=""
+  local USE_QUOTIO=0
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
 
   trap '_ocd_cleanup' INT TERM HUP
@@ -142,12 +142,9 @@ main() {
       --dev) shift ;;  # 已在预扫描处理
       --dev-root=*) shift ;;  # 已在预扫描处理
       --dev-root) shift 2 ;;  # 已在预扫描处理（空格式）
-      -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
-      -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
-      --clean) CLEAN_INSTANCE=1; shift ;;
-      --purge) PURGE_INSTANCE=1; shift ;;
+      --clean) CLEAN_CONFIG=1; shift ;;
       --merge-up) MERGE_UP=1; shift ;;
       -h|--help)
         cat << EOF
@@ -158,13 +155,10 @@ Usage: ocd [options]
 Options:
   -v, --version     Show version
   -r                Rebuild image and clear cache
-  -n <name>         Instance name
   -p <port>         Port number
-  -w <path>         Workspace root directory
-  --here            Mount current directory only
+  --here            Mount current directory only (skip workspace detection)
   --merge-up        Merge transcripts to parent project (undo --here)
-  --clean           Clean instance config (preserve conversations)
-  --purge           Clean ALL instance data including conversations
+  --clean           Clear config (regenerate on next run)
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
@@ -248,47 +242,27 @@ EOF
   if [[ "$USE_HERE" -eq 1 ]]; then
     WORKSPACE_ROOT="$CURRENT_DIR"
     START_DIR=""
-  elif [[ -n "$CUSTOM_WORKSPACE" ]]; then
-    WORKSPACE_ROOT="${CUSTOM_WORKSPACE/#\~/$HOME}"
-    START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
   else
     WORKSPACE_ROOT=$(ocd_find_workspace_root "$CURRENT_DIR")
     if [[ "$WORKSPACE_ROOT" == BLOCKED:* ]]; then
       ocd_error "工作区 ${WORKSPACE_ROOT#BLOCKED:} 不在白名单内"
       ocd_info "允许的工作区: ${OCD_ALLOWED_WORKSPACES:-未设置}"
+      ocd_info "使用 --here 可跳过白名单检查"
       return 1
     fi
     START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
   fi
 
-  # 实例名
-  [[ -z "$INSTANCE_NAME" ]] && INSTANCE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
+  # 容器名基于工作区目录名（仅用于 Docker 容器命名）
+  local WORKSPACE_NAME
+  WORKSPACE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
+  local CONTAINER_NAME="opencode-${WORKSPACE_NAME}"
 
-  local CONTAINER_NAME="opencode-${INSTANCE_NAME}"
-  # XDG 标准路径 (v3.0)
-  local INSTANCE_CONFIG_DIR="$OCD_CONFIG_INSTANCES/${INSTANCE_NAME}"
-  local INSTANCE_DATA_DIR="$OCD_DATA_INSTANCES/${INSTANCE_NAME}"
-  local INSTANCE_STATE_DIR="$OCD_STATE_INSTANCES/${INSTANCE_NAME}"
-
-  # 清理实例（保留对话历史）
-  if [[ "$CLEAN_INSTANCE" -eq 1 ]]; then
-    echo "🗑️  清理实例 '${INSTANCE_NAME}' 配置..."
-    rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_STATE_DIR"
-    ocd_success "已清理配置（对话历史已保留），重新运行 ocd 将生成新配置"
-    return 0
-  fi
-
-  # 完全清理实例（包括对话历史）
-  if [[ "$PURGE_INSTANCE" -eq 1 ]]; then
-    echo "⚠️  完全清理实例 '${INSTANCE_NAME}'..."
-    echo "   将删除: 配置、状态、对话历史"
-    read -r -p "   确认删除? [y/N] " confirm
-    if [[ "$confirm" =~ ^[Yy]$ ]]; then
-      rm -rf "$INSTANCE_CONFIG_DIR" "$INSTANCE_STATE_DIR" "$INSTANCE_DATA_DIR"
-      ocd_success "已完全清理实例 '${INSTANCE_NAME}'"
-    else
-      echo "已取消"
-    fi
+  # 清理配置（v4.0: 共享配置）
+  if [[ "$CLEAN_CONFIG" -eq 1 ]]; then
+    echo "🗑️  清理配置..."
+    rm -f "$OCD_CONFIG_HOME/opencode.json" "$OCD_CONFIG_HOME/oh-my-opencode.json"
+    ocd_success "已清理配置，重新运行 ocd 将生成新配置"
     return 0
   fi
 
@@ -304,18 +278,15 @@ EOF
   ocd_debug "OCD_CACHE_HOME=$OCD_CACHE_HOME"
   ocd_debug "OCD_CONFIG_HOME=$OCD_CONFIG_HOME"
   ocd_debug "WORKSPACE_ROOT=$WORKSPACE_ROOT"
-  ocd_debug "INSTANCE_NAME=$INSTANCE_NAME"
+  ocd_debug "PORT=$PORT"
 
   # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then
     ocd_remove_image "$IMAGE_NAME"
-    # 清理缓存 (与镜像版本相关)
     echo "🗑️  清理缓存..."
     ocd_debug "删除缓存目录: $OCD_CACHE_HOME"
-    rm -rf "$OCD_CACHE_HOME"
-    # 立即重建缓存目录结构（oh-my-opencode 需要）
-    ocd_debug "创建目录: $OCD_CACHE_HOME/oh-my-opencode/bin"
-    mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
+    rm -rf "$OCD_CACHE_HOME" "$OCD_OMO_CACHE_HOME"
+    mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$OCD_CACHE_HOME/ms-playwright"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
     ocd_build_image "$IMAGE_NAME" 0
@@ -327,24 +298,20 @@ EOF
   # 初始化配置
   ocd_init_global
   ocd_init_project "$(pwd)"
-  # 确保缓存目录存在（在 Docker 挂载之前创建，避免挂载空目录）
-  ocd_debug "确保缓存目录存在: $OCD_CACHE_HOME/oh-my-opencode/bin"
-  mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
-  ocd_debug "目录状态: $(ls -la "$OCD_CACHE_HOME/oh-my-opencode/" 2>&1 || echo '目录不存在')"
+  mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$OCD_CACHE_HOME/ms-playwright"
 
   # 加载环境变量
   ocd_load_env "$ENV_FILE"
 
-  # 生成配置文件
-  mkdir -p "$INSTANCE_CONFIG_DIR"
-  local CONFIG_FILE="${INSTANCE_CONFIG_DIR}/opencode.json"
-  local OMO_CONFIG_FILE="${INSTANCE_CONFIG_DIR}/oh-my-opencode.json"
+  # 生成配置文件 (v4.0: 共享配置)
+  mkdir -p "$OCD_CONFIG_HOME"
+  local CONFIG_FILE="${OCD_CONFIG_HOME}/opencode.json"
+  local OMO_CONFIG_FILE="${OCD_CONFIG_HOME}/oh-my-opencode.json"
 
   if [[ ! -f "$CONFIG_FILE" ]]; then
     echo "📝 生成 opencode.json..."
     ocd_generate_opencode_config "$CONFIG_FILE" "$PORT" "$USE_QUOTIO"
   else
-    # 更新端口和模型配置
     ocd_update_config_port "$CONFIG_FILE" "$PORT"
     ocd_update_config_model "$CONFIG_FILE" "$MAIN_MODEL"
   fi
@@ -353,22 +320,20 @@ EOF
     echo "📝 生成 oh-my-opencode.json..."
     ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
   else
-    # 更新 Agent 模型配置
     ocd_update_omo_agents "$OMO_CONFIG_FILE"
   fi
 
-  # IPC 文件 (状态目录，与容器内 /root/.opencode 对应)
-  mkdir -p "$INSTANCE_STATE_DIR"
-  local URL_FILE="${INSTANCE_STATE_DIR}/open_url"
-  local NOTIFY_FILE="${INSTANCE_STATE_DIR}/notifications"
-  local CLIPBOARD_FILE="${INSTANCE_STATE_DIR}/clipboard"
+  # IPC 文件 (v4.0: 按端口区分，支持多窗口)
+  local IPC_DIR
+  IPC_DIR=$(ocd_ipc_dir "$PORT")
+  mkdir -p "$IPC_DIR"
+  local URL_FILE="${IPC_DIR}/open_url"
+  local NOTIFY_FILE="${IPC_DIR}/notifications"
+  local CLIPBOARD_FILE="${IPC_DIR}/clipboard"
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
-  _OCD_URL_FILE="$URL_FILE"  # 保存到全局变量供 cleanup 使用
+  _OCD_URL_FILE="$URL_FILE"
 
-  # 清理可能泄漏的旧 fswatch 进程（防止多窗口 bug）
   pkill -f "fswatch.*open_url" 2>/dev/null || true
-
-  # 启动 Watcher（不使用 disown，保持进程可控以便 cleanup 能正确杀死）
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
 
   # Tailscale HTTPS
@@ -385,7 +350,7 @@ EOF
   local dev_label=""
   [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && dev_label=" [DEV]"
   echo ""
-  echo "🚀 OCD v$(ocd_version)${dev_label} │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  echo "🚀 OCD v$(ocd_version)${dev_label} │ http://localhost:${PORT}"
   [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && echo "   └─ 📂 开发目录: $OCD_ROOT"
   local TAILSCALE_IP
   TAILSCALE_IP=$(ocd_get_tailscale_ip || echo "")
@@ -402,8 +367,8 @@ EOF
     _OCD_CAFFEINATE_PID=$!
   fi
 
-  # 运行容器
-  ocd_run_container "$CONTAINER_NAME" "$IMAGE_NAME" "$WORKSPACE_ROOT" "$INSTANCE_NAME" "$START_DIR" "$ENV_FILE" "$@"
+  # 运行容器 (v4.0: 去掉 instance 参数)
+  ocd_run_container "$CONTAINER_NAME" "$IMAGE_NAME" "$WORKSPACE_ROOT" "$PORT" "$START_DIR" "$ENV_FILE" "$@"
 
   # 清理
   _ocd_cleanup

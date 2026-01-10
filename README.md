@@ -1,13 +1,13 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-3.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
 
 ## 功能特性
 
 - ✅ 一键启动 OpenCode 容器（`ocd` 命令）
-- ✅ **多实例支持**（同时编辑多个项目，自动端口分配 + 锁机制防冲突）
+- ✅ **多窗口支持**（同时编辑多个项目，自动端口分配 + 锁机制防冲突）
 - ✅ 链接自动在 Mac 浏览器打开
 - ✅ **macOS 桌面通知支持**
 - ✅ **剪贴板桥接**（`/share` 等命令自动复制到 Mac）
@@ -109,8 +109,9 @@ ocd
 ```
 
 **启动输出：**
-```
-🚀 OCD v3.0.0 │ projects │ http://localhost:4096
+
+```text
+🚀 OCD v4.0.0 │ http://localhost:4096
    └─ 项目: webapp
 ```
 
@@ -120,14 +121,11 @@ ocd
 |------|------|------|
 | `-v` | 显示版本号 | `ocd -v` |
 | `-h` | 显示帮助 | `ocd -h` |
-| `-n <name>` | 指定实例名 | `ocd -n myapp` |
 | `-p <port>` | 指定端口 | `ocd -p 5000` |
-| `-w <path>` | 指定工作区目录 | `ocd -w ~/projects` |
 | `--here` | 只挂载当前目录 | `ocd --here` |
 | `--merge-up` | 合并 transcripts 到父项目（撤销 --here） | `ocd --merge-up` |
 | `-r` | 重建镜像 + 清理缓存 | `ocd -r` |
-| `--clean` | 清理当前实例配置（保留对话） | `ocd --clean` |
-| `--purge` | 完全清理当前实例（需确认） | `ocd --purge` |
+| `--clean` | 清理共享配置（保留对话） | `ocd --clean` |
 | `--https` | 通过 Tailscale Serve 启用 HTTPS | `ocd --https` |
 | `--awake` | 防止 Mac 进入休眠 | `ocd --awake` |
 | `--quotio` | 启用 Quotio 代理 | `ocd --quotio` |
@@ -173,50 +171,32 @@ docker rmi opencode-bun-dev
 git worktree remove dev
 ```
 
-### 兼容旧行为
-
-```bash
-# 只挂载当前目录（不检测工作区）
-ocd --here
-
-# 指定工作区目录
-ocd -w ~/work
-
-# 环境变量方式
-export OCD_WORKSPACE=~/projects
-ocd
-```
-
 ## 目录结构
 
-OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)：
+OCD v4.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)：
 
 ```
-~/.config/opencode/                    # 配置 (可版本控制)
-├── global/                            # 全局配置
-│   ├── opencode/{skill,command,agent}/
-│   └── claude/{skills,commands,agents,rules}
-└── instances/<instance>/              # 实例配置
-    ├── opencode.json
-    └── oh-my-opencode.json
+~/.config/opencode/                    # 配置 (单副本，共享)
+├── opencode.json                     # 主配置文件
+├── oh-my-opencode.json               # 插件配置文件
+├── skill/                            # 全局技能
+├── command/                          # 全局命令
+└── agent/                            # 全局 Agent
 
 ~/.local/share/opencode/               # 数据 (必须备份)
-├── auth.json                          # 认证令牌 (共享)
-├── bin/                               # 二进制缓存
-└── instances/<instance>/              # 对话历史
-    ├── session/
-    ├── message/
-    └── part/
+├── storage/                          # 会话和消息 (按 git SHA 存储)
+│   └── session/<git-sha>/
+├── auth.json                          # OAuth 认证令牌 (共享)
+└── bin/                               # 二进制缓存
 
 ~/.local/state/opencode/               # 状态 (可重建)
-└── instances/<instance>/              # IPC 文件
+└── ipc/<port>/                       # 跨窗口隔离的 IPC 文件
     ├── open_url
     ├── notifications
     └── clipboard
 
-~/.cache/opencode/                     # 缓存 (可删除)
-├── oh-my-opencode/                    # ast-grep, ripgrep
-└── ms-playwright/                     # 浏览器
+~/.cache/opencode/                     # OpenCode 缓存 (可删除)
+~/.cache/oh-my-opencode/               # 插件缓存 (ast-grep, ripgrep)
 
 <project>/.claude/                     # 项目级对话 (跟随项目)
 ├── todos/
@@ -225,82 +205,59 @@ OCD v3.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 
 ### 目录清理对照表
 
-| 目录 | 内容 | `-r` | `--clean` | `--purge` | 手动 |
-|------|------|:----:|:---------:|:---------:|:----:|
-| `~/.cache/opencode/` | 缓存 (playwright, ast-grep) | ✅ | - | - | ✅ |
-| `~/.config/opencode/instances/<inst>/` | 实例配置 | - | ✅ | ✅ | ✅ |
-| `~/.local/state/opencode/instances/<inst>/` | IPC 文件 | - | ✅ | ✅ | ✅ |
-| `~/.local/share/opencode/instances/<inst>/` | 对话历史 | - | - | ✅ | ✅ |
-| `~/.config/opencode/global/` | 全局配置 (skills) | - | - | - | ✅ |
-| `~/.local/share/opencode/auth.json` | 认证令牌 | - | - | - | ✅ |
-| `<project>/.claude/` | 项目对话 | - | - | - | ✅ |
+| 目录 | 内容 | `-r` | `--clean` | 手动 |
+|------|------|:----:|:---------:|:----:|
+| `~/.cache/opencode/` | 缓存 (playwright, ast-grep) | ✅ | - | ✅ |
+| `~/.config/opencode/` | 共享配置 | - | ✅ | ✅ |
+| `~/.local/state/opencode/ipc/` | IPC 状态 | - | ✅ | ✅ |
+| `~/.local/share/opencode/storage/` | 对话历史 | - | - | ✅ |
+| `~/.local/share/opencode/auth.json` | 认证令牌 | - | - | ✅ |
+| `<project>/.claude/` | 项目对话 | - | - | ✅ |
 
 **图例**：✅ = 会删除，- = 不删除
 
 **命令说明**：
-- `ocd -r` - 重建镜像，清理缓存（所有实例共享）
-- `ocd --clean` - 清理当前实例配置，保留对话历史
-- `ocd --purge` - 完全删除当前实例（需确认）
+
+- `ocd -r` - 重建镜像，清理缓存
+- `ocd --clean` - 清理共享配置，重新生成
 
 ### 神圣不可删除
 
 以下目录**不会被任何 ocd 命令自动删除**，只能手动清理：
 
 - `~/.local/share/opencode/auth.json` - OAuth 认证令牌
-- `~/.config/opencode/global/` - 全局 skills/commands/agents
+- `~/.config/opencode/{skill,command,agent}/` - 全局自定义组件
 
-## 从 v2.x 升级
+## 从 v3.x 升级
 
 ### 自动迁移
 
-OCD v3.0 首次运行时会**自动检测并迁移** v2.x 数据：
+OCD v4.0 提供了迁移脚本来合并 v3.x 的实例数据：
 
 ```bash
-ocd
-# → 检测到 v2.x 数据，自动迁移中...
-# → ✓ 配置: ~/.config/opencode/myapp → ~/.config/opencode/instances/myapp
-# → ✓ 数据: ~/.local/share/opencode/storage/myapp → ~/.local/share/opencode/instances/myapp
-# → ✓ 状态: ~/.opencode_data/myapp → ~/.local/state/opencode/instances/myapp
-# → ✓ 迁移完成
+# 运行迁移脚本
+~/opencode/scripts/migrate-v4.sh
 ```
 
-### 手动迁移
-
-如需手动运行迁移脚本：
-
-```bash
-~/opencode/scripts/migrate-v3.sh
-```
+该脚本会将所有 `instances/` 下的配置合并到共享配置，并移动会话数据。
 
 ### 路径变更
 
-| v2.x 路径 | v3.0 路径 |
-|-----------|-----------|
-| `~/.config/opencode/<inst>/` | `~/.config/opencode/instances/<inst>/` |
-| `~/.local/share/opencode/storage/<inst>/` | `~/.local/share/opencode/instances/<inst>/` |
-| `~/.opencode_data/<inst>/` | `~/.local/state/opencode/instances/<inst>/` |
-| `~/opencode/global/` | `~/.config/opencode/global/` |
+| 路径描述 | v3.x 路径 | v4.0 路径 |
+|-----------|-----------|-----------|
+| 实例配置 | `~/.config/opencode/instances/<inst>/` | `~/.config/opencode/` (合并) |
+| 会话数据 | `~/.local/share/opencode/instances/<inst>/` | `~/.local/share/opencode/storage/` |
+| IPC 状态 | `~/.local/state/opencode/instances/<inst>/` | `~/.local/state/opencode/ipc/<port>/` |
+| 全局配置 | `~/.config/opencode/global/` | `~/.config/opencode/` |
 
-### 不变的路径
+### 清理 v3.x 残留
 
-以下路径在 v2.x 和 v3.0 中保持一致：
-
-- `~/.local/share/opencode/auth.json` - 认证令牌
-- `~/.cache/opencode/` - 缓存目录
-
-### 清理 v2.x 残留
-
-迁移完成后，旧目录会保留作为备份。确认无问题后可手动清理：
+确认 v4.0 运行正常后，可以清理旧的实例目录：
 
 ```bash
-# 清理旧的全局配置（已复制到新位置）
-rm -rf ~/opencode/global
-
-# 清理旧的 IPC 目录（如果为空）
-rmdir ~/.opencode_data 2>/dev/null
-
-# 清理旧的 storage 目录（如果为空）
-rmdir ~/.local/share/opencode/storage 2>/dev/null
+rm -rf ~/.config/opencode/instances
+rm -rf ~/.local/share/opencode/instances
+rm -rf ~/.local/state/opencode/instances
 ```
 
 ## 架构
@@ -519,7 +476,7 @@ oh-my-opencode 的通知 hook 会自动使用此机制。
 
 确保 `.env` 格式正确：不能有 `export`、引号、注释。
 
-### Q: 多实例端口冲突？
+### Q: 多窗口端口冲突？
 
 OCD 使用锁机制防止冲突。如遇问题：
 

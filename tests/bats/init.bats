@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/bats/init.bats - 目录初始化测试
+# tests/bats/init.bats - 目录初始化测试 (v4.0)
 
 setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
@@ -8,12 +8,13 @@ setup() {
 
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录
+  # 模拟 XDG 目录 (v4.0 - 无 instance 概念)
   export OCD_CONFIG_HOME="$TEST_DIR/config"
-  export OCD_CONFIG_GLOBAL="$TEST_DIR/config/global"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
+  export OCD_IPC_HOME="$TEST_DIR/state/ipc"
 }
 
 teardown() {
@@ -21,53 +22,15 @@ teardown() {
 }
 
 # =========================================
-# ocd_init_global 测试
+# ocd_init_global 测试 (v4.0 - 简化版)
 # =========================================
 
 @test "ocd_init_global creates OpenCode native directories" {
   ocd_init_global
 
-  [ -d "$OCD_CONFIG_GLOBAL/opencode/skill" ]
-  [ -d "$OCD_CONFIG_GLOBAL/opencode/command" ]
-  [ -d "$OCD_CONFIG_GLOBAL/opencode/agent" ]
-}
-
-@test "ocd_init_global creates Claude compat directories" {
-  ocd_init_global
-
-  [ -d "$OCD_CONFIG_GLOBAL/claude/skills" ]
-  [ -d "$OCD_CONFIG_GLOBAL/claude/commands" ]
-  [ -d "$OCD_CONFIG_GLOBAL/claude/agents" ]
-  [ -d "$OCD_CONFIG_GLOBAL/claude/rules" ]
-}
-
-@test "ocd_init_global creates settings.json if not exists" {
-  ocd_init_global
-
-  [ -f "$OCD_CONFIG_GLOBAL/claude/settings.json" ]
-  # 应该是空 JSON 对象
-  result=$(cat "$OCD_CONFIG_GLOBAL/claude/settings.json")
-  [ "$result" = "{}" ]
-}
-
-@test "ocd_init_global creates .mcp.json if not exists" {
-  ocd_init_global
-
-  [ -f "$OCD_CONFIG_GLOBAL/claude/.mcp.json" ]
-  # 应该包含 mcpServers
-  run jq '.mcpServers' "$OCD_CONFIG_GLOBAL/claude/.mcp.json"
-  [ "$status" -eq 0 ]
-}
-
-@test "ocd_init_global does not overwrite existing files" {
-  mkdir -p "$OCD_CONFIG_GLOBAL/claude"
-  echo '{"custom": true}' > "$OCD_CONFIG_GLOBAL/claude/settings.json"
-
-  ocd_init_global
-
-  # 应保留原内容
-  result=$(jq '.custom' "$OCD_CONFIG_GLOBAL/claude/settings.json")
-  [ "$result" = "true" ]
+  [ -d "$OCD_CONFIG_HOME/skill" ]
+  [ -d "$OCD_CONFIG_HOME/command" ]
+  [ -d "$OCD_CONFIG_HOME/agent" ]
 }
 
 @test "ocd_init_global returns 0 (set -e compatible)" {
@@ -86,8 +49,9 @@ teardown() {
   ocd_init_global
 
   # 目录应该存在
-  [ -d "$OCD_CONFIG_GLOBAL/opencode/skill" ]
-  [ -d "$OCD_CONFIG_GLOBAL/claude/skills" ]
+  [ -d "$OCD_CONFIG_HOME/skill" ]
+  [ -d "$OCD_CONFIG_HOME/command" ]
+  [ -d "$OCD_CONFIG_HOME/agent" ]
 }
 
 # =========================================

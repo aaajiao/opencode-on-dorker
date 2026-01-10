@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/bats/docker.bats - Docker 挂载和目录创建测试
+# tests/bats/docker.bats - Docker 挂载和目录创建测试 (v4.0)
 #
 # 注意：这些测试不需要真正运行 Docker，只测试挂载参数构建逻辑
 
@@ -7,20 +7,17 @@ setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录
+  # 模拟 XDG 目录 (v4.0 - 无 instance 概念)
   export OCD_CONFIG_HOME="$TEST_DIR/config"
-  export OCD_CONFIG_GLOBAL="$TEST_DIR/config/global"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
-  export OCD_CONFIG_INSTANCES="$TEST_DIR/config/instances"
-  export OCD_DATA_INSTANCES="$TEST_DIR/data/instances"
-  export OCD_STATE_INSTANCES="$TEST_DIR/state/instances"
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
+  export OCD_IPC_HOME="$TEST_DIR/state/ipc"
   export HOME="$TEST_DIR/home"
 
   mkdir -p "$HOME"
-  mkdir -p "$OCD_CONFIG_GLOBAL/opencode"/{skill,command,agent}
-  mkdir -p "$OCD_CONFIG_GLOBAL/claude"
+  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
 
   source "$OCD_ROOT/lib/core.sh"
   source "$OCD_ROOT/lib/workspace.sh"
@@ -151,16 +148,17 @@ teardown() {
 }
 
 # =========================================
-# IPC 文件创建测试
+# IPC 文件创建测试 (v4.0 - 按端口区分)
 # =========================================
 
 @test "IPC files created and empty" {
-  local state_dir="$TEST_DIR/state/instances/test"
-  mkdir -p "$state_dir"
+  local port="4096"
+  local ipc_dir="$OCD_IPC_HOME/$port"
+  mkdir -p "$ipc_dir"
 
-  local url_file="$state_dir/open_url"
-  local notify_file="$state_dir/notifications"
-  local clipboard_file="$state_dir/clipboard"
+  local url_file="$ipc_dir/open_url"
+  local notify_file="$ipc_dir/notifications"
+  local clipboard_file="$ipc_dir/clipboard"
 
   : > "$url_file" && : > "$notify_file" && : > "$clipboard_file"
 
@@ -168,6 +166,26 @@ teardown() {
   [ -f "$notify_file" ]
   [ -f "$clipboard_file" ]
   [ ! -s "$url_file" ]  # 应该为空
+}
+
+@test "IPC directories isolated by port" {
+  local port1="4096"
+  local port2="5000"
+  local ipc_dir1="$OCD_IPC_HOME/$port1"
+  local ipc_dir2="$OCD_IPC_HOME/$port2"
+
+  mkdir -p "$ipc_dir1" "$ipc_dir2"
+  echo "test1" > "$ipc_dir1/clipboard"
+  echo "test2" > "$ipc_dir2/clipboard"
+
+  # 两个端口的 IPC 文件应该独立
+  [ "$(cat "$ipc_dir1/clipboard")" = "test1" ]
+  [ "$(cat "$ipc_dir2/clipboard")" = "test2" ]
+}
+
+@test "ocd_ipc_dir returns correct path" {
+  result=$(ocd_ipc_dir "5000")
+  [ "$result" = "$OCD_IPC_HOME/5000" ]
 }
 
 # =========================================

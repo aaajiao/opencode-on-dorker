@@ -1,0 +1,19 @@
+#!/bin/bash
+# bin/devocd - 开发模式快捷入口
+# 直接执行 dev 目录下的 ocd，避免依赖生产版代码
+
+OCD_DEV_ROOT="${OCD_DEV_ROOT:-$HOME/opencode/dev}"
+
+if [[ ! -f "$OCD_DEV_ROOT/bin/ocd" ]]; then
+  echo "❌ 开发目录不存在: $OCD_DEV_ROOT"
+  echo ""
+  echo "   创建方法："
+  echo "   cd ~/opencode && git worktree add dev dev"
+  exit 1
+fi
+
+# 设置 OCD_ROOT 并标记已设置，防止 ocd 再次修改
+export OCD_ROOT="$OCD_DEV_ROOT"
+export OCD_ROOT_PRESET=1
+export OCD_DEV_MODE=1
+exec "$OCD_DEV_ROOT/bin/ocd" "$@"
