@@ -84,7 +84,7 @@ ocd_load_versions() {
 OCD_DEBUG="${OCD_DEBUG:-0}"
 
 ocd_debug() {
-  [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2
+  [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2 || true
 }
 
 # =========================================

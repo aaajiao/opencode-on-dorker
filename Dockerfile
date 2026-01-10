@@ -177,7 +177,7 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
 RUN echo '#!/bin/bash\n\
 \n\
 # 调试函数\n\
-ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2; }\n\
+ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2 || true; }\n\
 \n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
 \n\
@@ -229,7 +229,8 @@ if [[ -n "$OCD_START_DIR" && -d "/workspace/$OCD_START_DIR" ]]; then\n\
     cd "/workspace/$OCD_START_DIR"\n\
 fi\n\
 \n\
-exec opencode "$@"\n\
+# 始终传递当前工作目录给 opencode（使用 -c 选项明确指定）\n\
+exec opencode -c . "$@"\n\
 ' > /usr/local/bin/entrypoint.sh && \
     chmod +x /usr/local/bin/entrypoint.sh
 
