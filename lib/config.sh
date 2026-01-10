@@ -18,16 +18,25 @@ MULTIMODAL_MODEL="${MULTIMODAL_MODEL:-}"
 # 加载模型配置
 # =========================================
 ocd_load_models() {
-  local models_file="${OCD_ROOT:-$HOME/opencode}/models.conf"
+  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
+  local models_file=""
 
-  # 先从 models.conf 加载用户配置（如果存在）
-  if [[ -f "$models_file" ]]; then
+  # 按优先级查找配置文件：
+  # 1. models.conf（用户自定义配置，最高优先级）
+  # 2. models.conf.example（预设配置，作为默认值）
+  if [[ -f "$ocd_root/models.conf" ]]; then
+    models_file="$ocd_root/models.conf"
+  elif [[ -f "$ocd_root/models.conf.example" ]]; then
+    models_file="$ocd_root/models.conf.example"
+  fi
+
+  # 从配置文件加载（如果存在）
+  if [[ -n "$models_file" ]]; then
     # shellcheck disable=SC1090
     source <(grep -E '^[A-Z_]+=.+' "$models_file" 2>/dev/null | grep -v '^#' || true)
   fi
 
-  # 然后对未设置的变量应用默认值
-  # 注意：这必须在加载 models.conf 之后执行！
+  # 对未设置的变量应用硬编码默认值（兜底）
   MAIN_MODEL="${MAIN_MODEL:-anthropic/claude-opus-4-5}"
   PLANNER_MODEL="${PLANNER_MODEL:-anthropic/claude-opus-4-5}"
   # 其他变量保持空值（不设置默认值）
