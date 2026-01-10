@@ -66,7 +66,7 @@ main() {
   local REBUILD=0 CLEAN_INSTANCE=0 PURGE_INSTANCE=0 MERGE_UP=0
   local INSTANCE_NAME="" CUSTOM_PORT=""
   local USE_QUOTIO=0 CUSTOM_WORKSPACE=""
-  local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0 USE_DEBUG=0
+  local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
 
   trap '_ocd_cleanup' INT TERM HUP
 
@@ -78,7 +78,7 @@ main() {
       --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
-      --debug) USE_DEBUG=1; OCD_DEBUG=1; export OCD_DEBUG; shift ;;
+      --debug) OCD_DEBUG=1; export OCD_DEBUG; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
