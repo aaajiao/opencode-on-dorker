@@ -140,13 +140,15 @@ cleanup_v3_dirs() {
   echo "清理旧目录..."
   
   if [[ -d "$V3_CONFIG_INSTANCES" ]]; then
-    local backup="$V3_CONFIG_INSTANCES.bak.$(date +%Y%m%d)"
+    local backup
+    backup="$V3_CONFIG_INSTANCES.bak.$(date +%Y%m%d)"
     mv "$V3_CONFIG_INSTANCES" "$backup"
     log_info "  备份: $V3_CONFIG_INSTANCES → $backup"
   fi
   
   if [[ -d "$V3_DATA_INSTANCES" ]]; then
-    local backup="$V3_DATA_INSTANCES.bak.$(date +%Y%m%d)"
+    local backup
+    backup="$V3_DATA_INSTANCES.bak.$(date +%Y%m%d)"
     mv "$V3_DATA_INSTANCES" "$backup"
     log_info "  备份: $V3_DATA_INSTANCES → $backup"
   fi
