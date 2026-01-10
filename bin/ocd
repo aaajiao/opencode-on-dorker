@@ -78,6 +78,7 @@ main() {
       --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
+      --debug) OCD_DEBUG=1; export OCD_DEBUG; shift ;;
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
@@ -104,6 +105,7 @@ Options:
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
+  --debug           Enable debug output
   -h, --help        Show this help
 EOF
         return 0
@@ -233,13 +235,21 @@ EOF
   ocd_load_versions
   ocd_load_models
 
+  # 调试信息
+  ocd_debug "OCD_CACHE_HOME=$OCD_CACHE_HOME"
+  ocd_debug "OCD_CONFIG_HOME=$OCD_CONFIG_HOME"
+  ocd_debug "WORKSPACE_ROOT=$WORKSPACE_ROOT"
+  ocd_debug "INSTANCE_NAME=$INSTANCE_NAME"
+
   # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then
     ocd_remove_image "$IMAGE_NAME"
     # 清理缓存 (与镜像版本相关)
     echo "🗑️  清理缓存..."
+    ocd_debug "删除缓存目录: $OCD_CACHE_HOME"
     rm -rf "$OCD_CACHE_HOME"
     # 立即重建缓存目录结构（oh-my-opencode 需要）
+    ocd_debug "创建目录: $OCD_CACHE_HOME/oh-my-opencode/bin"
     mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
@@ -253,7 +263,9 @@ EOF
   ocd_init_global
   ocd_init_project "$(pwd)"
   # 确保缓存目录存在（在 Docker 挂载之前创建，避免挂载空目录）
+  ocd_debug "确保缓存目录存在: $OCD_CACHE_HOME/oh-my-opencode/bin"
   mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
+  ocd_debug "目录状态: $(ls -la "$OCD_CACHE_HOME/oh-my-opencode/" 2>&1 || echo '目录不存在')"
 
   # 加载环境变量
   ocd_load_env "$ENV_FILE"
