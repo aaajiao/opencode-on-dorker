@@ -43,53 +43,6 @@ ocd_load_models() {
 }
 
 # =========================================
-# 加载 MCP 配置
-# =========================================
-# 从 mcp.json 读取配置并替换 ${VAR} 和 ${VAR:-default} 变量
-# 优先级：mcp.json > mcp.json.example
-ocd_load_mcp() {
-  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
-  local mcp_file=""
-
-  # 按优先级查找配置文件
-  if [[ -f "$ocd_root/mcp.json" ]]; then
-    mcp_file="$ocd_root/mcp.json"
-  elif [[ -f "$ocd_root/mcp.json.example" ]]; then
-    mcp_file="$ocd_root/mcp.json.example"
-  fi
-
-  [[ -z "$mcp_file" ]] && return 1
-
-  local content
-  content=$(cat "$mcp_file")
-
-  # 移除 JSON 注释字段（_comment, _variables）
-  if command -v jq &>/dev/null; then
-    content=$(echo "$content" | jq 'del(._comment, ._variables)')
-  else
-    # 无 jq 时用 grep 过滤（简单处理）
-    content=$(echo "$content" | grep -v '"_comment"' | grep -v '"_variables"')
-  fi
-
-  # 替换 ${VAR:-default} 格式（带默认值）
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*):-([^}]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local default="${BASH_REMATCH[2]}"
-    local value="${!var:-$default}"
-    content="${content//\$\{${var}:-${default}\}/$value}"
-  done
-
-  # 替换 ${VAR} 格式（无默认值）
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local value="${!var:-}"
-    content="${content//\$\{${var}\}/$value}"
-  done
-
-  echo "$content"
-}
-
-# =========================================
 # 渲染模板（替换占位符）
 # =========================================
 ocd_render_template() {
@@ -117,12 +70,14 @@ ocd_generate_opencode_config() {
   local port="$2"
   local use_quotio="${3:-0}"
 
+  # 版本变量
   local omo_ver="${OH_MY_OPENCODE_VERSION:-2.14.0}"
   local auth_ver="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
+  local pw_ver="${PLAYWRIGHT_MCP_VERSION:-0.0.54}"
+  local exa_ver="${EXA_MCP_VERSION:-3.1.3}"
+  local exa_key="${EXA_API_KEY:-}"
 
-  local mcp_config
-  mcp_config=$(ocd_load_mcp) || mcp_config='{}'
-
+  # 基础配置
   local config
   config=$(cat << EOF
 {
@@ -136,7 +91,22 @@ ocd_generate_opencode_config() {
     "port": ${port},
     "hostname": "0.0.0.0"
   },
-  "mcp": ${mcp_config}
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@playwright/mcp@${pw_ver}", "--headless"],
+      "enabled": true
+    },
+    "exa": {
+      "type": "local",
+      "command": ["npx", "-y", "exa-mcp-server@${exa_ver}"],
+      "timeout": 60000,
+      "enabled": false,
+      "environment": {
+        "EXA_API_KEY": "${exa_key}"
+      }
+    }
+  }
 EOF
 )
 
