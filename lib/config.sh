@@ -2,10 +2,13 @@
 # lib/config.sh - 配置生成模块
 
 # =========================================
-# 模型配置变量（可被 models.conf 覆盖）
+# 模型配置变量（声明，稍后在 ocd_load_models 中设置默认值）
 # =========================================
-MAIN_MODEL="${MAIN_MODEL:-anthropic/claude-opus-4-5}"
-PLANNER_MODEL="${PLANNER_MODEL:-anthropic/claude-opus-4-5}"
+# 注意：不要在这里设置默认值！
+# 默认值应该在 ocd_load_models() 中加载 models.conf **之后**设置
+# 这样才能确保 models.conf 中的配置优先于默认值
+MAIN_MODEL="${MAIN_MODEL:-}"
+PLANNER_MODEL="${PLANNER_MODEL:-}"
 ORACLE_MODEL="${ORACLE_MODEL:-}"
 DOCUMENT_WRITER_MODEL="${DOCUMENT_WRITER_MODEL:-}"
 FRONTEND_MODEL="${FRONTEND_MODEL:-}"
@@ -17,10 +20,17 @@ MULTIMODAL_MODEL="${MULTIMODAL_MODEL:-}"
 ocd_load_models() {
   local models_file="${OCD_ROOT:-$HOME/opencode}/models.conf"
 
+  # 先从 models.conf 加载用户配置（如果存在）
   if [[ -f "$models_file" ]]; then
     # shellcheck disable=SC1090
     source <(grep -E '^[A-Z_]+=.+' "$models_file" 2>/dev/null | grep -v '^#' || true)
   fi
+
+  # 然后对未设置的变量应用默认值
+  # 注意：这必须在加载 models.conf 之后执行！
+  MAIN_MODEL="${MAIN_MODEL:-anthropic/claude-opus-4-5}"
+  PLANNER_MODEL="${PLANNER_MODEL:-anthropic/claude-opus-4-5}"
+  # 其他变量保持空值（不设置默认值）
 }
 
 # =========================================
