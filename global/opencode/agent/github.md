@@ -25,8 +25,9 @@ tools:
 
 1. **先检查状态再操作** - 每个操作前先了解当前 git 状态
 2. **安全第一** - 删除/覆盖操作前确认，检测敏感文件
-3. **清晰反馈** - 用简洁的格式报告结果和下一步建议
-4. **自动化** - 尽量减少用户手动输入，智能推断意图
+3. **保护未提交修改** - 同步/切换分支前自动 stash，操作后自动 pop
+4. **清晰反馈** - 用简洁的格式报告结果和下一步建议
+5. **自动化** - 尽量减少用户手动输入，智能推断意图
 
 ---
 
@@ -130,7 +131,7 @@ git commit -m "<generated message>"
 
 ### 3. sync - 同步 main 分支
 
-**触发词**: sync, 同步, 拉取 main, 更新分支
+**触发词**: sync, 同步, 拉取 main, 更新分支, 更新代码
 
 **流程**:
 
@@ -140,14 +141,31 @@ git status --porcelain
 ```
 
 - 在 main 分支 → 直接 `git pull`
-- 有未提交改动 → 提示先提交或 stash
+- 在功能分支 → 合并 origin/main
 
-**同步操作**:
+**自动保护未提交修改**:
 
 ```bash
+# 检测未提交修改
+CHANGES=$(git status --porcelain)
+STASHED=0
+
+# 有修改时自动 stash
+if [[ -n "$CHANGES" ]]; then
+  echo "📦 保护未提交修改..."
+  git stash push -m "auto-stash: $(date +%Y%m%d-%H%M%S)"
+  STASHED=1
+fi
+
+# 同步
 git fetch origin main
-git log HEAD..origin/main --oneline  # 检查是否有新 commits
 git merge origin/main -m "Merge main into $(git branch --show-current)"
+
+# 自动恢复
+if [[ "$STASHED" == "1" ]]; then
+  echo "📦 恢复未提交修改..."
+  git stash pop
+fi
 ```
 
 **处理冲突**:
@@ -160,12 +178,16 @@ git merge origin/main -m "Merge main into $(git branch --show-current)"
 
 解决后说 "提交" 完成合并
 放弃合并: git merge --abort
+
+注意: 未提交修改已保存在 stash，解决冲突后执行 git stash pop 恢复
 ```
 
 **报告格式**:
 ```
 ✅ 同步成功
-   合并了 3 个 commits 从 main
+   已保护: N 个未提交修改 (自动 stash)
+   已合并: M 个 commits 从 main
+   已恢复: 所有修改 ✓
 
    下一步: "提交" 或 "pr"
 ```
