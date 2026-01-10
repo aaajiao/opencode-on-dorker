@@ -90,10 +90,21 @@ ocd_run_container() {
   fi
   local project_claude="${project_dir}/.claude"
 
-  # 确保目录存在
+  # 确保缓存目录变量有效（防止空变量导致挂载失败）
+  if [[ -z "$OCD_CACHE_HOME" || "$OCD_CACHE_HOME" == "/" ]]; then
+    echo "❌ 错误: OCD_CACHE_HOME 未正确设置 ($OCD_CACHE_HOME)" >&2
+    return 1
+  fi
+
+  # 确保目录存在（必须在 docker run 之前创建，否则 Docker 会创建 root 权限的空目录）
   mkdir -p "$instance_config_dir" "$instance_data_dir" "$instance_state_dir"
   mkdir -p "$playwright_cache" "$opencode_cache" "$omo_bin_cache/bin"
   mkdir -p "$OCD_DATA_HOME/bin" "$global_opencode"/{skill,command,agent} "$global_claude"
+
+  # 验证关键目录存在（调试用）
+  if [[ ! -d "$omo_bin_cache/bin" ]]; then
+    echo "⚠️  警告: 无法创建缓存目录 $omo_bin_cache/bin" >&2
+  fi
   mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
 
