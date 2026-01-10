@@ -26,13 +26,17 @@ ocd_find_free_port() {
 
   # 一次性获取所有监听端口
   local used_ports
-  used_ports=$(lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null | awk 'NR>1{print $9}' | grep -oE '[0-9]+$' | sort -u)
+  used_ports=$(lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null | awk 'NR>1{print $9}' | grep -oE '[0-9]+$' | sort -u || true)
 
   # 从上次分配的端口+1 开始（减少冲突）
   local start_port=$base_port
   if [[ -f "$port_file" ]]; then
-    start_port=$(( $(cat "$port_file") + 1 ))
-    [[ $start_port -ge $((base_port + 100)) ]] && start_port=$base_port
+    local saved_port
+    saved_port=$(cat "$port_file" 2>/dev/null || echo "")
+    if [[ "$saved_port" =~ ^[0-9]+$ ]]; then
+      start_port=$(( saved_port + 1 ))
+      [[ $start_port -ge $((base_port + 100)) ]] && start_port=$base_port
+    fi
   fi
 
   # 查找空闲端口

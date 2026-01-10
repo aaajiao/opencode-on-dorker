@@ -107,7 +107,7 @@ ocd_run_container() {
   if [[ ! -d "$omo_bin_cache/bin" ]]; then
     ocd_debug "⚠️ 无法创建缓存目录 $omo_bin_cache/bin"
   else
-    ocd_debug "缓存目录已就绪: $(ls -la "$omo_bin_cache/" 2>&1)"
+    ocd_debug "缓存目录已就绪: $(ls -la "$omo_bin_cache/" 2>&1 || echo '目录不存在')"
   fi
   mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
