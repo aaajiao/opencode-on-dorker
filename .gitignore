@@ -27,9 +27,3 @@ dev/
 
 # 本地版本锁定
 versions.lock
-
-# 本地 MCP 配置
-mcp.json
-
-# 本地模型配置
-models.conf
