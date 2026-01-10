@@ -1,58 +1,51 @@
-# OCD 挂载映射参考
+# OCD 挂载映射参考 (v4.0)
 
 Mac 与 Docker 容器之间的目录映射关系。
 
 ---
 
-## 全局配置挂载
+## 核心挂载 (v4.0 简化架构)
 
-每次启动 Docker 时，Mac 文件覆盖容器内对应路径。
-
-### OpenCode 原生（单数目录）
+v4.0 移除了 instance 概念，所有配置和数据共享：
 
 | Mac | Docker | 说明 |
 |-----|--------|------|
-| `~/.config/opencode/global/opencode/skill/` | `/root/.config/opencode/skill/` | 全局 Skills |
-| `~/.config/opencode/global/opencode/command/` | `/root/.config/opencode/command/` | 全局 Commands |
-| `~/.config/opencode/global/opencode/agent/` | `/root/.config/opencode/agent/` | 全局 Agents |
+| `<workspace>/` | `/workspace/` | 工作区（双向同步） |
+| `~/.config/opencode/` | `/root/.config/opencode/` | 共享配置 |
+| `~/.local/share/opencode/` | `/root/.local/share/opencode/` | 共享数据（会话按 git SHA 存储） |
+| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | 状态 |
+| `~/.cache/opencode/` | `/root/.cache/opencode/` | OpenCode 缓存 |
+| `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | 插件缓存 |
+| `~/.ssh/` | `/root/.ssh/:ro` | SSH 密钥（只读） |
 
-### Claude 兼容层（复数目录）
+---
+
+## IPC 挂载 (多窗口支持)
+
+每个端口有独立的 IPC 目录：
 
 | Mac | Docker | 说明 |
 |-----|--------|------|
-| `~/.config/opencode/global/claude/` | `/root/.claude/` | 整体挂载 |
-| ├─ `skills/` | `/root/.claude/skills/` | 全局 Skills |
-| ├─ `commands/` | `/root/.claude/commands/` | 全局 Commands |
-| ├─ `agents/` | `/root/.claude/agents/` | 全局 Agents |
-| ├─ `rules/` | `/root/.claude/rules/` | 全局 Rules |
-| ├─ `settings.json` | `/root/.claude/settings.json` | Hooks 配置 |
-| └─ `.mcp.json` | `/root/.claude/.mcp.json` | MCP 服务器 |
+| `~/.local/state/opencode/ipc/<port>/` | `/root/.opencode/` | IPC 文件 |
+
+IPC 目录内容：
+
+| 文件 | 用途 |
+|------|------|
+| `open_url` | 写入 URL，Mac watcher 打开浏览器 |
+| `notifications` | 写入 `标题\|内容`，Mac watcher 发送通知 |
+| `clipboard` | 写入内容，Mac watcher 执行 pbcopy |
+| `.watcher.pid` | watcher 进程 PID（用于清理） |
 
 ---
 
-## 实例配置挂载
+## 项目级配置挂载
+
+### 会话数据（始终挂载）
 
 | Mac | Docker |
 |-----|--------|
-| `~/.config/opencode/instances/<inst>/` | `/root/.config/opencode/` |
-| `~/.local/share/opencode/instances/<inst>/` | `/root/.local/share/opencode/storage/` |
-| `~/.local/state/opencode/instances/<inst>/` | `/root/.opencode/` |
-
----
-
-## 项目挂载
-
-### 工作区（双向同步）
-
-| Mac | Docker |
-|-----|--------|
-| `<workspace>/` | `/workspace/` |
-| `<project>/.opencode/` | `/workspace/<相对路径>/.opencode/` |
-
-### 会话数据（始终覆盖全局）
-
-| Mac | Docker |
-|-----|--------|
+| `<project>/.claude/` | `/root/.claude/` |
 | `<project>/.claude/todos/` | `/root/.claude/todos/` |
 | `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` |
 
@@ -69,64 +62,55 @@ Mac 与 Docker 容器之间的目录映射关系。
 
 ---
 
+## 全局配置目录
+
+| Mac | Docker | 说明 |
+|-----|--------|------|
+| `~/.config/opencode/skill/` | `/root/.config/opencode/skill/` | 全局 Skills |
+| `~/.config/opencode/command/` | `/root/.config/opencode/command/` | 全局 Commands |
+| `~/.config/opencode/agent/` | `/root/.config/opencode/agent/` | 全局 Agents |
+
+---
+
 ## 覆盖行为说明
 
 ### 情况 1：项目没有 `.claude/agents/` 或目录为空
 
 ```
-Mac 全局                          Docker 容器
-~/.config/opencode/global/
-  claude/agents/
-    ├── Planner.md         →      /root/.claude/agents/
-    ├── oracle.md                   ├── Planner.md
-    └── writer.md                   ├── oracle.md
-                                    └── writer.md
+全局配置生效：
+~/.config/opencode/agent/
+  ├── oracle.md         →    /root/.config/opencode/agent/
+  └── writer.md               ├── oracle.md
+                              └── writer.md
 ```
 
 ### 情况 2：项目有 `.claude/agents/` 且非空
 
 ```
-Mac 全局                          Docker 容器
-~/.config/opencode/global/
-  claude/agents/
-    ├── Planner.md         ✗      /root/.claude/agents/
-    ├── oracle.md          ✗        └── project-agent.md  ← 只有项目的
-    └── writer.md          ✗
-                                  （全局 agents 完全不可见）
-Mac 项目
+项目配置完全覆盖全局：
 <project>/.claude/agents/
-    └── project-agent.md   →
+  └── my-agent.md       →    /root/.claude/agents/
+                              └── my-agent.md
+                              
+全局 agents 完全不可见（替换，非合并）
 ```
 
 ---
 
-## OpenCode 可读写路径
-
-| 容器路径 | 持久化位置 | 说明 |
-|----------|-----------|------|
-| `/workspace/` | `<workspace>/` | 工作区文件 |
-| `/workspace/.opencode/` | `<project>/.opencode/` | 项目 OpenCode 原生配置 |
-| `/root/.claude/` | 全局或项目 | 取决于条件覆盖 |
-| `/root/.config/opencode/skill/` | 全局 | OpenCode 原生 Skills |
-| `/root/.config/opencode/command/` | 全局 | OpenCode 原生 Commands |
-| `/root/.config/opencode/agent/` | 全局 | OpenCode 原生 Agents |
-
----
-
-## 缓存挂载（可删除重建）
-
-| Mac | Docker |
-|-----|--------|
-| `~/.cache/opencode/` | `/root/.cache/opencode/` |
-| `~/.cache/opencode/ms-playwright/` | `/root/.cache/ms-playwright/` |
-| `~/.cache/opencode/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` |
-
----
-
-## 共享数据挂载
+## 缓存挂载
 
 | Mac | Docker | 说明 |
 |-----|--------|------|
-| `~/.local/share/opencode/auth.json` | `/root/.local/share/opencode/auth.json` | OAuth 令牌 |
-| `~/.local/share/opencode/bin/` | `/root/.local/share/opencode/bin/` | 二进制缓存 |
-| `~/.ssh/` | `/root/.ssh/` (只读) | SSH 密钥 |
+| `~/.cache/opencode/` | `/root/.cache/opencode/` | OpenCode 缓存 |
+| `~/.cache/opencode/ms-playwright/` | `/root/.cache/ms-playwright/` | Playwright 浏览器 |
+| `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | 插件缓存 (ast-grep, ripgrep) |
+
+---
+
+## v3.x → v4.0 路径变更
+
+| 说明 | v3.x 路径 | v4.0 路径 |
+|------|-----------|-----------|
+| 配置 | `~/.config/opencode/instances/<inst>/` | `~/.config/opencode/` |
+| 会话 | `~/.local/share/opencode/instances/<inst>/` | `~/.local/share/opencode/storage/` |
+| IPC | `~/.local/state/opencode/instances/<inst>/` | `~/.local/state/opencode/ipc/<port>/` |

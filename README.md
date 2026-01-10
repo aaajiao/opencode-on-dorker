@@ -145,16 +145,20 @@ git worktree add dev dev
 cd ~/opencode/dev
 nano lib/docker.sh
 
-# 3. 使用开发版启动
-ocd --dev
+# 3. 使用开发版启动（推荐 devocd）
+devocd                   # 直接执行 dev/bin/ocd（推荐）
+ocd --dev                # 备选方式
 
 # 4. 重建开发镜像（修改 Dockerfile 后）
-ocd -r --dev
+devocd -r
 
 # 5. 使用自定义路径
-ocd --dev-root ~/code/ocd-fork
-ocd --dev-root=~/code/ocd-fork  # 等号式也可以
+OCD_DEV_ROOT=~/fork devocd
 ```
+
+**`devocd` vs `ocd --dev`**：
+- `devocd`：直接执行 `dev/bin/ocd`，修改 `bin/ocd` 后立即生效（**推荐**）
+- `ocd --dev`：通过主目录 `bin/ocd` 加载，只有 `lib/*.sh` 的修改生效
 
 **开发模式特性**：
 - 使用独立镜像 `opencode-bun-dev`（不污染生产镜像）
@@ -191,9 +195,10 @@ OCD v4.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 
 ~/.local/state/opencode/               # 状态 (可重建)
 └── ipc/<port>/                       # 跨窗口隔离的 IPC 文件
-    ├── open_url
-    ├── notifications
-    └── clipboard
+    ├── open_url                      # URL 打开
+    ├── notifications                 # 桌面通知
+    ├── clipboard                     # 剪贴板同步
+    └── .watcher.pid                  # Watcher 进程 PID
 
 ~/.cache/opencode/                     # OpenCode 缓存 (可删除)
 ~/.cache/oh-my-opencode/               # 插件缓存 (ast-grep, ripgrep)
