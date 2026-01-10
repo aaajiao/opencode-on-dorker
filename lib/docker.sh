@@ -92,18 +92,22 @@ ocd_run_container() {
 
   # 确保缓存目录变量有效（防止空变量导致挂载失败）
   if [[ -z "$OCD_CACHE_HOME" || "$OCD_CACHE_HOME" == "/" ]]; then
-    echo "❌ 错误: OCD_CACHE_HOME 未正确设置 ($OCD_CACHE_HOME)" >&2
+    ocd_error "OCD_CACHE_HOME 未正确设置 ($OCD_CACHE_HOME)"
     return 1
   fi
 
   # 确保目录存在（必须在 docker run 之前创建，否则 Docker 会创建 root 权限的空目录）
+  ocd_debug "创建实例目录: $instance_config_dir"
   mkdir -p "$instance_config_dir" "$instance_data_dir" "$instance_state_dir"
+  ocd_debug "创建缓存目录: $omo_bin_cache/bin"
   mkdir -p "$playwright_cache" "$opencode_cache" "$omo_bin_cache/bin"
   mkdir -p "$OCD_DATA_HOME/bin" "$global_opencode"/{skill,command,agent} "$global_claude"
 
-  # 验证关键目录存在（调试用）
+  # 验证关键目录存在
   if [[ ! -d "$omo_bin_cache/bin" ]]; then
-    echo "⚠️  警告: 无法创建缓存目录 $omo_bin_cache/bin" >&2
+    ocd_debug "⚠️ 无法创建缓存目录 $omo_bin_cache/bin"
+  else
+    ocd_debug "缓存目录已就绪: $(ls -la "$omo_bin_cache/" 2>&1)"
   fi
   mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
@@ -116,6 +120,7 @@ ocd_run_container() {
   tz=$(readlink /etc/localtime 2>/dev/null | sed 's#.*/zoneinfo/##' || echo "UTC")
 
   # 构建挂载参数数组
+  ocd_debug "挂载配置: $omo_bin_cache -> /root/.cache/oh-my-opencode"
   local mount_args=(
     -v "${workspace_root}:/workspace"
     -v "${instance_state_dir}:/root/.opencode"
@@ -148,6 +153,7 @@ ocd_run_container() {
     fi
   done
 
+  ocd_debug "启动容器: $container_name"
   docker run -it --rm \
     --name "$container_name" \
     --network host \
@@ -157,6 +163,7 @@ ocd_run_container() {
     -e BROWSER=/usr/bin/xdg-open \
     -e "EXA_API_KEY=${EXA_API_KEY:-}" \
     -e "OCD_START_DIR=${start_dir}" \
+    -e "OCD_DEBUG=${OCD_DEBUG:-0}" \
     "${mount_args[@]}" \
     -w /workspace \
     "$image_name" "$@"
