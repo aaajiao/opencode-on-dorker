@@ -77,6 +77,7 @@ ocd_run_container() {
   # 根据实际启动目录确定项目（确保 TUI/WebUI 看到相同的 transcripts）
   local project_dir
   if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
+    # Dev 模式：强制使用 OCD_ROOT 作为项目目录，不向上查找 git
     project_dir="${OCD_ROOT:-$HOME/opencode/dev}"
   else
     if [[ -n "$start_dir" && "$start_dir" != "." ]]; then

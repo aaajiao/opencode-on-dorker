@@ -160,6 +160,7 @@ ocd --dev-root=~/code/ocd-fork  # 等号式也可以
 - 使用独立镜像 `opencode-bun-dev`（不污染生产镜像）
 - 优先加载 `dev/.env`（如存在），否则使用主目录 `.env`
 - 启动信息显示 `[DEV]` 标识和开发目录路径
+- 对话数据独立存储（`dev/.claude/transcripts/`，不与主目录混用）
 
 **清理开发环境**：
 ```bash
