@@ -101,8 +101,13 @@ _ocd_cleanup() {
     kill -KILL "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
-  # 清空 IPC 文件防止残留数据
-  [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]] && : > "$_OCD_URL_FILE"
+  # 清空 IPC 文件防止残留数据，并删除 PID 文件
+  if [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]]; then
+    : > "$_OCD_URL_FILE"
+    local ipc_dir
+    ipc_dir=$(dirname "$_OCD_URL_FILE")
+    rm -f "${ipc_dir}/.watcher.pid" 2>/dev/null
+  fi
   if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
     kill "$_OCD_CAFFEINATE_PID" 2>/dev/null
     _OCD_CAFFEINATE_PID=""
@@ -333,8 +338,17 @@ EOF
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
   _OCD_URL_FILE="$URL_FILE"
 
-  pkill -f "fswatch.*open_url" 2>/dev/null || true
+  # 清理同端口的旧 watcher（通过 PID 文件，不影响其他窗口）
+  local WATCHER_PID_FILE="${IPC_DIR}/.watcher.pid"
+  if [[ -f "$WATCHER_PID_FILE" ]]; then
+    local old_pid
+    old_pid=$(cat "$WATCHER_PID_FILE" 2>/dev/null)
+    [[ -n "$old_pid" ]] && kill "$old_pid" 2>/dev/null || true
+    rm -f "$WATCHER_PID_FILE"
+  fi
+
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
+  echo "$_OCD_WATCHER_PID" > "$WATCHER_PID_FILE"
 
   # Tailscale HTTPS
   local TS_HOSTNAME=""
