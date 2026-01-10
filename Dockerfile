@@ -178,9 +178,24 @@ RUN echo '#!/bin/bash\n\
 \n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
 \n\
-# 确保缓存目录结构存在（关键：必须在 oh-my-opencode 启动前创建）\n\
-# 即使通过 Docker volume 挂载，也需要确保 bin 子目录存在\n\
-mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
+# 调试：检查挂载状态\n\
+if [[ ! -d "/root/.cache" ]]; then\n\
+    echo "[debug] /root/.cache 不存在，正在创建..." >&2\n\
+    mkdir -p /root/.cache\n\
+fi\n\
+\n\
+if [[ ! -d "/root/.cache/oh-my-opencode" ]]; then\n\
+    echo "[debug] /root/.cache/oh-my-opencode 不存在（挂载可能失败），正在创建..." >&2\n\
+    mkdir -p /root/.cache/oh-my-opencode\n\
+fi\n\
+\n\
+# 确保 bin 子目录存在\n\
+mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null\n\
+if [[ ! -d "/root/.cache/oh-my-opencode/bin" ]]; then\n\
+    echo "[debug] ❌ 无法创建 /root/.cache/oh-my-opencode/bin" >&2\n\
+    ls -la /root/.cache/ >&2\n\
+    ls -la /root/.cache/oh-my-opencode/ >&2 2>/dev/null || true\n\
+fi\n\
 chmod 755 /root/.cache/oh-my-opencode /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
 \n\
 # Chrome symlink for Playwright MCP (finds chrome in ms-playwright cache)\n\
