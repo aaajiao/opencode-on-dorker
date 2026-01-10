@@ -8,7 +8,7 @@ Guidelines for AI agents working on this repository.
 
 **Tech Stack**: Docker, Shell (bash/zsh), JSON configuration
 
-**CRITICAL**: This repo IS `~/opencode` on Mac. `/workspace/opencode.sh` = `~/opencode/opencode.sh`.
+**CRITICAL**: This repo IS `~/opencode` on Mac. `/workspace/bin/ocd` = `~/opencode/bin/ocd`.
 
 ## Build & Validation Commands
 
@@ -20,9 +20,8 @@ ocd -r                                            # Rebuild + reset config
 ocd -r --keep                                     # Rebuild + keep config
 
 # Shell validation
-bash -n opencode.sh                               # Syntax check
-zsh -n opencode.sh                                # Zsh syntax check
-shellcheck opencode.sh                            # Lint (if available)
+bash -n bin/ocd lib/*.sh                          # Syntax check
+shellcheck bin/ocd lib/*.sh                       # Lint (if available)
 
 # JSON validation
 jq . ~/.config/opencode/opencode.json             # Validate config
@@ -35,7 +34,15 @@ docker run -it --rm --network host opencode-bun bash
 
 ```
 ~/opencode/
-├── opencode.sh                       # Main shell function (ocd command)
+├── bin/
+│   └── ocd                           # Main entry script
+├── lib/
+│   ├── core.sh                       # Core utils, XDG paths, logging
+│   ├── port.sh                       # Port allocation, lock mechanism
+│   ├── workspace.sh                  # Workspace detection
+│   ├── watcher.sh                    # IPC monitoring (clipboard/notify/URL)
+│   ├── config.sh                     # Config generation
+│   └── docker.sh                     # Docker build & run
 ├── Dockerfile                        # Container image
 ├── .env                              # API keys (KEY=VALUE only!)
 ├── .ocdrc                            # Local config (workspace whitelist)
@@ -44,15 +51,18 @@ docker run -it --rm --network host opencode-bun bash
 │   └── claude/{skills,settings.json}     # Claude compat config
 
 # Runtime directories (auto-created on Mac host)
-~/.config/opencode/<instance>/        # Instance config (persisted)
-~/.cache/opencode/                    # Plugin cache (shared)
+~/.config/opencode/instances/<instance>/  # Instance config (persisted)
+~/.config/opencode/global/                # Global config (shared)
+~/.local/share/opencode/instances/        # Session data (conversations)
+~/.local/state/opencode/instances/        # IPC files (notifications, URLs)
+~/.cache/opencode/                        # Plugin cache (shared)
 ```
 
 **Config naming**: OpenCode = singular (`skill/`), Claude compat = plural (`skills/`)
 
 ## Code Style Guidelines
 
-### Shell Script (opencode.sh)
+### Shell Script (bin/ocd, lib/*.sh)
 
 ```bash
 # Formatting
@@ -110,7 +120,7 @@ GITHUB_TOKEN=ghp_xxxx
 | `$(pwd)` or workspace | `/workspace` | Project files |
 | `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config (full dir) |
 | `~/.cache/opencode` | `/root/.cache/opencode` | Plugin cache |
-| `~/.opencode_data/<instance>` | `/root/.opencode` | IPC (notifications, URLs) |
+| `~/.local/state/opencode/instances/<instance>` | `/root/.opencode` | IPC (notifications, URLs) |
 | `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI settings (KV store) |
 | `~/opencode/global/opencode/` | `/root/.config/opencode/{skill,command,agent}` | Global config |
 | `~/opencode/global/claude/` | `/root/.claude/` | Claude compat |
@@ -126,7 +136,7 @@ GITHUB_TOKEN=ghp_xxxx
 ## Common Pitfalls
 
 1. **`local` in subshell**: Never use inside `( ... ) &`
-2. **Function not updating**: Run `exec zsh` after modifying `opencode.sh`
+2. **Function not updating**: Run `exec zsh` after modifying shell scripts
 3. **Env file format**: No quotes, no export, no comments
 4. **OAuth fails**: Ensure `--network host` is used
 5. **Skills not loading**: Check directory naming (singular vs plural)
@@ -157,7 +167,39 @@ ocd --quotio                # Enable Quotio provider
 ocd -r                      # Rebuild image + reset config
 ocd -r --keep               # Rebuild image + keep config
 ocd -v                      # Show version
+ocd --dev                   # Development mode (from dev/ directory)
+ocd -r --dev                # Rebuild development image
+ocd --dev-root ~/fork       # Use custom development directory
 ```
+
+### Development Mode
+
+Used for testing OCD itself (developer use):
+
+```bash
+# 1. Set up dev branch (using git worktree)
+cd ~/opencode
+git worktree add dev dev
+
+# 2. Modify code in dev/
+cd ~/opencode/dev
+nano lib/docker.sh
+
+# 3. Launch with dev version
+ocd --dev
+
+# 4. Rebuild dev image (after Dockerfile changes)
+ocd -r --dev
+
+# 5. Use custom path
+ocd --dev-root ~/code/ocd-fork
+ocd --dev-root=~/code/ocd-fork  # equals style also works
+```
+
+**Dev mode features**:
+- Uses separate image `opencode-bun-dev` (doesn't pollute production image)
+- Loads `dev/.env` first (if exists), otherwise falls back to main `.env`
+- Startup shows `[DEV]` label and dev directory path
 
 ## Workspace Whitelist (.ocdrc)
 
