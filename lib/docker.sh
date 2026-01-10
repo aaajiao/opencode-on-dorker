@@ -83,10 +83,15 @@ ocd_run_container() {
 
   # 根据实际启动目录确定项目（确保 TUI/WebUI 看到相同的 transcripts）
   local project_dir
-  if [[ -n "$start_dir" && "$start_dir" != "." ]]; then
-    project_dir=$(ocd_find_project_dir "${workspace_root}/${start_dir}")
+  if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
+    # Dev 模式：强制使用 OCD_ROOT 作为项目目录，不向上查找 git
+    project_dir="${OCD_ROOT:-$HOME/opencode/dev}"
   else
-    project_dir=$(ocd_find_project_dir "$workspace_root")
+    if [[ -n "$start_dir" && "$start_dir" != "." ]]; then
+      project_dir=$(ocd_find_project_dir "${workspace_root}/${start_dir}")
+    else
+      project_dir=$(ocd_find_project_dir "$workspace_root")
+    fi
   fi
   local project_claude="${project_dir}/.claude"
 
