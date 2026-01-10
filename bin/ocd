@@ -9,7 +9,7 @@ OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 # =========================================
 # 开发模式检测（必须在 source 之前）
 # =========================================
-OCD_DEV_MODE=0
+OCD_DEV_MODE="${OCD_DEV_MODE:-0}"
 _OCD_ORIG_ROOT="$OCD_ROOT"
 _OCD_DEV_ROOT_ARG=""
 
@@ -39,9 +39,12 @@ unset _ocd_args _ocd_i _arg
 
 # 应用开发模式
 if [[ "$OCD_DEV_MODE" -eq 1 ]]; then
-  # 展开 ~ 为 $HOME
-  _OCD_DEV_ROOT_ARG="${_OCD_DEV_ROOT_ARG/#\~/$HOME}"
-  OCD_ROOT="${_OCD_DEV_ROOT_ARG:-$OCD_ROOT/dev}"
+  # 只有当 OCD_ROOT 没有被预设时（非 devocd 调用），才修改它
+  if [[ "${OCD_ROOT_PRESET:-0}" -ne 1 ]]; then
+    # 展开 ~ 为 $HOME
+    _OCD_DEV_ROOT_ARG="${_OCD_DEV_ROOT_ARG/#\~/$HOME}"
+    OCD_ROOT="${_OCD_DEV_ROOT_ARG:-$OCD_ROOT/dev}"
+  fi
 
   if [[ ! -d "$OCD_ROOT/lib" ]]; then
     echo "❌ 开发目录不存在或不完整: $OCD_ROOT"
@@ -262,6 +265,7 @@ EOF
   local WORKSPACE_NAME
   WORKSPACE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
   local CONTAINER_NAME="opencode-${WORKSPACE_NAME}"
+  [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && CONTAINER_NAME="${CONTAINER_NAME}-dev"
 
   # 清理配置（v4.0: 共享配置）
   if [[ "$CLEAN_CONFIG" -eq 1 ]]; then
