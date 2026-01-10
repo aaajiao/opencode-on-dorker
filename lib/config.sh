@@ -208,6 +208,85 @@ ocd_update_config_port() {
 }
 
 # =========================================
+# 更新配置模型 (opencode.json)
+# =========================================
+ocd_update_config_model() {
+  local config_file="$1"
+  local model="$2"
+
+  [[ -z "$model" ]] && return 0
+
+  if command -v jq &>/dev/null; then
+    local tmp_file
+    tmp_file=$(mktemp)
+    if jq --arg model "$model" '.model = $model' "$config_file" > "$tmp_file"; then
+      mv "$tmp_file" "$config_file"
+    else
+      rm -f "$tmp_file"
+    fi
+  else
+    # sed 备用方案：替换 "model": "xxx" 为新值
+    sed -i.bak -E "s|(\"model\":[[:space:]]*\")[^\"]+(\")|\1${model}\2|g" "$config_file"
+    rm -f "${config_file}.bak"
+  fi
+}
+
+# =========================================
+# 更新 Agent 模型 (oh-my-opencode.json)
+# =========================================
+ocd_update_omo_agents() {
+  local config_file="$1"
+
+  [[ ! -f "$config_file" ]] && return 0
+
+  # 检查 jq 依赖
+  if ! command -v jq &>/dev/null; then
+    # 无 jq 时使用 sed 备用方案（仅更新 Planner 模型）
+    if [[ -n "$PLANNER_MODEL" ]]; then
+      sed -i.bak -E "s|(\"Planner-Sisyphus\"[^}]*\"model\":[[:space:]]*\")[^\"]+(\")|\1${PLANNER_MODEL}\2|" "$config_file"
+      rm -f "${config_file}.bak"
+    fi
+    echo "⚠️  Agent 模型更新受限（无 jq），仅更新 Planner 模型" >&2
+    echo "   安装 jq 以启用完整功能: brew install jq" >&2
+    return 0
+  fi
+
+  local tmp_file
+  tmp_file=$(mktemp)
+
+  # 构建 jq 更新命令
+  local jq_cmd=". "
+
+  # 更新 Planner-Sisyphus 模型（始终更新）
+  if [[ -n "$PLANNER_MODEL" ]]; then
+    jq_cmd+="| .agents.\"Planner-Sisyphus\".model = \"$PLANNER_MODEL\" "
+  fi
+
+  # 条件更新其他 agents
+  if [[ -n "$ORACLE_MODEL" ]]; then
+    jq_cmd+="| .agents.oracle.model = \"$ORACLE_MODEL\" "
+  fi
+
+  if [[ -n "$DOCUMENT_WRITER_MODEL" ]]; then
+    jq_cmd+="| .agents.\"document-writer\".model = \"$DOCUMENT_WRITER_MODEL\" "
+  fi
+
+  if [[ -n "$FRONTEND_MODEL" ]]; then
+    jq_cmd+="| .agents.\"frontend-ui-ux-engineer\".model = \"$FRONTEND_MODEL\" "
+  fi
+
+  if [[ -n "$MULTIMODAL_MODEL" ]]; then
+    jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
+  fi
+
+  if jq "$jq_cmd" "$config_file" > "$tmp_file" 2>/dev/null; then
+    mv "$tmp_file" "$config_file"
+  else
+    rm -f "$tmp_file"
+  fi
+}
+
+# =========================================
 # 初始化全局配置目录
 # =========================================
 ocd_init_global() {

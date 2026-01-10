@@ -239,6 +239,8 @@ EOF
     # 清理缓存 (与镜像版本相关)
     echo "🗑️  清理缓存..."
     rm -rf "$OCD_CACHE_HOME"
+    # 立即重建缓存目录结构（oh-my-opencode 需要）
+    mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
     ocd_build_image "$IMAGE_NAME" 1
   elif ! ocd_image_exists "$IMAGE_NAME"; then
     ocd_build_image "$IMAGE_NAME" 0
@@ -264,12 +266,17 @@ EOF
     echo "📝 生成 opencode.json..."
     ocd_generate_opencode_config "$CONFIG_FILE" "$PORT" "$USE_QUOTIO"
   else
+    # 更新端口和模型配置
     ocd_update_config_port "$CONFIG_FILE" "$PORT"
+    ocd_update_config_model "$CONFIG_FILE" "$MAIN_MODEL"
   fi
 
   if [[ ! -f "$OMO_CONFIG_FILE" ]]; then
     echo "📝 生成 oh-my-opencode.json..."
     ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
+  else
+    # 更新 Agent 模型配置
+    ocd_update_omo_agents "$OMO_CONFIG_FILE"
   fi
 
   # IPC 文件 (状态目录，与容器内 /root/.opencode 对应)

@@ -187,6 +187,9 @@ if [ -d "/root/.cache/ms-playwright" ]; then\n\
     fi\n\
 fi\n\
 \n\
+# 预创建 oh-my-opencode 缓存目录（防止 comment-checker 下载失败）\n\
+mkdir -p /root/.cache/oh-my-opencode/bin\n\
+\n\
 if [[ -n "$GITHUB_TOKEN" ]]; then\n\
     if gh auth status &>/dev/null; then\n\
         echo "✅ GitHub 已认证 (使用 GITHUB_TOKEN)"\n\
