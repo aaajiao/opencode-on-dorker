@@ -24,3 +24,6 @@ global/opencode/**/.DS_Store
 
 # 开发版 worktree
 dev/
+
+# 本地版本锁定
+versions.lock
