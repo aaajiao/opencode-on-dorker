@@ -252,7 +252,8 @@ EOF
   # 初始化配置
   ocd_init_global
   ocd_init_project "$(pwd)"
-  # 目录创建已移至 lib/docker.sh 中统一处理
+  # 确保缓存目录存在（在 Docker 挂载之前创建，避免挂载空目录）
+  mkdir -p "$OCD_CACHE_HOME/oh-my-opencode/bin" "$OCD_CACHE_HOME/ms-playwright"
 
   # 加载环境变量
   ocd_load_env "$ENV_FILE"
