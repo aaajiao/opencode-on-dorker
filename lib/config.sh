@@ -31,9 +31,9 @@ ocd_load_models() {
   fi
 
   # 从配置文件加载（如果存在）
-  if [[ -n "$models_file" ]]; then
-    # shellcheck disable=SC1090
-    source <(grep -E '^[A-Z_]+=.+' "$models_file" 2>/dev/null | grep -v '^#' || true)
+  if [[ -n "$models_file" && -f "$models_file" ]]; then
+    # 使用 eval 代替进程替换，兼容更多 shell
+    eval "$(grep -E '^[A-Z_]+=.+' "$models_file" 2>/dev/null | grep -v '^#')" 2>/dev/null || true
   fi
 
   # 对未设置的变量应用硬编码默认值（兜底）
