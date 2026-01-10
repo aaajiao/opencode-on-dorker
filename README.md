@@ -131,6 +131,46 @@ ocd
 | `--https` | 通过 Tailscale Serve 启用 HTTPS | `ocd --https` |
 | `--awake` | 防止 Mac 进入休眠 | `ocd --awake` |
 | `--quotio` | 启用 Quotio 代理 | `ocd --quotio` |
+| `--dev` | 使用开发版（从 dev/ 加载） | `ocd --dev` |
+| `--dev-root` | 指定开发目录 | `ocd --dev-root ~/fork` |
+
+### 开发模式
+
+用于测试 OCD 本身的修改（开发者使用）：
+
+```bash
+# 1. 设置开发分支（使用 git worktree）
+cd ~/opencode
+git worktree add dev dev
+
+# 2. 在 dev/ 中修改代码
+cd ~/opencode/dev
+nano lib/docker.sh
+
+# 3. 使用开发版启动
+ocd --dev
+
+# 4. 重建开发镜像（修改 Dockerfile 后）
+ocd -r --dev
+
+# 5. 使用自定义路径
+ocd --dev-root ~/code/ocd-fork
+ocd --dev-root=~/code/ocd-fork  # 等号式也可以
+```
+
+**开发模式特性**：
+- 使用独立镜像 `opencode-bun-dev`（不污染生产镜像）
+- 优先加载 `dev/.env`（如存在），否则使用主目录 `.env`
+- 启动信息显示 `[DEV]` 标识和开发目录路径
+
+**清理开发环境**：
+```bash
+# 删除开发镜像
+docker rmi opencode-bun-dev
+
+# 删除 worktree
+git worktree remove dev
+```
 
 ### 兼容旧行为
 

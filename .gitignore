@@ -21,3 +21,6 @@ global/opencode/**/.DS_Store
 
 # 本地配置文件（包含用户个人路径）
 .ocdrc
+
+# 开发版 worktree
+dev/

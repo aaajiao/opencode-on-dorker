@@ -6,6 +6,56 @@ set -euo pipefail
 
 OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 
+# =========================================
+# 开发模式检测（必须在 source 之前）
+# =========================================
+OCD_DEV_MODE=0
+_OCD_ORIG_ROOT="$OCD_ROOT"
+_OCD_DEV_ROOT_ARG=""
+
+# 预扫描 --dev / --dev-root 参数
+_ocd_args=("$@")
+_ocd_i=0
+while [[ $_ocd_i -lt ${#_ocd_args[@]} ]]; do
+  _arg="${_ocd_args[$_ocd_i]}"
+  case "$_arg" in
+    --dev)
+      OCD_DEV_MODE=1
+      ;;
+    --dev-root=*)
+      _OCD_DEV_ROOT_ARG="${_arg#*=}"
+      OCD_DEV_MODE=1
+      ;;
+    --dev-root)
+      # 空格式：下一个参数是路径
+      _ocd_i=$((_ocd_i + 1))
+      _OCD_DEV_ROOT_ARG="${_ocd_args[$_ocd_i]:-}"
+      OCD_DEV_MODE=1
+      ;;
+  esac
+  _ocd_i=$((_ocd_i + 1))
+done
+unset _ocd_args _ocd_i _arg
+
+# 应用开发模式
+if [[ "$OCD_DEV_MODE" -eq 1 ]]; then
+  # 展开 ~ 为 $HOME
+  _OCD_DEV_ROOT_ARG="${_OCD_DEV_ROOT_ARG/#\~/$HOME}"
+  OCD_ROOT="${_OCD_DEV_ROOT_ARG:-$OCD_ROOT/dev}"
+
+  if [[ ! -d "$OCD_ROOT/lib" ]]; then
+    echo "❌ 开发目录不存在或不完整: $OCD_ROOT"
+    echo ""
+    echo "   创建方法："
+    echo "   git worktree add dev dev    # 从 dev 分支创建"
+    echo "   # 或"
+    echo "   cp -r ~/opencode ~/opencode/dev"
+    exit 1
+  fi
+  export OCD_DEV_MODE
+fi
+unset _OCD_DEV_ROOT_ARG
+
 # 加载模块
 source "$OCD_ROOT/lib/core.sh"
 source "$OCD_ROOT/lib/port.sh"
@@ -17,8 +67,18 @@ source "$OCD_ROOT/lib/docker.sh"
 # =========================================
 # 全局变量
 # =========================================
-IMAGE_NAME="opencode-bun"
-ENV_FILE="$OCD_ROOT/.env"
+if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
+  IMAGE_NAME="opencode-bun-dev"
+else
+  IMAGE_NAME="opencode-bun"
+fi
+
+# ENV_FILE: dev/.env 优先，否则 fallback 到主目录
+if [[ "${OCD_DEV_MODE:-0}" -eq 1 && -f "$OCD_ROOT/.env" ]]; then
+  ENV_FILE="$OCD_ROOT/.env"
+else
+  ENV_FILE="$_OCD_ORIG_ROOT/.env"
+fi
 
 _OCD_WATCHER_PID=""
 _OCD_HTTPS_ENABLED=""
@@ -79,6 +139,9 @@ main() {
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
       --debug) OCD_DEBUG=1; export OCD_DEBUG; shift ;;
+      --dev) shift ;;  # 已在预扫描处理
+      --dev-root=*) shift ;;  # 已在预扫描处理
+      --dev-root) shift 2 ;;  # 已在预扫描处理（空格式）
       -n) INSTANCE_NAME="$2"; shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       -w|--workspace) CUSTOM_WORKSPACE="$2"; shift 2 ;;
@@ -106,6 +169,8 @@ Options:
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
   --debug           Enable debug output
+  --dev             Use development version (from dev/ directory)
+  --dev-root PATH   Specify development directory
   -h, --help        Show this help
 EOF
         return 0
@@ -317,8 +382,11 @@ EOF
   fi
 
   # 启动信息
+  local dev_label=""
+  [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && dev_label=" [DEV]"
   echo ""
-  echo "🚀 OCD v$(ocd_version) │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  echo "🚀 OCD v$(ocd_version)${dev_label} │ ${INSTANCE_NAME} │ http://localhost:${PORT}"
+  [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && echo "   └─ 📂 开发目录: $OCD_ROOT"
   local TAILSCALE_IP
   TAILSCALE_IP=$(ocd_get_tailscale_ip || echo "")
   [[ -n "$TS_HOSTNAME" && "$USE_HTTPS" -eq 1 ]] && echo "   └─ 🔒 HTTPS: https://${TS_HOSTNAME}"
