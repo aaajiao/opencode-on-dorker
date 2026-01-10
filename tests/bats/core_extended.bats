@@ -1,21 +1,16 @@
 #!/usr/bin/env bats
-# tests/bats/core_extended.bats - 扩展核心函数测试
-#
-# 覆盖之前未测试的 lib/core.sh 函数
+# tests/bats/core_extended.bats - 扩展核心函数测试 (v4.0)
 
 setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录
   export OCD_CONFIG_HOME="$TEST_DIR/config"
-  export OCD_CONFIG_GLOBAL="$TEST_DIR/config/global"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
-  export OCD_CONFIG_INSTANCES="$TEST_DIR/config/instances"
-  export OCD_DATA_INSTANCES="$TEST_DIR/data/instances"
-  export OCD_STATE_INSTANCES="$TEST_DIR/state/instances"
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
+  export OCD_IPC_HOME="$TEST_DIR/state/ipc"
 
   source "$OCD_ROOT/lib/core.sh"
 }
@@ -25,27 +20,27 @@ teardown() {
 }
 
 # =========================================
-# ocd_instance_*_dir 函数测试
+# ocd_ipc_dir 函数测试 (v4.0 新增)
 # =========================================
 
-@test "ocd_instance_config_dir returns correct path" {
-  result=$(ocd_instance_config_dir "myproject")
-  [ "$result" = "$OCD_CONFIG_INSTANCES/myproject" ]
+@test "ocd_ipc_dir returns correct path for port" {
+  result=$(ocd_ipc_dir "5000")
+  [ "$result" = "$OCD_IPC_HOME/5000" ]
 }
 
-@test "ocd_instance_config_dir uses default name" {
-  result=$(ocd_instance_config_dir)
-  [ "$result" = "$OCD_CONFIG_INSTANCES/opencode" ]
+@test "ocd_ipc_dir uses default port 4096" {
+  result=$(ocd_ipc_dir)
+  [ "$result" = "$OCD_IPC_HOME/4096" ]
 }
 
-@test "ocd_instance_data_dir returns correct path" {
-  result=$(ocd_instance_data_dir "myproject")
-  [ "$result" = "$OCD_DATA_INSTANCES/myproject" ]
-}
+@test "ocd_ipc_dir handles various port numbers" {
+  result1=$(ocd_ipc_dir "8080")
+  result2=$(ocd_ipc_dir "3000")
+  result3=$(ocd_ipc_dir "443")
 
-@test "ocd_instance_state_dir returns correct path" {
-  result=$(ocd_instance_state_dir "myproject")
-  [ "$result" = "$OCD_STATE_INSTANCES/myproject" ]
+  [ "$result1" = "$OCD_IPC_HOME/8080" ]
+  [ "$result2" = "$OCD_IPC_HOME/3000" ]
+  [ "$result3" = "$OCD_IPC_HOME/443" ]
 }
 
 # =========================================
@@ -91,7 +86,6 @@ EOF
 
 @test "ocd_load_versions handles missing file" {
   OCD_ROOT="$TEST_DIR" ocd_load_versions
-  # 不应报错
   [ $? -eq 0 ]
 }
 
@@ -102,10 +96,9 @@ valid_var=test
 BUN_VERSION=1.3.5
 EOF
 
-  unset valid_var 123INVALID BUN_VERSION 2>/dev/null || true
+  unset valid_var BUN_VERSION 2>/dev/null || true
   OCD_ROOT="$TEST_DIR" ocd_load_versions
 
-  # 只有 BUN_VERSION 应该被设置（大写字母开头）
   [ "$BUN_VERSION" = "1.3.5" ]
 }
 
@@ -139,9 +132,20 @@ EOF
 # =========================================
 
 @test "ocd_auto_migrate does nothing without migrate script" {
-  # 不存在迁移脚本时应该直接返回 0
   run ocd_auto_migrate
   [ "$status" -eq 0 ]
+}
+
+# =========================================
+# XDG 路径变量测试 (v4.0)
+# =========================================
+
+@test "OCD_IPC_HOME is correctly derived from STATE_HOME" {
+  [ "$OCD_IPC_HOME" = "$OCD_STATE_HOME/ipc" ]
+}
+
+@test "OCD_OMO_CACHE_HOME is set" {
+  [ -n "$OCD_OMO_CACHE_HOME" ]
 }
 
 # =========================================
@@ -157,8 +161,8 @@ run_with_set_e() {
   )
 }
 
-@test "set -e: ocd_instance_config_dir" {
-  run run_with_set_e ocd_instance_config_dir test
+@test "set -e: ocd_ipc_dir" {
+  run run_with_set_e ocd_ipc_dir 5000
   [ "$status" -eq 0 ]
 }
 

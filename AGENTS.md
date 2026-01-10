@@ -10,14 +10,47 @@ Guidelines for AI agents working on this repository.
 
 **CRITICAL**: This repo IS `~/opencode` on Mac. `/workspace/bin/ocd` = `~/opencode/bin/ocd`.
 
+## Design Philosophy (v4.0)
+
+### Core Principle: Follow OpenCode Native Behavior
+
+OCD is a **thin Docker wrapper** around OpenCode. It should NOT introduce its own concepts that conflict with OpenCode's native behavior.
+
+**OpenCode's Project Identification**:
+- Uses **git root commit SHA** as project ID
+- Sessions stored in `~/.local/share/opencode/storage/session/<sha>/`
+- WebUI switches projects via `?directory=` query param
+- Non-git directories fall back to `"global"` project ID
+
+**OCD's Role**:
+- Containerize OpenCode with proper mounts
+- Provide macOS integration (clipboard, notifications, URL opening)
+- Handle port allocation for multi-window support
+- **NOT** manage project/session isolation (let OpenCode do it)
+
+### Removed Concepts (v4.0)
+
+| Removed | Reason |
+|---------|--------|
+| `instance` | Conflicts with OpenCode's git-SHA-based project ID |
+| `-n <name>` | No longer needed without instance concept |
+| `-w <path>` | Use `--here` or cd to target directory |
+| `--purge` | No instance to purge |
+
+### Key Design Decisions
+
+1. **Single shared storage** - All containers share `~/.local/share/opencode/storage/`
+2. **OpenCode manages sessions** - By git SHA, not by OCD instance name
+3. **IPC by port** - Multi-window support via `~/.local/state/opencode/ipc/<port>/`
+4. **`--here` for isolation** - When you need to mount only current directory
+
 ## Build & Validation Commands
 
 ```bash
 # Docker
 docker build -t opencode-bun .                    # Build image
 docker build --no-cache -t opencode-bun .         # Full rebuild
-ocd -r                                            # Rebuild + reset config
-ocd -r --keep                                     # Rebuild + keep config
+ocd -r                                            # Rebuild + clear cache
 
 # Shell validation
 bash -n bin/ocd lib/*.sh                          # Syntax check
@@ -46,16 +79,31 @@ docker run -it --rm --network host opencode-bun bash
 ├── Dockerfile                        # Container image
 ├── .env                              # API keys (KEY=VALUE only!)
 ├── .ocdrc                            # Local config (workspace whitelist)
-├── global/
-│   ├── opencode/{skill,command,agent}/   # Global OpenCode config
-│   └── claude/{skills,settings.json}     # Claude compat config
 
 # Runtime directories (auto-created on Mac host)
-~/.config/opencode/instances/<instance>/  # Instance config (persisted)
-~/.config/opencode/global/                # Global config (shared)
-~/.local/share/opencode/instances/        # Session data (conversations)
-~/.local/state/opencode/instances/        # IPC files (notifications, URLs)
-~/.cache/opencode/                        # Plugin cache (shared)
+~/.config/opencode/                   # Config (single, shared)
+├── opencode.json                     # Main config
+├── oh-my-opencode.json               # Plugin config
+├── skill/                            # Global skills
+├── command/                          # Global commands
+└── agent/                            # Global agents
+
+~/.local/share/opencode/              # Data (OpenCode native structure)
+├── storage/                          # Sessions, messages (by git SHA)
+│   ├── session/<git-sha>/
+│   ├── message/
+│   └── part/
+├── auth.json                         # OAuth tokens
+└── bin/                              # Binaries
+
+~/.local/state/opencode/              # State
+└── ipc/<port>/                       # IPC files per port (multi-window)
+    ├── open_url
+    ├── notifications
+    └── clipboard
+
+~/.cache/opencode/                    # OpenCode cache
+~/.cache/oh-my-opencode/              # Plugin cache (ast-grep, ripgrep)
 ```
 
 **Config naming**: OpenCode = singular (`skill/`), Claude compat = plural (`skills/`)
@@ -113,25 +161,26 @@ API_KEY=sk-xxx
 GITHUB_TOKEN=ghp_xxxx
 ```
 
-## Container Mounts
+## Container Mounts (v4.0 Simplified)
 
 | Host | Container | Purpose |
 |------|-----------|---------|
-| `$(pwd)` or workspace | `/workspace` | Project files |
-| `~/.config/opencode/<instance>` | `/root/.config/opencode` | Instance config (full dir) |
-| `~/.cache/opencode` | `/root/.cache/opencode` | Plugin cache |
-| `~/.local/state/opencode/instances/<instance>` | `/root/.opencode` | IPC (notifications, URLs) |
-| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | UI settings (KV store) |
-| `~/opencode/global/opencode/` | `/root/.config/opencode/{skill,command,agent}` | Global config |
-| `~/opencode/global/claude/` | `/root/.claude/` | Claude compat |
-
-**Mount order matters**: Instance config dir mounted first, then global subdirs overlay.
+| Workspace (detected or `--here`) | `/workspace` | Project files |
+| `~/.config/opencode/` | `/root/.config/opencode/` | Config (shared) |
+| `~/.local/share/opencode/` | `/root/.local/share/opencode/` | Data (shared) |
+| `~/.local/state/opencode/` | `/root/.local/state/opencode/` | State |
+| `~/.cache/opencode/` | `/root/.cache/opencode/` | OpenCode cache |
+| `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | Plugin cache |
+| `~/.ssh/` | `/root/.ssh/:ro` | SSH keys (read-only) |
+| Project `.claude/` | `/root/.claude/` | Claude compat |
 
 ## IPC (Container → Mac)
 
-- **Notifications**: `notify "Title" "Message"` → `/root/.opencode/notifications`
-- **URLs**: writes to `/root/.opencode/open_url` → host watcher calls `open`
-- **Clipboard**: writes to `/root/.opencode/clipboard` → host watcher calls `pbcopy`
+IPC files are stored per-port for multi-window support:
+- **Path**: `~/.local/state/opencode/ipc/<port>/`
+- **Notifications**: `notify "Title" "Message"` → `notifications` file
+- **URLs**: writes to `open_url` → host watcher calls `open`
+- **Clipboard**: writes to `clipboard` → host watcher calls `pbcopy`
 
 ## Common Pitfalls
 
@@ -153,24 +202,31 @@ GITHUB_TOKEN=ghp_xxxx
 # 5. Verify: ls -la /root/.config/opencode/
 ```
 
-## CLI Reference
+## CLI Reference (v4.0)
 
 ```bash
-ocd                         # Auto: instance = dir name, port = auto
-ocd -n myapp                # Custom instance name
+ocd                         # Auto-detect workspace, auto port
 ocd -p 5000                 # Custom port
-ocd -w ~/projects           # Specify workspace directory
 ocd --here                  # Mount only current directory (no workspace detection)
 ocd --https                 # Enable HTTPS via Tailscale Serve
 ocd --awake                 # Prevent Mac from sleeping
 ocd --quotio                # Enable Quotio provider
-ocd -r                      # Rebuild image + reset config
-ocd -r --keep               # Rebuild image + keep config
+ocd -r                      # Rebuild image + clear cache
 ocd -v                      # Show version
+ocd --clean                 # Clear config (regenerate on next run)
 ocd --dev                   # Development mode (from dev/ directory)
 ocd -r --dev                # Rebuild development image
 ocd --dev-root ~/fork       # Use custom development directory
 ```
+
+### Removed Parameters (v4.0)
+
+| Parameter | Replacement |
+|-----------|-------------|
+| `-n <name>` | Removed - OpenCode uses git SHA |
+| `-w <path>` | Use `cd <path> && ocd` or `--here` |
+| `--purge` | Removed - use `rm -rf ~/.local/share/opencode/storage/` manually |
+| `--keep` | Removed - config is always preserved |
 
 ### Development Mode
 
@@ -201,6 +257,23 @@ ocd --dev-root=~/code/ocd-fork  # equals style also works
 - Loads `dev/.env` first (if exists), otherwise falls back to main `.env`
 - Startup shows `[DEV]` label and dev directory path
 
+## Workspace Detection
+
+OCD automatically detects workspace by walking up from current directory:
+
+1. Find `.git` directory → use its **parent** as workspace
+2. If no `.git` found → use current directory
+3. With `--here` → always use current directory (skip detection)
+
+**Example**:
+```bash
+cd ~/projects/webapp/src/components
+ocd
+# Detects ~/projects/webapp/.git
+# Mounts ~/projects/ as /workspace
+# Starts in /workspace/webapp/src/components
+```
+
 ## Workspace Whitelist (.ocdrc)
 
 ```bash
@@ -209,4 +282,30 @@ OCD_ALLOWED_WORKSPACES="$HOME/opencode:$HOME/projects"
 ```
 
 When set, OCD blocks access to directories not in the whitelist.
-Use `--here` or `-w` to bypass. Supports `$HOME` and `~` expansion.
+Use `--here` to bypass. Supports `$HOME` and `~` expansion.
+
+## Migration from v3.x
+
+If you have existing v3.x instance data:
+
+```bash
+# Run migration script
+~/opencode/scripts/migrate-v4.sh
+
+# Or manually merge (sessions will be accessible after migration)
+# The migration merges all instance storage into shared storage
+```
+
+## OpenCode + oh-my-opencode Compatibility
+
+OCD is fully compatible with:
+- **OpenCode** - Native project detection via git SHA
+- **oh-my-opencode** - Plugin uses directory markers, not OCD instances
+- **WebUI** - Project switching via `?directory=` works correctly
+
+| Component | Project Detection | Storage |
+|-----------|-------------------|---------|
+| OpenCode TUI | git root commit SHA | `storage/session/<sha>/` |
+| OpenCode WebUI | Same (via header/query) | Same |
+| oh-my-opencode | Directory markers (.git, package.json) | User-level config |
+| OCD | Delegates to OpenCode | Shared storage |

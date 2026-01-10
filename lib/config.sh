@@ -339,20 +339,9 @@ ocd_update_omo_agents() {
 # 初始化全局配置目录
 # =========================================
 ocd_init_global() {
-  # v3.0: 使用 XDG 标准路径
-  local global_dir="$OCD_CONFIG_GLOBAL"
+  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
 
-  # OpenCode 原生全局配置（单数目录名）
-  mkdir -p "$global_dir/opencode"/{skill,command,agent}
-
-  # Claude 兼容层全局配置（复数目录名）
-  mkdir -p "$global_dir/claude"/{skills,commands,agents,rules}
-
-  # 默认配置文件（空）
-  [[ ! -f "$global_dir/claude/settings.json" ]] && echo '{}' > "$global_dir/claude/settings.json"
-  [[ ! -f "$global_dir/claude/.mcp.json" ]] && echo '{"mcpServers":{}}' > "$global_dir/claude/.mcp.json"
-
-  return 0  # 防止 set -e 因条件判断返回 false 而退出
+  return 0
 }
 
 # =========================================
