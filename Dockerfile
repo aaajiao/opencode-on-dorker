@@ -177,7 +177,7 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
 RUN echo '#!/bin/bash\n\
 \n\
 # 调试函数\n\
-ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2; }\n\
+ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2 || true; }\n\
 \n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
 \n\
