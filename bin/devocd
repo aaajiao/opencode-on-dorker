@@ -12,5 +12,8 @@ if [[ ! -f "$OCD_DEV_ROOT/bin/ocd" ]]; then
   exit 1
 fi
 
+# 设置 OCD_ROOT 并标记已设置，防止 ocd 再次修改
+export OCD_ROOT="$OCD_DEV_ROOT"
+export OCD_ROOT_PRESET=1
 export OCD_DEV_MODE=1
 exec "$OCD_DEV_ROOT/bin/ocd" "$@"
