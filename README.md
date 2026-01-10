@@ -370,12 +370,62 @@ ultrathink         # 深度思考
 
 ## MCP 服务器
 
+### 内置 MCP
+
 | MCP | 来源 | 功能 |
 |-----|------|------|
-| context7 | 内置 | 文档查询 |
-| exa | 内置 | 网页搜索 |
-| grep_app | 内置 | 代码搜索 |
+| context7 | oh-my-opencode | 文档查询 |
+| exa | 配置 | 网页搜索 |
+| grep_app | oh-my-opencode | 代码搜索 |
 | playwright | 配置 | 浏览器自动化 |
+
+### MCP 配置
+
+通过 `mcp.json` 配置文件管理 MCP 服务器：
+
+```bash
+cp mcp.json.example ~/opencode/mcp.json
+nano ~/opencode/mcp.json
+```
+
+**配置格式**：
+
+```json
+{
+  "playwright": {
+    "type": "local",
+    "command": ["npx", "@playwright/mcp@${PLAYWRIGHT_MCP_VERSION:-0.0.54}", "--headless"],
+    "enabled": true
+  },
+  "exa": {
+    "type": "local",
+    "command": ["npx", "-y", "exa-mcp-server@${EXA_MCP_VERSION:-3.1.3}"],
+    "timeout": 60000,
+    "enabled": false,
+    "environment": {
+      "EXA_API_KEY": "${EXA_API_KEY}"
+    }
+  }
+}
+```
+
+**变量替换**：
+- `${VAR}` - 从 `.env` 或 `versions.lock` 读取
+- `${VAR:-default}` - 带默认值
+
+**添加新 MCP**：
+
+```json
+{
+  "filesystem": {
+    "type": "local",
+    "command": ["npx", "-y", "@anthropics/mcp-filesystem@latest", "/workspace"],
+    "enabled": true
+  }
+}
+```
+
+> **注意**：修改后需重新生成配置：`ocd --clean && ocd`
 
 ## 模型配置
 
