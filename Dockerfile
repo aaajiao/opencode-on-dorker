@@ -178,6 +178,11 @@ RUN echo '#!/bin/bash\n\
 \n\
 env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
 \n\
+# 确保缓存目录结构存在（关键：必须在 oh-my-opencode 启动前创建）\n\
+# 即使通过 Docker volume 挂载，也需要确保 bin 子目录存在\n\
+mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
+chmod 755 /root/.cache/oh-my-opencode /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
+\n\
 # Chrome symlink for Playwright MCP (finds chrome in ms-playwright cache)\n\
 if [ -d "/root/.cache/ms-playwright" ]; then\n\
     CHROME_PATH=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1)\n\
@@ -186,9 +191,6 @@ if [ -d "/root/.cache/ms-playwright" ]; then\n\
         ln -sf "$CHROME_PATH" /opt/google/chrome/chrome 2>/dev/null\n\
     fi\n\
 fi\n\
-\n\
-# 预创建 oh-my-opencode 缓存目录（防止 comment-checker 下载失败）\n\
-mkdir -p /root/.cache/oh-my-opencode/bin\n\
 \n\
 if [[ -n "$GITHUB_TOKEN" ]]; then\n\
     if gh auth status &>/dev/null; then\n\
