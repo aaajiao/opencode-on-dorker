@@ -70,8 +70,8 @@ EOF
 # =========================================
 ocd_cleanup_duplicates() {
   local cleaned=0
-  local -A worktree_to_file
-  local -A worktree_to_updated
+  local tmp_file
+  tmp_file=$(mktemp)
 
   for f in "$OCD_SCAN_STORAGE_DIR"/*.json; do
     [[ ! -f "$f" ]] && continue
@@ -84,23 +84,30 @@ ocd_cleanup_duplicates() {
     [[ -z "$worktree" ]] && continue
     [[ "$worktree" == "/" ]] && continue
 
-    if [[ -n "${worktree_to_file[$worktree]:-}" ]]; then
-      local existing_updated="${worktree_to_updated[$worktree]}"
-      if [[ "$updated" -gt "$existing_updated" ]]; then
-        rm -f "${worktree_to_file[$worktree]}"
-        ((cleaned++))
-        worktree_to_file[$worktree]="$f"
-        worktree_to_updated[$worktree]="$updated"
-      else
-        rm -f "$f"
-        ((cleaned++))
-      fi
-    else
-      worktree_to_file[$worktree]="$f"
-      worktree_to_updated[$worktree]="$updated"
+    echo "${worktree}|${updated}|${f}" >> "$tmp_file"
+  done
+
+  local worktree_list
+  worktree_list=$(cut -d'|' -f1 "$tmp_file" | sort -u)
+
+  for wt in $worktree_list; do
+    local count
+    count=$(grep -c "^${wt}|" "$tmp_file" 2>/dev/null || echo 0)
+    
+    if [[ "$count" -gt 1 ]]; then
+      local keep_file
+      keep_file=$(grep "^${wt}|" "$tmp_file" | sort -t'|' -k2 -rn | head -1 | cut -d'|' -f3)
+      
+      grep "^${wt}|" "$tmp_file" | cut -d'|' -f3 | while read -r dup_file; do
+        if [[ "$dup_file" != "$keep_file" ]]; then
+          rm -f "$dup_file"
+          ((cleaned++))
+        fi
+      done
     fi
   done
 
+  rm -f "$tmp_file"
   echo "$cleaned"
 }
 
