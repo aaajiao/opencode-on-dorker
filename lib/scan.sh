@@ -27,7 +27,29 @@ ocd_get_project_id() {
 }
 
 # =========================================
+# 查找现有 worktree 记录
+# 返回：匹配的文件路径，或空
+# =========================================
+ocd_find_existing_record() {
+  local worktree="$1"
+
+  for f in "$OCD_SCAN_STORAGE_DIR"/*.json; do
+    [[ ! -f "$f" ]] && continue
+    [[ "$(basename "$f")" == "global.json" ]] && continue
+
+    # 使用 grep -F 固定字符串匹配，避免正则问题
+    if grep -qF "\"worktree\": \"${worktree}\"" "$f" 2>/dev/null; then
+      echo "$f"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+# =========================================
 # 注册/更新单个项目
+# 优先使用现有记录（保持与 OpenCode 创建的 ID 兼容）
 # =========================================
 ocd_register_project() {
   local project_name="$1"
@@ -39,15 +61,38 @@ ocd_register_project() {
   local now
   now=$(($(date +%s) * 1000))
 
-  local storage_file="${OCD_SCAN_STORAGE_DIR}/${project_id}.json"
+  # 先查找是否已有相同 worktree 的记录
+  local existing_file
+  existing_file=$(ocd_find_existing_record "$container_path")
 
-  # 检查是否已存在，保留 created 时间
-  local created_time="$now"
-  if [[ -f "$storage_file" ]]; then
-    local existing_created
-    existing_created=$(grep -o '"created":[0-9]*' "$storage_file" 2>/dev/null | grep -o '[0-9]*')
-    [[ -n "$existing_created" ]] && created_time="$existing_created"
+  if [[ -n "$existing_file" ]]; then
+    # 现有记录存在 - 读取原 ID 和 created 时间，只更新 updated
+    local existing_id existing_created
+    existing_id=$(grep -o '"id": "[^"]*"' "$existing_file" 2>/dev/null | sed 's/"id": "\([^"]*\)"/\1/')
+    existing_created=$(grep -o '"created": [0-9]*' "$existing_file" 2>/dev/null | grep -o '[0-9]*')
+
+    [[ -z "$existing_created" ]] && existing_created="$now"
+
+    # 使用现有 ID，更新 updated 时间
+    cat > "$existing_file" << EOF
+{
+  "id": "${existing_id}",
+  "worktree": "${container_path}",
+  "vcs": "git",
+  "sandboxes": [],
+  "time": {
+    "created": ${existing_created},
+    "updated": ${now}
+  }
+}
+EOF
+    # 返回特殊值表示是更新现有记录
+    echo "updated"
+    return 0
   fi
+
+  # 没有现有记录 - 创建新记录
+  local storage_file="${OCD_SCAN_STORAGE_DIR}/${project_id}.json"
 
   cat > "$storage_file" << EOF
 {
@@ -56,12 +101,13 @@ ocd_register_project() {
   "vcs": "git",
   "sandboxes": [],
   "time": {
-    "created": ${created_time},
+    "created": ${now},
     "updated": ${now}
   }
 }
 EOF
 
+  echo "created"
   return 0
 }
 
@@ -78,34 +124,37 @@ ocd_cleanup_duplicates() {
     [[ "$(basename "$f")" == "global.json" ]] && continue
 
     local worktree updated
-    worktree=$(grep -o '"worktree":"[^"]*"' "$f" 2>/dev/null | sed 's/"worktree":"\([^"]*\)"/\1/')
-    updated=$(grep -o '"updated":[0-9]*' "$f" 2>/dev/null | grep -o '[0-9]*')
+    # 支持有无空格的 JSON 格式
+    worktree=$(grep -o '"worktree":[[:space:]]*"[^"]*"' "$f" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
+    updated=$(grep -o '"updated":[[:space:]]*[0-9]*' "$f" 2>/dev/null | grep -o '[0-9]*')
 
     [[ -z "$worktree" ]] && continue
     [[ "$worktree" == "/" ]] && continue
 
-    echo "${worktree}|${updated}|${f}" >> "$tmp_file"
+    printf '%s\t%s\t%s\n' "$worktree" "$updated" "$f" >> "$tmp_file"
   done
 
   local worktree_list
-  worktree_list=$(cut -d'|' -f1 "$tmp_file" | sort -u)
+  worktree_list=$(cut -f1 "$tmp_file" | sort -u)
 
-  for wt in $worktree_list; do
+  while IFS= read -r wt; do
+    [[ -z "$wt" ]] && continue
+
     local count
-    count=$(grep -c "^${wt}|" "$tmp_file" 2>/dev/null || echo 0)
-    
+    count=$(awk -F'\t' -v w="$wt" '$1 == w { c++ } END { print c+0 }' "$tmp_file")
+
     if [[ "$count" -gt 1 ]]; then
       local keep_file
-      keep_file=$(grep "^${wt}|" "$tmp_file" | sort -t'|' -k2 -rn | head -1 | cut -d'|' -f3)
-      
-      grep "^${wt}|" "$tmp_file" | cut -d'|' -f3 | while read -r dup_file; do
+      keep_file=$(awk -F'\t' -v w="$wt" '$1 == w { print $2 "\t" $3 }' "$tmp_file" | sort -t$'\t' -k1 -rn | head -1 | cut -f2)
+
+      awk -F'\t' -v w="$wt" '$1 == w { print $3 }' "$tmp_file" | while read -r dup_file; do
         if [[ "$dup_file" != "$keep_file" ]]; then
           rm -f "$dup_file"
           ((cleaned++))
         fi
       done
     fi
-  done
+  done <<< "$worktree_list"
 
   rm -f "$tmp_file"
   echo "$cleaned"
@@ -140,19 +189,16 @@ ocd_scan_directory() {
       continue
     fi
 
-    local storage_file="${OCD_SCAN_STORAGE_DIR}/${project_id}.json"
-    local action="注册"
-    [[ -f "$storage_file" ]] && action="更新"
+    local result
+    result=$(ocd_register_project "$project_name" "$project_id")
 
-    if ocd_register_project "$project_name" "$project_id"; then
+    if [[ "$result" == "created" ]]; then
       local id_short="${project_id:0:8}"
-      if [[ "$action" == "注册" ]]; then
-        echo "  ✅ 新增: $project_name ($id_short...)"
-        ((registered++))
-      else
-        echo "  🔄 更新: $project_name ($id_short...)"
-        ((updated++))
-      fi
+      echo "  ✅ 新增: $project_name ($id_short...)"
+      ((registered++))
+    elif [[ "$result" == "updated" ]]; then
+      echo "  🔄 更新: $project_name"
+      ((updated++))
     else
       echo "  ❌ 失败: $project_name"
       ((skipped++))
