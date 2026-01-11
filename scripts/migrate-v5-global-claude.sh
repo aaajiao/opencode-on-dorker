@@ -21,6 +21,7 @@ find_project_claude_dirs() {
     "$HOME/workspace"
     "$HOME/dev"
     "$HOME/opencode"
+    "$HOME/o_projects"
   )
   
   for base in "${search_paths[@]}"; do
