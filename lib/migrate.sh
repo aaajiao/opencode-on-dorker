@@ -5,7 +5,6 @@ ocd_check_migration() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
   local ocd_root="${OCD_ROOT:-$HOME/opencode}"
   
-  # 检测 v4 配置（存在配置但无 v5 标记）
   if [[ -f "$config_dir/opencode.json" ]] && \
      [[ ! -f "$config_dir/.ocd-v5-migrated" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -22,11 +21,62 @@ ocd_check_migration() {
     touch "$config_dir/.ocd-v5-migrated"
   fi
   
-  # 提示 mcp.json 已废弃
   if [[ -f "$ocd_root/mcp.json" ]]; then
     echo "  ⚠️  检测到 ~/opencode/mcp.json"
     echo "     v5 的 MCP 配置已移至 opencode.json 的 mcp 字段"
     echo "     请手动迁移后删除 mcp.json"
     echo ""
+  fi
+}
+
+ocd_check_claude_migration() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
+  local marker="$config_dir/.claude-global-migrated"
+  
+  [[ -f "$marker" ]] && return 0
+  
+  local needs_migration=0
+  local search_paths=(
+    "$HOME/projects"
+    "$HOME/code"
+    "$HOME/workspace"
+    "$HOME/dev"
+  )
+  
+  for base in "${search_paths[@]}"; do
+    if [[ -d "$base" ]]; then
+      while IFS= read -r -d '' claude_dir; do
+        local todos_dir="${claude_dir}/todos"
+        local transcripts_dir="${claude_dir}/transcripts"
+        
+        if [[ -d "$todos_dir" ]] && [[ -n "$(ls -A "$todos_dir" 2>/dev/null)" ]]; then
+          needs_migration=1
+          break 2
+        fi
+        if [[ -d "$transcripts_dir" ]] && [[ -n "$(ls -A "$transcripts_dir" 2>/dev/null)" ]]; then
+          needs_migration=1
+          break 2
+        fi
+      done < <(find "$base" -maxdepth 4 -name ".claude" -type d -print0 2>/dev/null)
+    fi
+  done
+  
+  if [[ "$needs_migration" -eq 1 ]]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ⚠️  检测到项目级会话数据需要迁移"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "  v5 将 todos/transcripts 改为全局存储。"
+    echo "  请在 Mac 上运行迁移脚本："
+    echo ""
+    echo "    $ocd_root/scripts/migrate-v5-global-claude.sh"
+    echo ""
+    echo "  迁移后此提示不再显示。"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+  else
+    touch "$marker"
   fi
 }

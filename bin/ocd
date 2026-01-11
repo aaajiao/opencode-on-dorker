@@ -235,6 +235,11 @@ EOF
   if type ocd_check_migration &>/dev/null; then
     ocd_check_migration
   fi
+  
+  # v5: Check Claude global storage migration
+  if type ocd_check_claude_migration &>/dev/null; then
+    ocd_check_claude_migration
+  fi
 
   # v5: Show welcome on first run
   ocd_show_welcome_if_first_run
