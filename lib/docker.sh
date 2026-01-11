@@ -72,7 +72,6 @@ ocd_run_container() {
 
   local ipc_dir
   ipc_dir=$(ocd_ipc_dir "$port")
-  local playwright_cache="$OCD_CACHE_HOME/ms-playwright"
 
   local project_dir
   if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
@@ -95,7 +94,7 @@ ocd_run_container() {
 
   mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
   mkdir -p "$OCD_DATA_HOME"/{bin,storage}
-  mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$playwright_cache"
+  mkdir -p "$OCD_OMO_CACHE_HOME/bin"
   mkdir -p "$global_claude"/{todos,transcripts,commands,skills,agents,rules}
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
 
@@ -112,7 +111,6 @@ ocd_run_container() {
     -v "$OCD_STATE_HOME:/root/.local/state/opencode"
     -v "$OCD_CACHE_HOME:/root/.cache/opencode"
     -v "$OCD_OMO_CACHE_HOME:/root/.cache/oh-my-opencode"
-    -v "${playwright_cache}:/root/.cache/ms-playwright"
     -v "$HOME/.ssh:/root/.ssh:ro"
     -v "$global_claude:/root/.claude"
   )
