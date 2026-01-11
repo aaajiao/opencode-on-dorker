@@ -37,7 +37,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 # 同时创建 /opt/google/chrome/chrome symlink 供 @playwright/mcp 使用
 RUN npm install -g playwright && \
     npx playwright install --with-deps chromium && \
-    CHROME_BIN=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1) && \
+    CHROME_BIN=$(find /root/.cache/ms-playwright/chromium-* -name "chrome" -type f -executable 2>/dev/null | head -1) && \
     if [ -n "$CHROME_BIN" ]; then \
         mkdir -p /opt/google/chrome && \
         ln -sf "$CHROME_BIN" /opt/google/chrome/chrome && \
@@ -205,7 +205,7 @@ ocd_debug "目录状态: $(ls -la /root/.cache/oh-my-opencode/ 2>&1)"\n\
 # Playwright MCP: verify/fix Chrome symlink and clean stale locks\n\
 rm -rf /root/.cache/ms-playwright/mcp-chrome 2>/dev/null\n\
 if [ -d "/root/.cache/ms-playwright" ]; then\n\
-    CHROME_PATH=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1)\n\
+    CHROME_PATH=$(find /root/.cache/ms-playwright/chromium-* -name "chrome" -type f -executable 2>/dev/null | head -1)\n\
     if [ -n "$CHROME_PATH" ] && [ -x "$CHROME_PATH" ]; then\n\
         mkdir -p /opt/google/chrome\n\
         ln -sf "$CHROME_PATH" /opt/google/chrome/chrome 2>/dev/null\n\
