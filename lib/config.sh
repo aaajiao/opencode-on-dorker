@@ -62,29 +62,23 @@ ocd_create_config_from_template() {
 ocd_ensure_global_config() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
   local ocd_root="${OCD_ROOT:-$HOME/opencode}"
-  local created=0
   
-  # 创建目录结构
   mkdir -p "$config_dir"/{agent,command,skill,themes}
   
-  # opencode.json（从模板创建，替换版本占位符）
   if [[ ! -f "$config_dir/opencode.json" ]]; then
     if [[ -f "$ocd_root/templates/global/opencode.json.tmpl" ]]; then
       ocd_create_config_from_template \
         "$ocd_root/templates/global/opencode.json.tmpl" \
         "$config_dir/opencode.json"
       ocd_info "已创建 $config_dir/opencode.json"
-      created=1
     fi
   fi
   
-  # oh-my-opencode.json（直接复制）
   if [[ ! -f "$config_dir/oh-my-opencode.json" ]]; then
     if [[ -f "$ocd_root/templates/global/oh-my-opencode.json" ]]; then
       cp "$ocd_root/templates/global/oh-my-opencode.json" \
          "$config_dir/oh-my-opencode.json"
       ocd_info "已创建 $config_dir/oh-my-opencode.json"
-      created=1
     fi
   fi
   
