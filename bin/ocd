@@ -111,6 +111,12 @@ main() {
       ocd_scan "$@"
       return 0
       ;;
+    touch)
+      shift
+      source "$OCD_ROOT/lib/scan.sh"
+      ocd_touch "$@"
+      return 0
+      ;;
     init)
       shift
       ocd_init_project "${1:-full}"
