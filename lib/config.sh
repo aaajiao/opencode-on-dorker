@@ -88,7 +88,7 @@ ocd_ensure_global_config() {
     fi
   fi
   
-  return $created
+  return 0
 }
 
 # =========================================
@@ -198,7 +198,8 @@ ocd_update_omo_agents() {
 # =========================================
 ocd_reset_global_config() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
-  local backup_dir="$config_dir/.backup-$(date +%Y%m%d-%H%M%S)"
+  local backup_dir
+  backup_dir="$config_dir/.backup-$(date +%Y%m%d-%H%M%S)"
   
   # 备份现有配置
   if [[ -f "$config_dir/opencode.json" || -f "$config_dir/oh-my-opencode.json" ]]; then
