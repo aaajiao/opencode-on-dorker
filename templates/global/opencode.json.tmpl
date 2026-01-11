@@ -12,7 +12,7 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest", "--headless"],
+      "command": ["npx", "@playwright/mcp@{{PLAYWRIGHT_MCP_VERSION}}", "--headless"],
       "enabled": true
     },
     "kernel": {
@@ -25,7 +25,7 @@
     },
     "exa": {
       "type": "local",
-      "command": ["npx", "-y", "exa-mcp-server@latest"],
+      "command": ["npx", "-y", "exa-mcp-server@{{EXA_MCP_VERSION}}"],
       "enabled": false,
       "environment": {
         "EXA_API_KEY": "{env:EXA_API_KEY}"
