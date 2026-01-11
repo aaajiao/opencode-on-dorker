@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/bats/init.bats - 目录初始化测试 (v4.0)
+# tests/bats/init.bats - 目录初始化测试 (v5)
 
 setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
@@ -8,13 +8,15 @@ setup() {
 
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录 (v4.0 - 无 instance 概念)
   export OCD_CONFIG_HOME="$TEST_DIR/config"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
   export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
   export OCD_IPC_HOME="$TEST_DIR/state/ipc"
+
+  mkdir -p "$OCD_ROOT/templates/project/.opencode"
+  mkdir -p "$OCD_ROOT/templates/project/.claude"
 }
 
 teardown() {
@@ -22,7 +24,7 @@ teardown() {
 }
 
 # =========================================
-# ocd_init_global 测试 (v4.0 - 简化版)
+# ocd_init_global tests (v5)
 # =========================================
 
 @test "ocd_init_global creates OpenCode native directories" {
@@ -34,7 +36,6 @@ teardown() {
 }
 
 @test "ocd_init_global returns 0 (set -e compatible)" {
-  # 这个测试确保函数在 set -e 下不会导致脚本退出
   set -e
   ocd_init_global
   result=$?
@@ -48,55 +49,139 @@ teardown() {
   ocd_init_global
   ocd_init_global
 
-  # 目录应该存在
   [ -d "$OCD_CONFIG_HOME/skill" ]
   [ -d "$OCD_CONFIG_HOME/command" ]
   [ -d "$OCD_CONFIG_HOME/agent" ]
 }
 
 # =========================================
-# ocd_init_project 测试
+# ocd_init_project tests (v5 - user command)
 # =========================================
 
-@test "ocd_init_project creates OpenCode native directories" {
+@test "ocd_init_project creates AGENTS.md from template" {
   local project="$TEST_DIR/myproject"
   mkdir -p "$project"
+  cd "$project"
 
-  ocd_init_project "$project"
+  echo "# Test AGENTS.md" > "$OCD_ROOT/templates/project/AGENTS.md.example"
 
-  [ -d "$project/.opencode/skill" ]
-  [ -d "$project/.opencode/command" ]
+  # Run in non-interactive mode (skip git prompt)
+  echo "n" | ocd_init_project "full" 2>/dev/null || true
+
+  [ -f "$project/AGENTS.md" ]
+}
+
+@test "ocd_init_project creates .opencode directory structure" {
+  local project="$TEST_DIR/myproject"
+  mkdir -p "$project"
+  cd "$project"
+  git init --quiet
+
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+  echo "{}" > "$OCD_ROOT/templates/project/.opencode/oh-my-opencode.json.example"
+
+  ocd_init_project "full"
+
   [ -d "$project/.opencode/agent" ]
+  [ -d "$project/.opencode/command" ]
+  [ -d "$project/.opencode/skill" ]
+  [ -d "$project/.opencode/plugin" ]
 }
 
-@test "ocd_init_project creates Claude session directories" {
+@test "ocd_init_project creates .claude directory structure" {
   local project="$TEST_DIR/myproject"
   mkdir -p "$project"
+  cd "$project"
+  git init --quiet
 
-  ocd_init_project "$project"
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+  echo "{}" > "$OCD_ROOT/templates/project/.claude/settings.json.example"
 
-  [ -d "$project/.claude/todos" ]
-  [ -d "$project/.claude/transcripts" ]
+  ocd_init_project "full"
+
+  [ -d "$project/.claude/agents" ]
+  [ -d "$project/.claude/commands" ]
+  [ -d "$project/.claude/skills" ]
 }
 
-@test "ocd_init_project does NOT create Claude config directories" {
+@test "ocd_init_project --minimal only creates AGENTS.md" {
   local project="$TEST_DIR/myproject"
   mkdir -p "$project"
+  cd "$project"
+  git init --quiet
 
-  ocd_init_project "$project"
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+  echo "{}" > "$OCD_ROOT/templates/project/opencode.json.example"
 
-  # 不应自动创建这些目录（用户手动创建才启用覆盖）
-  [ ! -d "$project/.claude/skills" ]
-  [ ! -d "$project/.claude/commands" ]
-  [ ! -d "$project/.claude/agents" ]
-  [ ! -d "$project/.claude/rules" ]
+  ocd_init_project "--minimal"
+
+  [ -f "$project/AGENTS.md" ]
+  [ ! -f "$project/opencode.json" ]
+  [ ! -d "$project/.opencode" ]
 }
 
-@test "ocd_init_project handles non-writable directory gracefully" {
-  local project="/nonexistent/path"
+@test "ocd_init_project does not overwrite existing files" {
+  local project="$TEST_DIR/myproject"
+  mkdir -p "$project"
+  cd "$project"
+  git init --quiet
 
-  # 应该静默失败（不报错）
-  run ocd_init_project "$project"
-  # 由于使用了 2>/dev/null || true，应该成功
-  [ "$status" -eq 0 ]
+  echo "# Original" > "$project/AGENTS.md"
+  echo "# Template" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+
+  ocd_init_project "full"
+
+  result=$(cat "$project/AGENTS.md")
+  [[ "$result" == "# Original" ]]
+}
+
+@test "ocd_init_project updates .gitignore with local patterns" {
+  local project="$TEST_DIR/myproject"
+  mkdir -p "$project"
+  cd "$project"
+  git init --quiet
+  touch "$project/.gitignore"
+
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+
+  ocd_init_project "full"
+
+  grep -q ".claude/settings.local.json" "$project/.gitignore"
+}
+
+# =========================================
+# _ocd_copy_if_not_exists tests
+# =========================================
+
+@test "_ocd_copy_if_not_exists copies file when target missing" {
+  local src="$TEST_DIR/source.txt"
+  local dst="$TEST_DIR/dest.txt"
+
+  echo "content" > "$src"
+
+  run _ocd_copy_if_not_exists "$src" "$dst"
+
+  [ -f "$dst" ]
+  [ "$(cat "$dst")" = "content" ]
+}
+
+@test "_ocd_copy_if_not_exists skips when target exists" {
+  local src="$TEST_DIR/source.txt"
+  local dst="$TEST_DIR/dest.txt"
+
+  echo "source" > "$src"
+  echo "existing" > "$dst"
+
+  run _ocd_copy_if_not_exists "$src" "$dst"
+
+  [ "$(cat "$dst")" = "existing" ]
+}
+
+@test "_ocd_copy_if_not_exists handles missing source" {
+  local src="$TEST_DIR/nonexistent.txt"
+  local dst="$TEST_DIR/dest.txt"
+
+  run _ocd_copy_if_not_exists "$src" "$dst"
+
+  [ ! -f "$dst" ]
 }

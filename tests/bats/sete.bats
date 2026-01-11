@@ -68,19 +68,20 @@ run_with_set_e() {
   [ "$status" -eq 0 ]
 }
 
-@test "set -e: ocd_generate_opencode_config" {
-  run run_with_set_e ocd_generate_opencode_config "$TEST_DIR/opencode.json" 4096 0
+@test "set -e: ocd_ensure_global_config" {
+  run run_with_set_e ocd_ensure_global_config
   [ "$status" -eq 0 ]
 }
 
-@test "set -e: ocd_generate_omo_config" {
-  run run_with_set_e ocd_generate_omo_config "$TEST_DIR/omo.json" 0
+@test "set -e: ocd_create_config_from_template" {
+  echo '{"test": "value"}' > "$TEST_DIR/template.json"
+  run run_with_set_e ocd_create_config_from_template "$TEST_DIR/template.json" "$TEST_DIR/output.json"
   [ "$status" -eq 0 ]
 }
 
-@test "set -e: ocd_update_config_port" {
+@test "set -e: ocd_update_port" {
   echo '{"server":{"port":4096}}' > "$TEST_DIR/config.json"
-  run run_with_set_e ocd_update_config_port "$TEST_DIR/config.json" 5000
+  run run_with_set_e ocd_update_port "$TEST_DIR/config.json" 5000
   [ "$status" -eq 0 ]
 }
 

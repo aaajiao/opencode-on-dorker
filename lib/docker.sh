@@ -117,6 +117,11 @@ ocd_run_container() {
     -v "${project_claude}:/root/.claude"
   )
 
+  # Mount user's ~/.claude if exists (Claude Code CLI config)
+  if [[ -d "$HOME/.claude" ]]; then
+    mount_args+=(-v "$HOME/.claude:/root/.user-claude:ro")
+  fi
+
   # 项目级 Claude 兼容层配置（条件覆盖挂载）
   local subdir proj_subdir
   for subdir in skills commands agents rules; do

@@ -1,4 +1,4 @@
-# OCD 开发者指南 (v4.0)
+# OCD 开发者指南 (v5.0)
 
 本文档面向想要扩展或定制 OCD (OpenCode Docker) 的**开发者**。
 
@@ -6,13 +6,16 @@
 
 ## 1. 架构概述
 
-### 1.1 设计原则
+### 1.1 v5 设计原则
 
-OCD v4.0 是 OpenCode 的**薄 Docker 包装器**，遵循 OpenCode 原生行为：
+OCD v5.0 是 OpenCode 的**薄 Docker 包装器**，遵循以下原则：
 
-- **OpenCode 的项目识别**：使用 git root commit SHA 作为项目 ID
-- **OCD 的职责**：容器化、macOS 集成（剪贴板/通知/URL）、端口分配
-- **不做**：项目/会话隔离（让 OpenCode 处理）
+| 原则 | 说明 |
+|------|------|
+| **用户拥有配置** | 配置文件首次创建后由用户管理，OCD 不再覆盖 |
+| **最小化干预** | 每次启动只更新端口，其他配置不动 |
+| **模板驱动** | 从 `templates/` 生成配置，支持变量替换 |
+| **遵循原生设计** | 完全遵循 OpenCode + oh-my-opencode 的目录结构 |
 
 ### 1.2 模块化设计
 
@@ -22,30 +25,59 @@ OCD v4.0 是 OpenCode 的**薄 Docker 包装器**，遵循 OpenCode 原生行为
 | Port | `lib/port.sh` | 端口分配、原子锁机制 |
 | Workspace | `lib/workspace.sh` | 工作区检测、白名单验证 |
 | Watcher | `lib/watcher.sh` | IPC 文件监控（剪贴板/通知/URL） |
-| Config | `lib/config.sh` | 配置文件生成 |
+| Config | `lib/config.sh` | **v5 配置管理**（模板、端口更新、重置） |
 | Docker | `lib/docker.sh` | Docker 镜像构建与容器运行 |
+| Migrate | `lib/migrate.sh` | v4→v5 自动迁移 |
 
-### 1.3 入口流程
+### 1.3 v5 入口流程
 
 ```
 bin/ocd
    │
    ├─ 加载模块 (lib/*.sh)
-   ├─ 自动迁移 v3.x → v4.0
-   ├─ 解析参数
+   ├─ 解析参数 / 子命令 (init, config)
    ├─ 工作区检测
    ├─ 端口分配（原子锁）
-   ├─ 初始化配置目录
-   ├─ 生成配置文件
+   ├─ v5 配置流程：
+   │   ├─ 检测是否首次运行
+   │   ├─ 首次：从模板创建配置 + 显示欢迎信息
+   │   └─ 非首次：只更新端口号
+   ├─ 应用 models.conf（如存在）
    ├─ 启动 Watcher（按端口隔离）
    └─ 运行 Docker 容器
 ```
 
 ---
 
-## 2. 目录结构 (XDG 规范)
+## 2. 目录结构
 
-### 2.1 路径定义
+### 2.1 OCD 安装目录
+
+```
+~/opencode/
+├── .env                               # API Keys（必需）
+├── models.conf                        # 模型配置（可选）
+├── versions.lock                      # 版本锁定
+├── templates/
+│   ├── global/                        # 全局配置模板
+│   │   ├── opencode.json.tmpl         # 支持 {{VAR}} 替换
+│   │   └── oh-my-opencode.json
+│   └── project/                       # 项目配置模板
+│       ├── AGENTS.md.example
+│       ├── .mcp.json.example
+│       ├── .opencode/
+│       └── .claude/
+├── bin/
+│   ├── ocd                            # 主程序
+│   └── devocd                         # 开发模式
+└── lib/
+    ├── core.sh
+    ├── config.sh                      # v5 配置管理
+    ├── migrate.sh                     # v4→v5 迁移
+    └── ...
+```
+
+### 2.2 运行时目录 (XDG 规范)
 
 | 变量 | 默认路径 | 用途 | 备份策略 |
 |------|----------|------|----------|
@@ -54,10 +86,10 @@ bin/ocd
 | `OCD_STATE_HOME` | `~/.local/state/opencode/` | IPC 文件 | 可重建 |
 | `OCD_CACHE_HOME` | `~/.cache/opencode/` | 缓存 | 可删除 |
 
-### 2.2 完整目录结构
+### 2.3 完整目录结构
 
 ```
-~/.config/opencode/                    # 配置 (共享)
+~/.config/opencode/                    # 配置 (用户所有)
 ├── opencode.json                      # 主配置文件
 ├── oh-my-opencode.json                # 插件配置
 ├── skill/                             # 全局 Skills
@@ -80,52 +112,56 @@ bin/ocd
 ~/.cache/opencode/                     # OpenCode 缓存
 ~/.cache/oh-my-opencode/               # 插件缓存 (ast-grep, ripgrep)
 
-<project>/.claude/                     # 项目级配置
+<project>/.opencode/                   # 项目级配置 (ocd init 创建)
+├── oh-my-opencode.json
+├── agent/
+├── command/
+└── skill/
+
+<project>/.claude/                     # 项目级对话
+├── settings.json
 ├── todos/
-├── transcripts/
-├── skills/                            # 项目 Skills (可选)
-├── commands/                          # 项目 Commands (可选)
-├── agents/                            # 项目 Agents (可选)
-└── rules/                             # 项目 Rules (可选)
+└── transcripts/
 ```
 
 ---
 
-## 3. 配置系统
+## 3. v5 配置系统
 
-### 3.1 配置文件
+### 3.1 配置生命周期
 
-| 文件 | 路径 | 用途 |
-|------|------|------|
-| `opencode.json` | `~/.config/opencode/` | 主配置（模型、端口、MCP） |
-| `oh-my-opencode.json` | `~/.config/opencode/` | 插件配置（Agent 模型映射） |
-| `mcp.json` | `~/opencode/` | MCP 服务器源配置 |
-| `models.conf` | `~/opencode/` | 模型覆盖配置 |
+| 事件 | OCD 行为 |
+|------|----------|
+| 首次运行 | 从 `templates/global/` 创建配置，显示欢迎信息 |
+| 每次启动 | 只更新 `opencode.json` 中的端口号 |
+| `--clean` | 备份到 `backup-<timestamp>/`，重新从模板创建 |
+| `models.conf` 存在 | 应用模型覆盖设置 |
 
-### 3.2 opencode.json 结构
+### 3.2 核心函数 (lib/config.sh)
+
+| 函数 | 用途 |
+|------|------|
+| `ocd_ensure_global_config()` | 首次运行时创建配置 |
+| `ocd_update_port()` | 更新 opencode.json 中的端口 |
+| `ocd_reset_global_config()` | `--clean` 处理：备份 + 重建 |
+| `ocd_init_project()` | `ocd init` 处理：创建项目配置 |
+| `ocd_create_config_from_template()` | 模板变量替换 |
+
+### 3.3 模板变量替换
+
+`templates/global/opencode.json.tmpl` 支持 `{{VAR}}` 格式：
 
 ```json
 {
-  "$schema": "https://opencode.ai/config.json",
-  "model": "anthropic/claude-opus-4-5",
-  "plugin": ["oh-my-opencode@2.14.0"],
-  "server": {
-    "port": 4096,
-    "hostname": "0.0.0.0"
-  },
-  "mcp": {
-    "playwright": {
-      "type": "local",
-      "command": ["npx", "@playwright/mcp@0.0.54", "--headless"],
-      "enabled": true
-    }
-  }
+  "plugin": ["oh-my-opencode@{{OH_MY_OPENCODE_VERSION}}"]
 }
 ```
 
-### 3.3 models.conf（可选）
+替换源：
+1. `versions.lock` 中的版本号
+2. 环境变量
 
-自定义默认模型：
+### 3.4 models.conf（可选）
 
 ```bash
 # ~/opencode/models.conf
@@ -134,13 +170,43 @@ PLANNER_MODEL=anthropic/claude-opus-4-5
 ORACLE_MODEL=openai/gpt-5.2
 ```
 
-修改后需重新生成配置：`ocd --clean && ocd`
+修改后需运行 `ocd --clean` 重新生成配置。
 
 ---
 
-## 4. IPC 通信机制
+## 4. 子命令
 
-### 4.1 架构
+### 4.1 ocd init
+
+初始化项目级配置：
+
+```bash
+cd your-project
+ocd init
+```
+
+创建内容：
+- `.opencode/oh-my-opencode.json.example`
+- `.opencode/agent/`, `.opencode/command/`, `.opencode/skill/`
+- `.claude/settings.json.example`
+- `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
+- `AGENTS.md.example`
+- `.mcp.json.example`
+
+### 4.2 ocd config
+
+配置管理：
+
+```bash
+ocd config           # 显示配置路径和状态
+ocd config edit      # 用编辑器打开配置
+```
+
+---
+
+## 5. IPC 通信机制
+
+### 5.1 架构
 
 ```
 Mac (watcher)                    Docker 容器
@@ -155,7 +221,7 @@ Mac (watcher)                    Docker 容器
   pbcopy                              │
 ```
 
-### 4.2 Watcher 管理 (v4.0)
+### 5.2 Watcher 管理
 
 每个端口独立管理 watcher，使用 PID 文件：
 
@@ -171,28 +237,15 @@ echo "$WATCHER_PID" > "${IPC_DIR}/.watcher.pid"
 
 **重要**：不使用全局 `pkill`，避免误杀其他窗口的 watcher。
 
-### 4.3 容器内写入
-
-```bash
-# 打开 URL
-echo "https://example.com" > /root/.opencode/open_url
-
-# 发送通知
-echo "标题|内容" >> /root/.opencode/notifications
-
-# 写入剪贴板
-echo "复制内容" > /root/.opencode/clipboard
-```
-
 ---
 
-## 5. 扩展点
+## 6. 扩展点
 
-### 5.1 Agent
+### 6.1 Agent
 
 **路径**：
 - 全局：`~/.config/opencode/agent/*.md`
-- 项目：`<project>/.claude/agents/*.md`
+- 项目：`<project>/.opencode/agent/*.md`
 
 **格式**：
 ```markdown
@@ -208,7 +261,7 @@ tools:
 系统提示词...
 ```
 
-### 5.2 Skill
+### 6.2 Skill
 
 **路径**：`~/.config/opencode/skill/<name>/SKILL.md`
 
@@ -221,7 +274,7 @@ tools:
 └── scripts/              # 可选
 ```
 
-### 5.3 Command
+### 6.3 Command
 
 **路径**：`~/.config/opencode/command/*.md`
 
@@ -239,9 +292,9 @@ description: 部署项目
 
 ---
 
-## 6. 开发模式
+## 7. 开发模式
 
-### 6.1 设置
+### 7.1 设置
 
 ```bash
 # 创建 dev worktree
@@ -250,19 +303,25 @@ git worktree add dev dev
 
 # 使用开发版
 devocd                    # 推荐：直接执行 dev/bin/ocd
-ocd --dev                 # 备选：通过 main 的 ocd 切换
 ```
 
-### 6.2 测试
+**devocd 隔离**：
+- 镜像：`opencode-bun-dev`
+- 配置：`~/.config/opencode-dev/`
+
+### 7.2 测试
 
 ```bash
 # 语法检查
 bash -n bin/ocd lib/*.sh
 
+# ShellCheck
+shellcheck -S warning bin/ocd lib/*.sh
+
 # 单元测试
 bats tests/bats/*.bats              # 全部
-bats tests/bats/core.bats           # 单个文件
-bats tests/bats/core.bats -f "xxx"  # 匹配名称
+bats tests/bats/config.bats         # 单个文件
+bats tests/bats/config.bats -f "template"  # 匹配名称
 
 # 手动测试
 devocd -r    # 重建开发镜像
@@ -271,25 +330,30 @@ devocd       # 启动
 
 ---
 
-## 7. 常见问题
+## 8. 常见问题
 
 | 问题 | 原因 | 解决方案 |
 |------|------|----------|
-| 配置不生效 | 目录名错误 | 检查 `skill/` vs `skills/` |
+| 配置被覆盖 | 不应该发生（v5 不覆盖） | 检查是否运行了 `--clean` |
 | 端口冲突 | 锁文件残留 | `rm ~/.config/opencode/.port.lock` |
 | Watcher 不工作 | 进程残留 | 检查 `.watcher.pid`，手动 kill |
-| 浏览器不打开 | IPC 文件未写入 | 检查容器内 `/root/.opencode/open_url` |
+| 首次启动没创建配置 | 模板文件缺失 | 检查 `templates/global/` |
 
 ---
 
-## 8. v3.x 迁移
+## 9. v4 → v5 迁移
 
+v5 首次运行时自动检测 v4 配置并迁移：
+
+1. 检测旧格式配置
+2. 备份到 `~/.config/opencode/backup-v4/`
+3. 从模板创建新配置
+
+手动迁移：
 ```bash
-# 运行迁移脚本
-~/opencode/scripts/migrate-v4.sh
+# 备份旧配置
+mv ~/.config/opencode ~/.config/opencode-v4-backup
 
-# 确认后清理旧目录
-rm -rf ~/.config/opencode/instances
-rm -rf ~/.local/share/opencode/instances
-rm -rf ~/.local/state/opencode/instances
+# 重新启动（会创建新配置）
+ocd
 ```
