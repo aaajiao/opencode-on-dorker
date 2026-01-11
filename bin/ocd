@@ -105,6 +105,12 @@ main() {
 
   # Handle subcommands first
   case "${1:-}" in
+    scan)
+      shift
+      source "$OCD_ROOT/lib/scan.sh"
+      ocd_scan "$@"
+      return 0
+      ;;
     init)
       shift
       ocd_init_project "${1:-full}"
@@ -153,6 +159,7 @@ OCD v$(ocd_version) - OpenCode Docker
 Usage: ocd [command] [options]
 
 Commands:
+  scan [目录]         Scan and register git projects to OpenCode
   init [--minimal]    Initialize project configuration
   config              Show configuration paths
   config edit         Edit opencode.json
