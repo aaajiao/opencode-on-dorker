@@ -167,6 +167,59 @@ ocd
 | `ocd init` | 初始化项目配置（.opencode/, .claude/） |
 | `ocd config` | 显示配置路径和状态 |
 | `ocd config edit` | 用编辑器打开配置文件 |
+| `ocd scan` | 扫描并注册工作区内的 git 项目 |
+| `ocd touch <项目名>` | 更新项目时间戳，使其出现在 WebUI |
+
+### 项目管理
+
+OCD 提供项目扫描和管理功能，解决 WebUI 文件浏览器在 Docker 环境中不可用的问题。
+
+#### ocd scan
+
+扫描当前工作区下的所有 git 项目并注册到 OpenCode：
+
+```bash
+cd ~/projects
+ocd scan
+```
+
+输出示例：
+```
+🔍 OCD 项目扫描
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 工作区: /Users/xxx/projects
+💾 存储: /Users/xxx/.local/share/opencode/storage/project
+
+  ✅ 新增: webapp (a1b2c3d4...)
+  🔄 更新: api-server
+  🔄 更新: mobile-app
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📊 扫描完成:
+   发现: 3 个 git 项目
+   ✅ 新增: 1
+   🔄 更新: 2
+```
+
+#### ocd touch
+
+更新指定项目的时间戳，使其出现在 WebUI 的 "Recent projects" 列表中：
+
+```bash
+ocd touch webapp      # 可在任意目录执行
+```
+
+#### WebUI 项目数量限制
+
+> ⚠️ **已知问题**：OpenCode WebUI 的 "Recent projects" 只显示最近访问的 **5 个项目**。
+> 
+> 这是 OpenCode 的限制，非 OCD 问题。已提交 issue: [sst/opencode#7877](https://github.com/anomalyco/opencode/issues/7877)
+
+**临时解决方案**：
+
+1. 使用 `ocd touch <项目名>` 将需要的项目"置顶"
+2. 直接通过 OpenCode CLI 打开项目：`opencode --cwd /workspace/项目名`
+3. 在 WebUI 中使用终端 `cd` 到目标项目
 
 ### 开发模式
 

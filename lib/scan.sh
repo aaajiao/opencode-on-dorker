@@ -48,6 +48,63 @@ ocd_find_existing_record() {
 }
 
 # =========================================
+# 更新项目时间戳，使其出现在 WebUI
+# =========================================
+ocd_touch() {
+  local project_name="$1"
+
+  if [[ -z "$project_name" ]]; then
+    echo "用法: ocd touch <项目名>"
+    echo ""
+    echo "示例: ocd touch RSI+"
+    return 1
+  fi
+
+  local container_path="/workspace/${project_name}"
+  local existing_file
+  existing_file=$(ocd_find_existing_record "$container_path")
+
+  if [[ -z "$existing_file" ]]; then
+    echo "❌ 未找到项目: $project_name"
+    echo ""
+    echo "已注册的项目:"
+    for f in "$OCD_SCAN_STORAGE_DIR"/*.json; do
+      [[ ! -f "$f" ]] && continue
+      [[ "$(basename "$f")" == "global.json" ]] && continue
+      local name
+      name=$(grep -o '"worktree": "[^"]*"' "$f" 2>/dev/null | sed 's/.*\/\([^"]*\)".*/\1/')
+      [[ -n "$name" ]] && echo "  - $name"
+    done
+    return 1
+  fi
+
+  local existing_id existing_created
+  existing_id=$(grep -o '"id": "[^"]*"' "$existing_file" 2>/dev/null | sed 's/"id": "\([^"]*\)"/\1/')
+  existing_created=$(grep -o '"created": [0-9]*' "$existing_file" 2>/dev/null | grep -o '[0-9]*')
+
+  local now
+  now=$(($(date +%s) * 1000))
+  [[ -z "$existing_created" ]] && existing_created="$now"
+
+  cat > "$existing_file" << EOF
+{
+  "id": "${existing_id}",
+  "worktree": "${container_path}",
+  "vcs": "git",
+  "sandboxes": [],
+  "time": {
+    "created": ${existing_created},
+    "updated": ${now}
+  }
+}
+EOF
+
+  echo "✅ 已更新: $project_name"
+  echo "💡 刷新 WebUI 即可看到"
+}
+
+
+# =========================================
 # 注册/更新单个项目
 # 优先使用现有记录（保持与 OpenCode 创建的 ID 兼容）
 # =========================================
