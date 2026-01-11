@@ -66,6 +66,45 @@ EOF
 }
 
 # =========================================
+# 清理重复记录（同一个 worktree 多个 ID）
+# =========================================
+ocd_cleanup_duplicates() {
+  local cleaned=0
+  local -A worktree_to_file
+  local -A worktree_to_updated
+
+  for f in "$OCD_SCAN_STORAGE_DIR"/*.json; do
+    [[ ! -f "$f" ]] && continue
+    [[ "$(basename "$f")" == "global.json" ]] && continue
+
+    local worktree updated
+    worktree=$(grep -o '"worktree":"[^"]*"' "$f" 2>/dev/null | sed 's/"worktree":"\([^"]*\)"/\1/')
+    updated=$(grep -o '"updated":[0-9]*' "$f" 2>/dev/null | grep -o '[0-9]*')
+
+    [[ -z "$worktree" ]] && continue
+    [[ "$worktree" == "/" ]] && continue
+
+    if [[ -n "${worktree_to_file[$worktree]:-}" ]]; then
+      local existing_updated="${worktree_to_updated[$worktree]}"
+      if [[ "$updated" -gt "$existing_updated" ]]; then
+        rm -f "${worktree_to_file[$worktree]}"
+        ((cleaned++))
+        worktree_to_file[$worktree]="$f"
+        worktree_to_updated[$worktree]="$updated"
+      else
+        rm -f "$f"
+        ((cleaned++))
+      fi
+    else
+      worktree_to_file[$worktree]="$f"
+      worktree_to_updated[$worktree]="$updated"
+    fi
+  done
+
+  echo "$cleaned"
+}
+
+# =========================================
 # 扫描目录
 # =========================================
 ocd_scan_directory() {
@@ -162,10 +201,11 @@ ocd_scan() {
   echo "💾 存储: $OCD_SCAN_STORAGE_DIR"
   echo ""
 
-  # 执行扫描
   ocd_scan_directory "$target_dir"
 
-  # 显示结果
+  local duplicates_cleaned
+  duplicates_cleaned=$(ocd_cleanup_duplicates)
+
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "📊 扫描完成:"
@@ -173,6 +213,7 @@ ocd_scan() {
   [[ "${OCD_SCAN_REGISTERED:-0}" -gt 0 ]] && echo "   ✅ 新增: ${OCD_SCAN_REGISTERED}"
   [[ "${OCD_SCAN_UPDATED:-0}" -gt 0 ]] && echo "   🔄 更新: ${OCD_SCAN_UPDATED}"
   [[ "${OCD_SCAN_SKIPPED:-0}" -gt 0 ]] && echo "   ⏭️  跳过: ${OCD_SCAN_SKIPPED}"
+  [[ "$duplicates_cleaned" -gt 0 ]] && echo "   🧹 清理重复: ${duplicates_cleaned}"
   echo ""
 
   if [[ "${OCD_SCAN_REGISTERED:-0}" -gt 0 || "${OCD_SCAN_UPDATED:-0}" -gt 0 ]]; then
