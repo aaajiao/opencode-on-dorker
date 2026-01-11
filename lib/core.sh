@@ -8,7 +8,7 @@ OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 # XDG 标准路径定义 (v4.0 - 无 instance 概念)
 # =========================================
 # 配置目录 - 可版本控制
-OCD_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OCD_CONFIG_HOME="${OCD_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 
 # 数据目录 - 必须备份 (OpenCode 原生管理)
 OCD_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
