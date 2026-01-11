@@ -263,8 +263,8 @@ ocd_init_project() {
     _ocd_copy_if_not_exists "$template_dir/.opencode/oh-my-opencode.json.example" \
                            "$project_dir/.opencode/oh-my-opencode.json"
     
-    # .claude/ 目录
-    mkdir -p "$project_dir/.claude"/{agents,commands,skills}
+    # .claude/ 目录 (v5: 只创建 commands/skills/agents/rules，不创建 todos/transcripts)
+    mkdir -p "$project_dir/.claude"/{commands,skills,agents,rules}
     _ocd_copy_if_not_exists "$template_dir/.claude/settings.json.example" \
                            "$project_dir/.claude/settings.json"
   fi

@@ -8,7 +8,7 @@ OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 # XDG 标准路径定义 (v4.0 - 无 instance 概念)
 # =========================================
 # 配置目录 - 可版本控制
-OCD_CONFIG_HOME="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OCD_CONFIG_HOME="${OCD_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
 
 # 数据目录 - 必须备份 (OpenCode 原生管理)
 OCD_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
@@ -19,6 +19,9 @@ OCD_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
 # 缓存目录 - 可删除
 OCD_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/opencode"
 OCD_OMO_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-opencode"
+
+# Claude Code 兼容层目录 (oh-my-opencode)
+OCD_CLAUDE_HOME="$HOME/.claude"
 
 # IPC 目录 (按端口区分，支持多窗口)
 OCD_IPC_HOME="$OCD_STATE_HOME/ipc"

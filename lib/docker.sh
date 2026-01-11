@@ -59,7 +59,7 @@ ocd_remove_image() {
 }
 
 # =========================================
-# 运行容器 (v4.0: 简化挂载，去掉 instance 概念)
+# 运行容器 (v5: 全局 ~/.claude + 项目级覆盖)
 # =========================================
 ocd_run_container() {
   local container_name="$1"
@@ -74,10 +74,8 @@ ocd_run_container() {
   ipc_dir=$(ocd_ipc_dir "$port")
   local playwright_cache="$OCD_CACHE_HOME/ms-playwright"
 
-  # 根据实际启动目录确定项目（确保 TUI/WebUI 看到相同的 transcripts）
   local project_dir
   if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
-    # Dev 模式：强制使用 OCD_ROOT 作为项目目录，不向上查找 git
     project_dir="${OCD_ROOT:-$HOME/opencode/dev}"
   else
     if [[ -n "$start_dir" && "$start_dir" != "." ]]; then
@@ -86,6 +84,8 @@ ocd_run_container() {
       project_dir=$(ocd_find_project_dir "$workspace_root")
     fi
   fi
+
+  local global_claude="$OCD_CLAUDE_HOME"
   local project_claude="${project_dir}/.claude"
 
   if [[ -z "$OCD_CACHE_HOME" || "$OCD_CACHE_HOME" == "/" ]]; then
@@ -96,7 +96,7 @@ ocd_run_container() {
   mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
   mkdir -p "$OCD_DATA_HOME"/{bin,storage}
   mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$playwright_cache"
-  mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
+  mkdir -p "$global_claude"/{todos,transcripts,commands,skills,agents,rules}
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
 
   docker rm -f "$container_name" 2>/dev/null
@@ -114,22 +114,24 @@ ocd_run_container() {
     -v "$OCD_OMO_CACHE_HOME:/root/.cache/oh-my-opencode"
     -v "${playwright_cache}:/root/.cache/ms-playwright"
     -v "$HOME/.ssh:/root/.ssh:ro"
-    -v "${project_claude}:/root/.claude"
+    -v "$global_claude:/root/.claude"
   )
 
-  # Mount user's ~/.claude if exists (Claude Code CLI config)
-  if [[ -d "$HOME/.claude" ]]; then
-    mount_args+=(-v "$HOME/.claude:/root/.user-claude:ro")
-  fi
-
-  # 项目级 Claude 兼容层配置（条件覆盖挂载）
   local subdir proj_subdir
-  for subdir in skills commands agents rules; do
+  for subdir in commands skills agents rules; do
     proj_subdir="${project_claude}/${subdir}"
     if [[ -d "$proj_subdir" ]] && [[ -n "$(ls -A "$proj_subdir" 2>/dev/null)" ]]; then
       mount_args+=(-v "${proj_subdir}:/root/.claude/${subdir}")
     fi
   done
+
+  if [[ -f "${project_claude}/settings.json" ]]; then
+    mount_args+=(-v "${project_claude}/settings.json:/root/.claude/settings.json:ro")
+  fi
+
+  if [[ -f "${project_claude}/.mcp.json" ]]; then
+    mount_args+=(-v "${project_claude}/.mcp.json:/root/.claude/.mcp.json:ro")
+  fi
 
   ocd_debug "启动容器: $container_name"
   docker run -it --rm \
