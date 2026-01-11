@@ -15,6 +15,14 @@
       "command": ["npx", "@playwright/mcp@latest", "--headless"],
       "enabled": true
     },
+    "kernel": {
+      "type": "remote",
+      "url": "https://mcp.onkernel.com/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:KERNEL_API_KEY}"
+      },
+      "enabled": false
+    },
     "exa": {
       "type": "local",
       "command": ["npx", "-y", "exa-mcp-server@latest"],

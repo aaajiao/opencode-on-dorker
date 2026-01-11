@@ -31,9 +31,20 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs
 
 # -------------------------------------------------------
-# 第三步：安装 Playwright 浏览器依赖
+# 第三步：安装 Playwright 浏览器依赖 (ARM64 兼容)
 # -------------------------------------------------------
-RUN npx playwright install --with-deps chromium
+# 全局安装 playwright 确保浏览器下载到持久化路径 /root/.cache/ms-playwright/
+# 同时创建 /opt/google/chrome/chrome symlink 供 @playwright/mcp 使用
+RUN npm install -g playwright && \
+    npx playwright install --with-deps chromium && \
+    CHROME_BIN=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1) && \
+    if [ -n "$CHROME_BIN" ]; then \
+        mkdir -p /opt/google/chrome && \
+        ln -sf "$CHROME_BIN" /opt/google/chrome/chrome && \
+        echo "✅ Chromium installed: $($CHROME_BIN --version 2>/dev/null || echo 'ready')"; \
+    else \
+        echo "⚠️ Chromium binary not found"; \
+    fi
 
 # -------------------------------------------------------
 # 第四步：安装 uv (用于 uvx MCP 服务器)
@@ -191,13 +202,20 @@ mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null\n\
 chmod 755 /root/.cache/oh-my-opencode /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
 ocd_debug "目录状态: $(ls -la /root/.cache/oh-my-opencode/ 2>&1)"\n\
 \n\
-# Chrome symlink for Playwright MCP (finds chrome in ms-playwright cache)\n\
+# Playwright MCP: verify/fix Chrome symlink and clean stale locks\n\
+rm -rf /root/.cache/ms-playwright/mcp-chrome 2>/dev/null\n\
 if [ -d "/root/.cache/ms-playwright" ]; then\n\
     CHROME_PATH=$(find /root/.cache/ms-playwright -name "chrome" -type f -path "*/chrome-linux/*" 2>/dev/null | head -1)\n\
-    if [ -n "$CHROME_PATH" ]; then\n\
+    if [ -n "$CHROME_PATH" ] && [ -x "$CHROME_PATH" ]; then\n\
         mkdir -p /opt/google/chrome\n\
         ln -sf "$CHROME_PATH" /opt/google/chrome/chrome 2>/dev/null\n\
+        CHROME_VER=$(/opt/google/chrome/chrome --version 2>/dev/null | head -1 || echo "ready")\n\
+        echo "✅ Playwright Chromium: $CHROME_VER"\n\
+    else\n\
+        echo "⚠️  Playwright Chromium 未找到，浏览器功能可能不可用"\n\
     fi\n\
+else\n\
+    echo "⚠️  Playwright 未安装，浏览器功能不可用"\n\
 fi\n\
 \n\
 if [[ -n "$GITHUB_TOKEN" ]]; then\n\
