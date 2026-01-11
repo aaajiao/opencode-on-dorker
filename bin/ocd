@@ -305,7 +305,6 @@ EOF
 
   # v5: Only update port (config already exists)
   local CONFIG_FILE="${OCD_CONFIG_HOME}/opencode.json"
-  local OMO_CONFIG_FILE="${OCD_CONFIG_HOME}/oh-my-opencode.json"
 
   ocd_update_port "$CONFIG_FILE" "$PORT"
 
