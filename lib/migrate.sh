@@ -43,6 +43,7 @@ ocd_check_claude_migration() {
     "$HOME/workspace"
     "$HOME/dev"
     "$HOME/opencode"
+    "$HOME/o_projects"
   )
   
   for base in "${search_paths[@]}"; do
