@@ -1,5 +1,5 @@
 #!/usr/bin/env bats
-# tests/bats/config.bats - Config module tests
+# tests/bats/config.bats - Config module tests (v5)
 
 setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
@@ -7,77 +7,92 @@ setup() {
   source "$OCD_ROOT/lib/config.sh"
 
   export TEST_DIR=$(mktemp -d)
+  export OCD_CONFIG_HOME="$TEST_DIR/config"
+  mkdir -p "$OCD_CONFIG_HOME"
 }
 
 teardown() {
   rm -rf "$TEST_DIR"
 }
 
-# generate_opencode_config tests
-@test "generate_opencode_config creates valid JSON" {
-  local config_file="$TEST_DIR/opencode.json"
-  ocd_generate_opencode_config "$config_file" 4096 0
+# =========================================
+# ocd_create_config_from_template tests
+# =========================================
 
-  # Verify valid JSON
-  run jq '.' "$config_file"
-  [ "$status" -eq 0 ]
+@test "ocd_create_config_from_template replaces version placeholder" {
+  local template="$TEST_DIR/template.json"
+  local output="$TEST_DIR/output.json"
+
+  # Copy real template for test
+  cp "$OCD_ROOT/templates/global/opencode.json.tmpl" "$template" 2>/dev/null || \
+    echo '{"plugin": ["test"]}' > "$template"
+  export OH_MY_OPENCODE_VERSION="2.14.0"
+
+  ocd_create_config_from_template "$template" "$output"
+
+  [ -f "$output" ]
 }
 
-@test "generate_opencode_config includes correct port" {
-  local config_file="$TEST_DIR/opencode.json"
-  ocd_generate_opencode_config "$config_file" 5000 0
+@test "ocd_create_config_from_template creates output file" {
+  local template="$TEST_DIR/template.json"
+  local output="$TEST_DIR/output.json"
 
-  result=$(jq '.server.port' "$config_file")
-  [ "$result" = "5000" ]
+  echo '{"test": "value"}' > "$template"
+
+  ocd_create_config_from_template "$template" "$output"
+
+  [ -f "$output" ]
+  result=$(cat "$output")
+  [[ "$result" == *"test"* ]]
 }
 
-@test "generate_opencode_config excludes provider without quotio" {
-  local config_file="$TEST_DIR/opencode.json"
-  ocd_generate_opencode_config "$config_file" 4096 0
+# =========================================
+# ocd_ensure_global_config tests
+# =========================================
 
-  result=$(jq 'has("provider")' "$config_file")
-  [ "$result" = "false" ]
+@test "ocd_ensure_global_config creates config directories" {
+  ocd_ensure_global_config
+
+  [ -d "$OCD_CONFIG_HOME/agent" ]
+  [ -d "$OCD_CONFIG_HOME/command" ]
+  [ -d "$OCD_CONFIG_HOME/skill" ]
+  [ -d "$OCD_CONFIG_HOME/themes" ]
 }
 
-@test "generate_opencode_config includes provider with quotio" {
-  local config_file="$TEST_DIR/opencode.json"
-  export QUOTIO_API_KEY="test-key"
-  ocd_generate_opencode_config "$config_file" 4096 1
+@test "ocd_ensure_global_config does not overwrite existing config" {
+  mkdir -p "$OCD_CONFIG_HOME"
+  echo '{"custom": "config"}' > "$OCD_CONFIG_HOME/opencode.json"
 
-  result=$(jq 'has("provider")' "$config_file")
-  [ "$result" = "true" ]
+  ocd_ensure_global_config
+
+  result=$(cat "$OCD_CONFIG_HOME/opencode.json")
+  [[ "$result" == *"custom"* ]]
 }
 
-# generate_omo_config tests
-@test "generate_omo_config creates valid JSON" {
-  local config_file="$TEST_DIR/oh-my-opencode.json"
-  ocd_generate_omo_config "$config_file" 0
+# =========================================
+# ocd_update_port tests
+# =========================================
 
-  run jq '.' "$config_file"
-  [ "$status" -eq 0 ]
-}
-
-@test "generate_omo_config includes agents config" {
-  local config_file="$TEST_DIR/oh-my-opencode.json"
-  ocd_generate_omo_config "$config_file" 0
-
-  result=$(jq 'has("agents")' "$config_file")
-  [ "$result" = "true" ]
-}
-
-# update_config_port tests
-@test "update_config_port updates port value" {
+@test "ocd_update_port updates port value with jq" {
   local config_file="$TEST_DIR/test.json"
   echo '{"server":{"port":4096}}' > "$config_file"
 
-  ocd_update_config_port "$config_file" 5000
+  ocd_update_port "$config_file" 5000
 
   result=$(jq '.server.port' "$config_file")
   [ "$result" = "5000" ]
 }
 
-# update_config_model tests
-@test "update_config_model updates model value" {
+@test "ocd_update_port returns error for missing file" {
+  run ocd_update_port "/nonexistent/file.json" 5000
+  [ "$status" -eq 1 ]
+}
+
+# =========================================
+# ocd_update_config_model tests
+# =========================================
+
+@test "ocd_update_config_model updates model value" {
   local config_file="$TEST_DIR/test.json"
   echo '{"model":"anthropic/claude-sonnet-4-5"}' > "$config_file"
 
@@ -87,32 +102,34 @@ teardown() {
   [ "$result" = "opencode/claude-opus-4-5" ]
 }
 
-@test "update_config_model handles empty model gracefully" {
+@test "ocd_update_config_model handles empty model gracefully" {
   local config_file="$TEST_DIR/test.json"
   echo '{"model":"original"}' > "$config_file"
 
   ocd_update_config_model "$config_file" ""
 
-  # Should not change when empty
   result=$(jq -r '.model' "$config_file")
   [ "$result" = "original" ]
 }
 
-# update_omo_agents tests
-@test "update_omo_agents updates Planner-Sisyphus model" {
+# =========================================
+# ocd_update_omo_agents tests
+# =========================================
+
+@test "ocd_update_omo_agents updates Sisyphus model" {
   local config_file="$TEST_DIR/omo.json"
-  echo '{"agents":{"Planner-Sisyphus":{"model":"old-model"}}}' > "$config_file"
+  echo '{"agents":{"Sisyphus":{"model":"old-model"}}}' > "$config_file"
 
   export PLANNER_MODEL="new-planner-model"
   ocd_update_omo_agents "$config_file"
 
-  result=$(jq -r '.agents."Planner-Sisyphus".model' "$config_file")
+  result=$(jq -r '.agents.Sisyphus.model' "$config_file")
   [ "$result" = "new-planner-model" ]
 }
 
-@test "update_omo_agents adds oracle agent when ORACLE_MODEL is set" {
+@test "ocd_update_omo_agents adds oracle agent when ORACLE_MODEL is set" {
   local config_file="$TEST_DIR/omo.json"
-  echo '{"agents":{"Planner-Sisyphus":{"model":"planner"}}}' > "$config_file"
+  echo '{"agents":{"Sisyphus":{"model":"planner"}}}' > "$config_file"
 
   export PLANNER_MODEL="planner"
   export ORACLE_MODEL="openai/gpt-5.2"
@@ -120,4 +137,85 @@ teardown() {
 
   result=$(jq -r '.agents.oracle.model' "$config_file")
   [ "$result" = "openai/gpt-5.2" ]
+}
+
+@test "ocd_update_omo_agents handles missing file gracefully" {
+  run ocd_update_omo_agents "/nonexistent/file.json"
+  [ "$status" -eq 0 ]
+}
+
+# =========================================
+# ocd_reset_global_config tests
+# =========================================
+
+@test "ocd_reset_global_config creates backup before reset" {
+  mkdir -p "$OCD_CONFIG_HOME"
+  echo '{"old": "config"}' > "$OCD_CONFIG_HOME/opencode.json"
+
+  mkdir -p "$OCD_ROOT/templates/global"
+  echo '{"new": "config"}' > "$OCD_ROOT/templates/global/opencode.json.tmpl"
+
+  ocd_reset_global_config
+
+  backup_dir=$(ls -d "$OCD_CONFIG_HOME"/.backup-* 2>/dev/null | head -1)
+  [ -n "$backup_dir" ]
+  [ -f "$backup_dir/opencode.json" ]
+}
+
+@test "ocd_reset_global_config removes migration markers" {
+  mkdir -p "$OCD_CONFIG_HOME"
+  touch "$OCD_CONFIG_HOME/.ocd-v5-migrated"
+  touch "$OCD_CONFIG_HOME/.ocd-v5-init"
+
+  mkdir -p "$OCD_ROOT/templates/global"
+  echo '{}' > "$OCD_ROOT/templates/global/opencode.json.tmpl"
+
+  ocd_reset_global_config
+
+  [ ! -f "$OCD_CONFIG_HOME/.ocd-v5-migrated" ]
+  [ ! -f "$OCD_CONFIG_HOME/.ocd-v5-init" ]
+}
+
+# =========================================
+# ocd_load_models tests
+# =========================================
+
+@test "ocd_load_models sets default MAIN_MODEL" {
+  unset MAIN_MODEL
+  ocd_load_models
+
+  [ -n "$MAIN_MODEL" ]
+}
+
+@test "ocd_load_models loads from models.conf" {
+  echo "MAIN_MODEL=test/model" > "$OCD_ROOT/models.conf"
+
+  unset MAIN_MODEL
+  ocd_load_models
+
+  [ "$MAIN_MODEL" = "test/model" ]
+
+  rm -f "$OCD_ROOT/models.conf"
+}
+
+# =========================================
+# ocd_show_welcome_if_first_run tests
+# =========================================
+
+@test "ocd_show_welcome_if_first_run creates marker file" {
+  mkdir -p "$OCD_CONFIG_HOME"
+  rm -f "$OCD_CONFIG_HOME/.ocd-v5-init"
+
+  run ocd_show_welcome_if_first_run
+
+  [ -f "$OCD_CONFIG_HOME/.ocd-v5-init" ]
+}
+
+@test "ocd_show_welcome_if_first_run skips if marker exists" {
+  mkdir -p "$OCD_CONFIG_HOME"
+  touch "$OCD_CONFIG_HOME/.ocd-v5-init"
+
+  run ocd_show_welcome_if_first_run
+
+  [ "$status" -eq 0 ]
 }

@@ -1,19 +1,14 @@
 #!/usr/bin/env bash
-# bin/ocd - OCD 主入口
-# 用法: ocd [options]
+# bin/ocd - OCD v5 主入口
 
 set -euo pipefail
 
 OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 
-# =========================================
-# 开发模式检测（必须在 source 之前）
-# =========================================
 OCD_DEV_MODE="${OCD_DEV_MODE:-0}"
 _OCD_ORIG_ROOT="$OCD_ROOT"
 _OCD_DEV_ROOT_ARG=""
 
-# 预扫描 --dev / --dev-root 参数
 _ocd_args=("$@")
 _ocd_i=0
 while [[ $_ocd_i -lt ${#_ocd_args[@]} ]]; do
@@ -27,7 +22,6 @@ while [[ $_ocd_i -lt ${#_ocd_args[@]} ]]; do
       OCD_DEV_MODE=1
       ;;
     --dev-root)
-      # 空格式：下一个参数是路径
       _ocd_i=$((_ocd_i + 1))
       _OCD_DEV_ROOT_ARG="${_ocd_args[$_ocd_i]:-}"
       OCD_DEV_MODE=1
@@ -37,11 +31,8 @@ while [[ $_ocd_i -lt ${#_ocd_args[@]} ]]; do
 done
 unset _ocd_args _ocd_i _arg
 
-# 应用开发模式
 if [[ "$OCD_DEV_MODE" -eq 1 ]]; then
-  # 只有当 OCD_ROOT 没有被预设时（非 devocd 调用），才修改它
   if [[ "${OCD_ROOT_PRESET:-0}" -ne 1 ]]; then
-    # 展开 ~ 为 $HOME
     _OCD_DEV_ROOT_ARG="${_OCD_DEV_ROOT_ARG/#\~/$HOME}"
     OCD_ROOT="${_OCD_DEV_ROOT_ARG:-$OCD_ROOT/dev}"
   fi
@@ -50,7 +41,7 @@ if [[ "$OCD_DEV_MODE" -eq 1 ]]; then
     echo "❌ 开发目录不存在或不完整: $OCD_ROOT"
     echo ""
     echo "   创建方法："
-    echo "   git worktree add dev dev    # 从 dev 分支创建"
+    echo "   git worktree add dev dev"
     echo "   # 或"
     echo "   cp -r ~/opencode ~/opencode/dev"
     exit 1
@@ -59,24 +50,20 @@ if [[ "$OCD_DEV_MODE" -eq 1 ]]; then
 fi
 unset _OCD_DEV_ROOT_ARG
 
-# 加载模块
 source "$OCD_ROOT/lib/core.sh"
 source "$OCD_ROOT/lib/port.sh"
 source "$OCD_ROOT/lib/workspace.sh"
 source "$OCD_ROOT/lib/watcher.sh"
 source "$OCD_ROOT/lib/config.sh"
 source "$OCD_ROOT/lib/docker.sh"
+[[ -f "$OCD_ROOT/lib/migrate.sh" ]] && source "$OCD_ROOT/lib/migrate.sh"
 
-# =========================================
-# 全局变量
-# =========================================
 if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
   IMAGE_NAME="opencode-bun-dev"
 else
   IMAGE_NAME="opencode-bun"
 fi
 
-# ENV_FILE: dev/.env 优先，否则 fallback 到主目录
 if [[ "${OCD_DEV_MODE:-0}" -eq 1 && -f "$OCD_ROOT/.env" ]]; then
   ENV_FILE="$OCD_ROOT/.env"
 else
@@ -88,23 +75,15 @@ _OCD_HTTPS_ENABLED=""
 _OCD_CAFFEINATE_PID=""
 _OCD_URL_FILE=""
 
-# =========================================
-# 清理函数
-# =========================================
 _ocd_cleanup() {
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
-    # 先尝试杀死进程组
     kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null
-    # 再杀死单个进程（备用）
     kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
-    # 等待一小段时间让进程退出
     sleep 0.1
-    # 强制杀死（如果 TERM 无效）
     kill -KILL -- -"$_OCD_WATCHER_PID" 2>/dev/null
     kill -KILL "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
-  # 清空 IPC 文件防止残留数据，并删除 PID 文件
   if [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]]; then
     : > "$_OCD_URL_FILE"
     local ipc_dir
@@ -121,15 +100,30 @@ _ocd_cleanup() {
   fi
 }
 
-# =========================================
-# 主函数
-# =========================================
 main() {
-  # 加载本地配置
   [[ -f "$OCD_ROOT/.ocdrc" ]] && source "$OCD_ROOT/.ocdrc"
 
-  # v3.x → v4.0 自动迁移
-  ocd_auto_migrate
+  # Handle subcommands first
+  case "${1:-}" in
+    init)
+      shift
+      ocd_init_project "${1:-full}"
+      return 0
+      ;;
+    config)
+      shift
+      case "${1:-}" in
+        edit)
+          shift
+          ocd_edit_config "${1:-opencode}"
+          ;;
+        *)
+          ocd_show_config
+          ;;
+      esac
+      return 0
+      ;;
+  esac
 
   local REBUILD=0 CLEAN_CONFIG=0 MERGE_UP=0
   local CUSTOM_PORT=""
@@ -138,7 +132,6 @@ main() {
 
   trap '_ocd_cleanup' INT TERM HUP
 
-  # 解析参数
   while [[ $# -gt 0 ]]; do
     case "$1" in
       -v|--version) echo "OCD v$(ocd_version)"; return 0 ;;
@@ -147,9 +140,9 @@ main() {
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
       --debug) OCD_DEBUG=1; export OCD_DEBUG; shift ;;
-      --dev) shift ;;  # 已在预扫描处理
-      --dev-root=*) shift ;;  # 已在预扫描处理
-      --dev-root) shift 2 ;;  # 已在预扫描处理（空格式）
+      --dev) shift ;;
+      --dev-root=*) shift ;;
+      --dev-root) shift 2 ;;
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
       --clean) CLEAN_CONFIG=1; shift ;;
@@ -158,7 +151,13 @@ main() {
         cat << EOF
 OCD v$(ocd_version) - OpenCode Docker
 
-Usage: ocd [options]
+Usage: ocd [command] [options]
+
+Commands:
+  init [--minimal]    Initialize project configuration
+  config              Show configuration paths
+  config edit         Edit opencode.json
+  config edit --plugin  Edit oh-my-opencode.json
 
 Options:
   -v, --version     Show version
@@ -166,7 +165,7 @@ Options:
   -p <port>         Port number
   --here            Mount current directory only (skip workspace detection)
   --merge-up        Merge transcripts to parent project (undo --here)
-  --clean           Clear config (regenerate on next run)
+  --clean           Reset global config (backup and regenerate)
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
   --quotio          Enable Quotio provider
@@ -181,7 +180,6 @@ EOF
     esac
   done
 
-  # --merge-up: 合并 transcripts 到父项目（仅适用于 OCD 用户）
   if [[ "$MERGE_UP" -eq 1 ]]; then
     local current_dir current_transcripts
     current_dir="$(pwd)"
@@ -193,7 +191,6 @@ EOF
       return 1
     fi
 
-    # 向上查找父项目（优先找 .git 项目，否则用直接父目录）
     local parent_project
     parent_project=$(ocd_find_parent_project "$current_dir")
 
@@ -223,19 +220,16 @@ EOF
     echo "   从: $current_transcripts"
     echo "   到: $parent_transcripts"
 
-    # 统计 .jsonl 文件数
     local count
     count=$(find "$current_transcripts" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
 
     if [[ "$count" -gt 0 ]]; then
-      # OCD 用户: cwd 都是 /workspace（容器内路径），无需修改
       mv "$current_transcripts"/*.jsonl "$parent_transcripts/" 2>/dev/null || true
       ocd_success "已合并 $count 个文件"
     else
       ocd_info "没有需要合并的 .jsonl 文件"
     fi
 
-    # 清理空目录
     rmdir "$current_transcripts" 2>/dev/null || true
     rmdir "${current_dir}/.claude/todos" 2>/dev/null || true
     rmdir "${current_dir}/.claude" 2>/dev/null && ocd_info "已清理 ${current_dir}/.claude/" || true
@@ -243,7 +237,6 @@ EOF
     return 0
   fi
 
-  # 工作区检测
   local CURRENT_DIR WORKSPACE_ROOT START_DIR
   CURRENT_DIR="$(pwd)"
 
@@ -261,35 +254,26 @@ EOF
     START_DIR=$(ocd_get_relative_path "$WORKSPACE_ROOT" "$CURRENT_DIR")
   fi
 
-  # 容器名基于工作区目录名（仅用于 Docker 容器命名）
   local WORKSPACE_NAME
   WORKSPACE_NAME=$(ocd_sanitize_name "$(basename "$WORKSPACE_ROOT")")
   local CONTAINER_NAME="opencode-${WORKSPACE_NAME}"
   [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && CONTAINER_NAME="${CONTAINER_NAME}-dev"
 
-  # 清理配置（v4.0: 共享配置）
   if [[ "$CLEAN_CONFIG" -eq 1 ]]; then
-    echo "🗑️  清理配置..."
-    rm -f "$OCD_CONFIG_HOME/opencode.json" "$OCD_CONFIG_HOME/oh-my-opencode.json"
-    ocd_success "已清理配置，重新运行 ocd 将生成新配置"
+    ocd_reset_global_config
     return 0
   fi
 
-  # 端口分配
   local PORT
   PORT="${CUSTOM_PORT:-$(ocd_find_free_port 4096)}"
 
-  # 加载版本和模型配置
   ocd_load_versions
-  ocd_load_models
 
-  # 调试信息
   ocd_debug "OCD_CACHE_HOME=$OCD_CACHE_HOME"
   ocd_debug "OCD_CONFIG_HOME=$OCD_CONFIG_HOME"
   ocd_debug "WORKSPACE_ROOT=$WORKSPACE_ROOT"
   ocd_debug "PORT=$PORT"
 
-  # 镜像构建
   if [[ "$REBUILD" -eq 1 ]]; then
     ocd_remove_image "$IMAGE_NAME"
     echo "🗑️  清理缓存..."
@@ -301,38 +285,35 @@ EOF
     ocd_build_image "$IMAGE_NAME" 0
   fi
 
-  # 依赖检查
   ocd_check_dependencies
 
-  # 初始化配置
+  # v5: Ensure global config exists (first-time creation only)
+  ocd_ensure_global_config
+
+  # v5: Check migration from v4
+  if type ocd_check_migration &>/dev/null; then
+    ocd_check_migration
+  fi
+
+  # v5: Show welcome on first run
+  ocd_show_welcome_if_first_run
+
   ocd_init_global
-  ocd_init_project "$(pwd)"
   mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$OCD_CACHE_HOME/ms-playwright"
 
-  # 加载环境变量
   ocd_load_env "$ENV_FILE"
 
-  # 生成配置文件 (v4.0: 共享配置)
-  mkdir -p "$OCD_CONFIG_HOME"
+  # v5: Only update port (config already exists)
   local CONFIG_FILE="${OCD_CONFIG_HOME}/opencode.json"
   local OMO_CONFIG_FILE="${OCD_CONFIG_HOME}/oh-my-opencode.json"
 
-  if [[ ! -f "$CONFIG_FILE" ]]; then
-    echo "📝 生成 opencode.json..."
-    ocd_generate_opencode_config "$CONFIG_FILE" "$PORT" "$USE_QUOTIO"
-  else
-    ocd_update_config_port "$CONFIG_FILE" "$PORT"
-    ocd_update_config_model "$CONFIG_FILE" "$MAIN_MODEL"
+  ocd_update_port "$CONFIG_FILE" "$PORT"
+
+  # v5: Apply models.conf if exists (optional override)
+  if [[ -f "$OCD_ROOT/models.conf" ]]; then
+    ocd_apply_models_conf
   fi
 
-  if [[ ! -f "$OMO_CONFIG_FILE" ]]; then
-    echo "📝 生成 oh-my-opencode.json..."
-    ocd_generate_omo_config "$OMO_CONFIG_FILE" "$USE_QUOTIO"
-  else
-    ocd_update_omo_agents "$OMO_CONFIG_FILE"
-  fi
-
-  # IPC 文件 (v4.0: 按端口区分，支持多窗口)
   local IPC_DIR
   IPC_DIR=$(ocd_ipc_dir "$PORT")
   mkdir -p "$IPC_DIR"
@@ -342,7 +323,6 @@ EOF
   : > "$URL_FILE" && : > "$NOTIFY_FILE" && : > "$CLIPBOARD_FILE"
   _OCD_URL_FILE="$URL_FILE"
 
-  # 清理同端口的旧 watcher（通过 PID 文件，不影响其他窗口）
   local WATCHER_PID_FILE="${IPC_DIR}/.watcher.pid"
   if [[ -f "$WATCHER_PID_FILE" ]]; then
     local old_pid
@@ -354,7 +334,6 @@ EOF
   _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
   echo "$_OCD_WATCHER_PID" > "$WATCHER_PID_FILE"
 
-  # Tailscale HTTPS
   local TS_HOSTNAME=""
   if [[ "$USE_HTTPS" -eq 1 ]] && command -v tailscale &>/dev/null; then
     TS_HOSTNAME=$(tailscale status --json 2>/dev/null | grep -o '"Self":{[^}]*"DNSName":"[^"]*"' | grep -o '"DNSName":"[^"]*"' | cut -d'"' -f4 | sed 's/\.$//' || echo "")
@@ -364,7 +343,6 @@ EOF
     fi
   fi
 
-  # 启动信息
   local dev_label=""
   [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && dev_label=" [DEV]"
   echo ""
@@ -379,16 +357,13 @@ EOF
   [[ "$USE_AWAKE" -eq 1 ]] && echo "   └─ ☕ 防休眠已启用"
   echo ""
 
-  # 防休眠
   if [[ "$USE_AWAKE" -eq 1 ]]; then
     caffeinate -i -w $$ &
     _OCD_CAFFEINATE_PID=$!
   fi
 
-  # 运行容器 (v4.0: 去掉 instance 参数)
   ocd_run_container "$CONTAINER_NAME" "$IMAGE_NAME" "$WORKSPACE_ROOT" "$PORT" "$START_DIR" "$ENV_FILE" "$@"
 
-  # 清理
   _ocd_cleanup
 }
 

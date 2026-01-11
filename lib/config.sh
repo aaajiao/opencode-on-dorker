@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# lib/config.sh - 配置生成模块
+# lib/config.sh - v5 配置管理模块
+# 
+# v5 设计原则：
+# - 配置文件首次创建后由用户管理，OCD 不再覆盖
+# - 每次启动只更新端口
+# - 可选：models.conf 覆盖模型设置
 
 # =========================================
-# 模型配置变量（声明，稍后在 ocd_load_models 中设置默认值）
+# 模型配置变量
 # =========================================
-# 注意：不要在这里设置默认值！
-# 默认值应该在 ocd_load_models() 中加载 models.conf **之后**设置
-# 这样才能确保 models.conf 中的配置优先于默认值
 MAIN_MODEL="${MAIN_MODEL:-}"
 PLANNER_MODEL="${PLANNER_MODEL:-}"
 ORACLE_MODEL="${ORACLE_MODEL:-}"
@@ -15,232 +17,88 @@ FRONTEND_MODEL="${FRONTEND_MODEL:-}"
 MULTIMODAL_MODEL="${MULTIMODAL_MODEL:-}"
 
 # =========================================
-# 加载模型配置
+# 加载模型配置 (可选)
 # =========================================
 ocd_load_models() {
   local ocd_root="${OCD_ROOT:-$HOME/opencode}"
   local models_file=""
 
-  # 按优先级查找配置文件：
-  # 1. models.conf（用户自定义配置，最高优先级）
-  # 2. models.conf.example（预设配置，作为默认值）
+  # 只使用用户创建的 models.conf
   if [[ -f "$ocd_root/models.conf" ]]; then
     models_file="$ocd_root/models.conf"
-  elif [[ -f "$ocd_root/models.conf.example" ]]; then
-    models_file="$ocd_root/models.conf.example"
   fi
 
   # 从配置文件加载（如果存在）
   if [[ -n "$models_file" && -f "$models_file" ]]; then
-    # 使用 eval 代替进程替换，兼容更多 shell
     eval "$(grep -E '^[A-Z_]+=.+' "$models_file" 2>/dev/null | grep -v '^#')" 2>/dev/null || true
   fi
 
   # 对未设置的变量应用硬编码默认值（兜底）
-  MAIN_MODEL="${MAIN_MODEL:-anthropic/claude-opus-4-5}"
+  MAIN_MODEL="${MAIN_MODEL:-anthropic/claude-sonnet-4-5}"
   PLANNER_MODEL="${PLANNER_MODEL:-anthropic/claude-opus-4-5}"
-  # 其他变量保持空值（不设置默认值）
 }
 
 # =========================================
-# 加载 MCP 配置
+# 从模板创建配置文件
 # =========================================
-# 从 mcp.json 读取配置并替换 ${VAR} 和 ${VAR:-default} 变量
-# 优先级：mcp.json > mcp.json.example
-ocd_load_mcp() {
-  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
-  local mcp_file=""
-
-  # 按优先级查找配置文件
-  if [[ -f "$ocd_root/mcp.json" ]]; then
-    mcp_file="$ocd_root/mcp.json"
-  elif [[ -f "$ocd_root/mcp.json.example" ]]; then
-    mcp_file="$ocd_root/mcp.json.example"
-  fi
-
-  [[ -z "$mcp_file" ]] && return 1
-
-  local content
-  content=$(cat "$mcp_file")
-
-  # 移除 JSON 注释字段（_comment, _variables）
-  if command -v jq &>/dev/null; then
-    content=$(echo "$content" | jq 'del(._comment, ._variables)')
-  else
-    # 无 jq 时用 grep 过滤（简单处理）
-    content=$(echo "$content" | grep -v '"_comment"' | grep -v '"_variables"')
-  fi
-
-  # 替换 ${VAR:-default} 格式（带默认值）
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*):-([^}]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local default="${BASH_REMATCH[2]}"
-    local value="${!var:-$default}"
-    content="${content//\$\{${var}:-${default}\}/$value}"
-  done
-
-  # 替换 ${VAR} 格式（无默认值）
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local value="${!var:-}"
-    content="${content//\$\{${var}\}/$value}"
-  done
-
-  echo "$content"
-}
-
-# =========================================
-# 渲染模板（替换占位符）
-# =========================================
-ocd_render_template() {
+# 替换 {{VAR}} 格式的占位符
+ocd_create_config_from_template() {
   local template="$1"
-  shift
+  local output="$2"
+  
   local content
   content=$(cat "$template")
-
-  # 替换所有传入的变量
-  while [[ $# -gt 0 ]]; do
-    local key="$1"
-    local value="$2"
-    content="${content//__${key}__/$value}"
-    shift 2
-  done
-
-  echo "$content"
+  
+  # 替换 {{OH_MY_OPENCODE_VERSION}}
+  content="${content//\{\{OH_MY_OPENCODE_VERSION\}\}/${OH_MY_OPENCODE_VERSION:-latest}}"
+  
+  echo "$content" > "$output"
 }
 
 # =========================================
-# 生成 opencode.json
+# 确保全局配置存在
 # =========================================
-ocd_generate_opencode_config() {
-  local output_file="$1"
-  local port="$2"
-  local use_quotio="${3:-0}"
-
-  local omo_ver="${OH_MY_OPENCODE_VERSION:-2.14.0}"
-  local auth_ver="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
-
-  local mcp_config
-  mcp_config=$(ocd_load_mcp) || mcp_config='{}'
-
-  local config
-  config=$(cat << EOF
-{
-  "\$schema": "https://opencode.ai/config.json",
-  "model": "${MAIN_MODEL}",
-  "plugin": [
-    "oh-my-opencode@${omo_ver}",
-    "opencode-antigravity-auth@${auth_ver}"
-  ],
-  "server": {
-    "port": ${port},
-    "hostname": "0.0.0.0"
-  },
-  "mcp": ${mcp_config}
-EOF
-)
-
-  # Quotio provider（条件添加）
-  if [[ "$use_quotio" -eq 1 ]]; then
-    local quotio_key="${QUOTIO_API_KEY:-}"
-    local quotio_url="${QUOTIO_BASE_URL:-http://localhost:8317/v1}"
-    config+=$(cat << EOF
-,
-  "provider": {
-    "quotio": {
-      "name": "Quotio",
-      "npm": "@ai-sdk/anthropic",
-      "options": {
-        "apiKey": "${quotio_key}",
-        "baseURL": "${quotio_url}"
-      },
-      "models": {
-        "gemini-claude-sonnet-4-5": {
-          "name": "Claude Sonnet 4.5",
-          "limit": { "context": 200000, "output": 64000 }
-        },
-        "gemini-claude-opus-4-5-thinking": {
-          "name": "Claude Opus 4.5 Thinking",
-          "limit": { "context": 200000, "output": 64000 },
-          "reasoning": true,
-          "options": { "thinking": { "type": "enabled", "budgetTokens": 10000 } }
-        },
-        "gemini-3-pro-preview": {
-          "name": "Gemini 3 Pro Preview",
-          "limit": { "context": 1048576, "output": 65536 }
-        },
-        "gemini-3-flash-preview": {
-          "name": "Gemini 3 Flash Preview",
-          "limit": { "context": 1048576, "output": 65536 }
-        },
-        "gpt-5.2": {
-          "name": "GPT 5.2",
-          "limit": { "context": 400000, "output": 32768 },
-          "reasoning": true,
-          "options": { "reasoning": { "effort": "medium" } }
-        }
-      }
-    }
-  }
-EOF
-)
+# 首次运行时创建，之后不再覆盖
+ocd_ensure_global_config() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
+  local created=0
+  
+  # 创建目录结构
+  mkdir -p "$config_dir"/{agent,command,skill,themes}
+  
+  # opencode.json（从模板创建，替换版本占位符）
+  if [[ ! -f "$config_dir/opencode.json" ]]; then
+    if [[ -f "$ocd_root/templates/global/opencode.json.tmpl" ]]; then
+      ocd_create_config_from_template \
+        "$ocd_root/templates/global/opencode.json.tmpl" \
+        "$config_dir/opencode.json"
+      ocd_info "已创建 $config_dir/opencode.json"
+      created=1
+    fi
   fi
-
-  config+=$'\n}'
-
-  echo "$config" > "$output_file"
-}
-
-# =========================================
-# 生成 oh-my-opencode.json
-# =========================================
-ocd_generate_omo_config() {
-  local output_file="$1"
-  local use_quotio="${2:-0}"
-
-  # 设置默认模型（Quotio 模式下使用 quotio 前缀）
-  local doc_model="${DOCUMENT_WRITER_MODEL:-}"
-  local frontend_model="${FRONTEND_MODEL:-}"
-  local multimodal_model="${MULTIMODAL_MODEL:-}"
-
-  if [[ "$use_quotio" -eq 1 ]]; then
-    [[ -z "$doc_model" ]] && doc_model="quotio/gemini-3-pro-preview"
-    [[ -z "$frontend_model" ]] && frontend_model="quotio/gemini-3-pro-preview"
-    [[ -z "$multimodal_model" ]] && multimodal_model="quotio/gemini-3-flash-preview"
+  
+  # oh-my-opencode.json（直接复制）
+  if [[ ! -f "$config_dir/oh-my-opencode.json" ]]; then
+    if [[ -f "$ocd_root/templates/global/oh-my-opencode.json" ]]; then
+      cp "$ocd_root/templates/global/oh-my-opencode.json" \
+         "$config_dir/oh-my-opencode.json"
+      ocd_info "已创建 $config_dir/oh-my-opencode.json"
+      created=1
+    fi
   fi
-
-  # 构建 agents 配置
-  local agents_entries=()
-  agents_entries+=("\"Planner-Sisyphus\": { \"model\": \"${PLANNER_MODEL}\" }")
-
-  [[ -n "$ORACLE_MODEL" ]] && agents_entries+=("\"oracle\": { \"model\": \"${ORACLE_MODEL}\" }")
-  [[ -n "$doc_model" ]] && agents_entries+=("\"document-writer\": { \"model\": \"${doc_model}\" }")
-  [[ -n "$frontend_model" ]] && agents_entries+=("\"frontend-ui-ux-engineer\": { \"model\": \"${frontend_model}\" }")
-  [[ -n "$multimodal_model" ]] && agents_entries+=("\"multimodal-looker\": { \"model\": \"${multimodal_model}\" }")
-
-  # 用逗号连接
-  local agents_json
-  agents_json=$(IFS=','; echo "${agents_entries[*]}" | sed 's/,/,\n    /g')
-
-  cat > "$output_file" << EOF
-{
-  "\$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
-  "google_auth": false,
-  "disabled_mcps": [],
-  "disabled_hooks": [],
-  "agents": {
-    ${agents_json}
-  }
-}
-EOF
+  
+  return $created
 }
 
 # =========================================
-# 更新配置端口
+# 更新配置端口（每次启动）
 # =========================================
-ocd_update_config_port() {
+ocd_update_port() {
   local config_file="$1"
   local port="$2"
+
+  [[ ! -f "$config_file" ]] && return 1
 
   if command -v jq &>/dev/null; then
     local tmp_file
@@ -249,10 +107,33 @@ ocd_update_config_port() {
       mv "$tmp_file" "$config_file"
     else
       rm -f "$tmp_file"
+      return 1
     fi
   else
     sed -i.bak -E "s|(\"port\":[[:space:]]*)([0-9]+)|\1${port}|g" "$config_file"
     rm -f "${config_file}.bak"
+  fi
+}
+
+# =========================================
+# 应用 models.conf 覆盖（可选，每次启动）
+# =========================================
+ocd_apply_models_conf() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local opencode_json="$config_dir/opencode.json"
+  local omo_json="$config_dir/oh-my-opencode.json"
+  
+  # 加载 models.conf（如果存在）
+  ocd_load_models
+  
+  # 更新 opencode.json 的 model 字段
+  if [[ -n "$MAIN_MODEL" && -f "$opencode_json" ]]; then
+    ocd_update_config_model "$opencode_json" "$MAIN_MODEL"
+  fi
+  
+  # 更新 oh-my-opencode.json 的 agents
+  if [[ -f "$omo_json" ]]; then
+    ocd_update_omo_agents "$omo_json"
   fi
 }
 
@@ -274,7 +155,6 @@ ocd_update_config_model() {
       rm -f "$tmp_file"
     fi
   else
-    # sed 备用方案：替换 "model": "xxx" 为新值
     sed -i.bak -E "s|(\"model\":[[:space:]]*\")[^\"]+(\")|\1${model}\2|g" "$config_file"
     rm -f "${config_file}.bak"
   fi
@@ -288,15 +168,8 @@ ocd_update_omo_agents() {
 
   [[ ! -f "$config_file" ]] && return 0
 
-  # 检查 jq 依赖
+  # 需要 jq 才能更新
   if ! command -v jq &>/dev/null; then
-    # 无 jq 时使用 sed 备用方案（仅更新 Planner 模型）
-    if [[ -n "$PLANNER_MODEL" ]]; then
-      sed -i.bak -E "s|(\"Planner-Sisyphus\"[^}]*\"model\":[[:space:]]*\")[^\"]+(\")|\1${PLANNER_MODEL}\2|" "$config_file"
-      rm -f "${config_file}.bak"
-    fi
-    echo "⚠️  Agent 模型更新受限（无 jq），仅更新 Planner 模型" >&2
-    echo "   安装 jq 以启用完整功能: brew install jq" >&2
     return 0
   fi
 
@@ -306,27 +179,12 @@ ocd_update_omo_agents() {
   # 构建 jq 更新命令
   local jq_cmd=". "
 
-  # 更新 Planner-Sisyphus 模型（始终更新）
-  if [[ -n "$PLANNER_MODEL" ]]; then
-    jq_cmd+="| .agents.\"Planner-Sisyphus\".model = \"$PLANNER_MODEL\" "
-  fi
-
-  # 条件更新其他 agents
-  if [[ -n "$ORACLE_MODEL" ]]; then
-    jq_cmd+="| .agents.oracle.model = \"$ORACLE_MODEL\" "
-  fi
-
-  if [[ -n "$DOCUMENT_WRITER_MODEL" ]]; then
-    jq_cmd+="| .agents.\"document-writer\".model = \"$DOCUMENT_WRITER_MODEL\" "
-  fi
-
-  if [[ -n "$FRONTEND_MODEL" ]]; then
-    jq_cmd+="| .agents.\"frontend-ui-ux-engineer\".model = \"$FRONTEND_MODEL\" "
-  fi
-
-  if [[ -n "$MULTIMODAL_MODEL" ]]; then
-    jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
-  fi
+  # 条件更新 agents
+  [[ -n "$PLANNER_MODEL" ]] && jq_cmd+="| .agents.\"Sisyphus\".model = \"$PLANNER_MODEL\" "
+  [[ -n "$ORACLE_MODEL" ]] && jq_cmd+="| .agents.oracle.model = \"$ORACLE_MODEL\" "
+  [[ -n "$DOCUMENT_WRITER_MODEL" ]] && jq_cmd+="| .agents.\"document-writer\".model = \"$DOCUMENT_WRITER_MODEL\" "
+  [[ -n "$FRONTEND_MODEL" ]] && jq_cmd+="| .agents.\"frontend-ui-ux-engineer\".model = \"$FRONTEND_MODEL\" "
+  [[ -n "$MULTIMODAL_MODEL" ]] && jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
 
   if jq "$jq_cmd" "$config_file" > "$tmp_file" 2>/dev/null; then
     mv "$tmp_file" "$config_file"
@@ -336,26 +194,236 @@ ocd_update_omo_agents() {
 }
 
 # =========================================
-# 初始化全局配置目录
+# 重置全局配置（--clean）
+# =========================================
+ocd_reset_global_config() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local backup_dir="$config_dir/.backup-$(date +%Y%m%d-%H%M%S)"
+  
+  # 备份现有配置
+  if [[ -f "$config_dir/opencode.json" || -f "$config_dir/oh-my-opencode.json" ]]; then
+    mkdir -p "$backup_dir"
+    [[ -f "$config_dir/opencode.json" ]] && mv "$config_dir/opencode.json" "$backup_dir/"
+    [[ -f "$config_dir/oh-my-opencode.json" ]] && mv "$config_dir/oh-my-opencode.json" "$backup_dir/"
+    ocd_info "已备份配置到 $backup_dir"
+  fi
+  
+  # 删除迁移标记（如果有）
+  rm -f "$config_dir/.ocd-v5-migrated"
+  rm -f "$config_dir/.ocd-v5-init"
+  
+  # 重新创建
+  ocd_ensure_global_config
+  ocd_info "已重置全局配置"
+}
+
+# =========================================
+# 初始化项目配置 (ocd init)
+# =========================================
+ocd_init_project() {
+  local mode="${1:-full}"
+  local project_dir="$PWD"
+  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
+  local template_dir="$ocd_root/templates/project"
+  
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  📦 初始化项目配置"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  
+  # 1. 检查 Git
+  if [[ ! -d "$project_dir/.git" ]]; then
+    echo "⚠️  当前目录不是 Git 仓库"
+    echo ""
+    read -p "是否初始化 Git 仓库？[y/N] " answer
+    if [[ "$answer" =~ ^[Yy]$ ]]; then
+      git init
+      echo "✅ Git 仓库已初始化"
+    else
+      echo "⏭️  跳过 Git 初始化"
+      echo "   提示：OpenCode 使用 .git 识别项目边界"
+    fi
+    echo ""
+  fi
+  
+  # 2. 创建配置文件
+  echo "创建配置文件："
+  echo ""
+  
+  # AGENTS.md（始终创建）
+  _ocd_copy_if_not_exists "$template_dir/AGENTS.md.example" \
+                         "$project_dir/AGENTS.md"
+  
+  if [[ "$mode" != "--minimal" ]]; then
+    # OpenCode 配置
+    _ocd_copy_if_not_exists "$template_dir/opencode.json.example" \
+                           "$project_dir/opencode.json"
+    
+    # 项目 MCP
+    _ocd_copy_if_not_exists "$template_dir/.mcp.json.example" \
+                           "$project_dir/.mcp.json"
+    
+    # .opencode/ 目录
+    mkdir -p "$project_dir/.opencode"/{agent,command,skill,plugin}
+    _ocd_copy_if_not_exists "$template_dir/.opencode/oh-my-opencode.json.example" \
+                           "$project_dir/.opencode/oh-my-opencode.json"
+    
+    # .claude/ 目录
+    mkdir -p "$project_dir/.claude"/{agents,commands,skills}
+    _ocd_copy_if_not_exists "$template_dir/.claude/settings.json.example" \
+                           "$project_dir/.claude/settings.json"
+  fi
+  
+  # 3. 更新 .gitignore
+  if [[ -d "$project_dir/.git" ]]; then
+    local gitignore="$project_dir/.gitignore"
+    local patterns=(
+      ".claude/settings.local.json"
+      ".claude/*.local.*"
+    )
+    
+    for pattern in "${patterns[@]}"; do
+      if ! grep -qxF "$pattern" "$gitignore" 2>/dev/null; then
+        echo "$pattern" >> "$gitignore"
+        echo "  📝 添加到 .gitignore: $pattern"
+      fi
+    done
+  fi
+  
+  # 4. 完成提示
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  ✅ 初始化完成"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "  下一步："
+  echo "  1. 编辑 AGENTS.md 描述你的项目"
+  echo "  2. 或在 OpenCode 内运行 /init 自动生成"
+  echo ""
+  echo "  启动 OpenCode："
+  echo "    ocd"
+  echo ""
+}
+
+# =========================================
+# 辅助函数：如果目标不存在则复制
+# =========================================
+_ocd_copy_if_not_exists() {
+  local src="$1"
+  local dst="$2"
+  
+  if [[ ! -f "$dst" ]]; then
+    if [[ -f "$src" ]]; then
+      cp "$src" "$dst"
+      echo "  ✅ 创建: $dst"
+    else
+      echo "  ⚠️  模板不存在: $src"
+    fi
+  else
+    echo "  ⏭️  已存在: $dst"
+  fi
+}
+
+# =========================================
+# 显示配置信息 (ocd config)
+# =========================================
+ocd_show_config() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local ocd_root="${OCD_ROOT:-$HOME/opencode}"
+  
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  📁 OCD 配置路径"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "  OCD 安装目录:"
+  echo "    $ocd_root"
+  echo ""
+  echo "  全局配置目录:"
+  echo "    $config_dir"
+  echo ""
+  echo "  配置文件:"
+  [[ -f "$config_dir/opencode.json" ]] && echo "    ✅ opencode.json" || echo "    ❌ opencode.json (未创建)"
+  [[ -f "$config_dir/oh-my-opencode.json" ]] && echo "    ✅ oh-my-opencode.json" || echo "    ❌ oh-my-opencode.json (未创建)"
+  echo ""
+  echo "  可选配置:"
+  [[ -f "$ocd_root/.env" ]] && echo "    ✅ .env" || echo "    ❌ .env (必需)"
+  [[ -f "$ocd_root/models.conf" ]] && echo "    ✅ models.conf" || echo "    ⬜ models.conf (可选)"
+  echo ""
+  
+  # 显示 Claude 目录状态
+  if [[ -d "$HOME/.claude" ]]; then
+    echo "  Claude Code 目录:"
+    echo "    ✅ ~/.claude (将挂载到容器)"
+  fi
+  echo ""
+}
+
+# =========================================
+# 编辑配置文件 (ocd config edit)
+# =========================================
+ocd_edit_config() {
+  local target="${1:-opencode}"
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local file=""
+  
+  case "$target" in
+    opencode|main)
+      file="$config_dir/opencode.json"
+      ;;
+    plugin|omo|oh-my-opencode)
+      file="$config_dir/oh-my-opencode.json"
+      ;;
+    *)
+      echo "❌ 未知配置: $target"
+      echo "   可用: opencode, plugin"
+      return 1
+      ;;
+  esac
+  
+  if [[ ! -f "$file" ]]; then
+    echo "❌ 配置文件不存在: $file"
+    echo "   运行 ocd 首次创建配置"
+    return 1
+  fi
+  
+  ${EDITOR:-nano} "$file"
+}
+
+# =========================================
+# 初始化全局目录（兼容旧版调用）
 # =========================================
 ocd_init_global() {
-  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
-
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  mkdir -p "$config_dir"/{skill,command,agent}
   return 0
 }
 
 # =========================================
-# 初始化项目配置目录
+# 显示首次运行欢迎信息
 # =========================================
-ocd_init_project() {
-  local project_dir="$1"
-
-  # OpenCode 原生项目配置（单数目录名）
-  # 静默处理不可写目录（如 /nonexistent）
-  mkdir -p "$project_dir/.opencode"/{skill,command,agent} 2>/dev/null || true
-
-  # Claude 兼容层会话数据目录
-  # 注意：不自动创建 skills/commands/agents/rules/
-  # 用户需手动创建才会启用项目级覆盖（覆盖全局配置）
-  mkdir -p "$project_dir/.claude"/{todos,transcripts} 2>/dev/null || true
+ocd_show_welcome_if_first_run() {
+  local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local marker="$config_dir/.ocd-v5-init"
+  
+  [[ -f "$marker" ]] && return 0
+  
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  🎉 欢迎使用 OCD v5"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  echo "  配置文件位置："
+  echo "    $config_dir/opencode.json"
+  echo "    $config_dir/oh-my-opencode.json"
+  echo ""
+  echo "  从 v5 开始，这些配置由你管理。"
+  echo "  OCD 只会在每次启动时更新端口。"
+  echo ""
+  echo "  快速切换模型：创建 ~/opencode/models.conf"
+  echo "  初始化项目：ocd init"
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo ""
+  
+  touch "$marker"
 }
