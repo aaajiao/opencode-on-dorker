@@ -69,13 +69,17 @@ ocd_check_claude_migration() {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
     echo "  v5 将 todos/transcripts 改为全局存储。"
-    echo "  请在 Mac 上运行迁移脚本："
     echo ""
-    echo "    $ocd_root/scripts/migrate-v5-global-claude.sh"
-    echo ""
-    echo "  迁移后此提示不再显示。"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
+    read -r -p "  是否立即迁移？[Y/n] " answer
+    if [[ ! "$answer" =~ ^[Nn]$ ]]; then
+      echo ""
+      "$ocd_root/scripts/migrate-v5-global-claude.sh"
+    else
+      echo ""
+      echo "  跳过迁移。下次启动时会再次提示。"
+      echo "  手动运行: $ocd_root/scripts/migrate-v5-global-claude.sh"
+      echo ""
+    fi
   else
     touch "$marker"
   fi
