@@ -15,7 +15,58 @@ Mac 与 Docker 容器之间的目录映射关系。
 | `~/.cache/opencode/` | `/root/.cache/opencode/` | OpenCode 缓存 |
 | `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | 插件缓存 |
 | `~/.ssh/` | `/root/.ssh/:ro` | SSH 密钥（只读） |
-| `~/.claude/` | `/root/.claude/` | Claude 配置（如存在） |
+| `~/.claude/` | `/root/.claude/` | 全局 Claude 兼容层（基础挂载） |
+
+---
+
+## Claude 兼容层挂载 (v5 新架构)
+
+### 全局存储 (基础层)
+
+所有项目共享的全局存储，作为基础层挂载：
+
+| Mac | Docker | 说明 |
+|-----|--------|------|
+| `~/.claude/` | `/root/.claude/` | 全局 Claude 目录 |
+| `~/.claude/todos/` | `/root/.claude/todos/` | 全局 todos (所有项目共享) |
+| `~/.claude/transcripts/` | `/root/.claude/transcripts/` | 全局 transcripts (所有项目共享) |
+| `~/.claude/commands/` | `/root/.claude/commands/` | 用户全局 commands |
+| `~/.claude/skills/` | `/root/.claude/skills/` | 用户全局 skills |
+| `~/.claude/agents/` | `/root/.claude/agents/` | 用户全局 agents |
+| `~/.claude/rules/` | `/root/.claude/rules/` | 用户全局 rules |
+
+### 项目级覆盖 (条件挂载)
+
+项目配置覆盖全局配置，**仅当目录存在且非空时**才挂载：
+
+| Mac | Docker | 条件 |
+|-----|--------|------|
+| `<project>/.claude/commands/` | `/root/.claude/commands/` | 非空时覆盖 |
+| `<project>/.claude/skills/` | `/root/.claude/skills/` | 非空时覆盖 |
+| `<project>/.claude/agents/` | `/root/.claude/agents/` | 非空时覆盖 |
+| `<project>/.claude/rules/` | `/root/.claude/rules/` | 非空时覆盖 |
+| `<project>/.claude/settings.json` | `/root/.claude/settings.json` | 存在时覆盖 (只读) |
+| `<project>/.claude/.mcp.json` | `/root/.claude/.mcp.json` | 存在时覆盖 (只读) |
+
+### 目录结构总览
+
+```
+~/.claude/                          # 全局 (基础层)
+├── todos/                          # 全局 todos (所有项目共享)
+├── transcripts/                    # 全局 transcripts (所有项目共享)
+├── commands/                       # 用户全局 commands
+├── skills/                         # 用户全局 skills
+├── agents/                         # 用户全局 agents
+└── rules/                          # 用户全局 rules
+
+<project>/.claude/                  # 项目级 (条件覆盖)
+├── commands/                       # 覆盖全局 (非空时)
+├── skills/                         # 覆盖全局 (非空时)
+├── agents/                         # 覆盖全局 (非空时)
+├── rules/                          # 覆盖全局 (非空时)
+├── settings.json                   # Claude Code hooks
+└── .mcp.json                       # 项目级 MCP
+```
 
 ---
 
@@ -38,32 +89,11 @@ IPC 目录内容：
 
 ---
 
-## 项目级配置挂载
-
-### 会话数据（始终挂载）
-
-| Mac | Docker |
-|-----|--------|
-| `<project>/.claude/` | `/root/.claude/` |
-| `<project>/.claude/todos/` | `/root/.claude/todos/` |
-| `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` |
-
-### 项目 OpenCode 配置（v5 新增）
+## 项目 OpenCode 配置挂载
 
 | Mac | Docker | 说明 |
 |-----|--------|------|
-| `<project>/.opencode/` | `/root/.opencode-project/` | 项目级配置 |
-
-### 项目配置（条件覆盖）
-
-**仅当目录存在且非空时**，项目配置覆盖全局配置：
-
-| Mac | Docker | 条件 |
-|-----|--------|------|
-| `<project>/.claude/skills/` | `/root/.claude/skills/` | 非空时覆盖 |
-| `<project>/.claude/commands/` | `/root/.claude/commands/` | 非空时覆盖 |
-| `<project>/.claude/agents/` | `/root/.claude/agents/` | 非空时覆盖 |
-| `<project>/.claude/rules/` | `/root/.claude/rules/` | 非空时覆盖 |
+| `<project>/.opencode/` | `/root/.opencode-project/` | 项目级 OpenCode 配置 |
 
 ---
 
@@ -83,8 +113,8 @@ IPC 目录内容：
 
 ```
 全局配置生效：
-~/.config/opencode/agent/
-  ├── oracle.md         →    /root/.config/opencode/agent/
+~/.claude/agents/
+  ├── oracle.md         →    /root/.claude/agents/
   └── writer.md               ├── oracle.md
                               └── writer.md
 ```
@@ -138,5 +168,16 @@ v5 中，`~/.config/opencode/` 下的配置文件首次创建后由用户管理�
 
 | 说明 | v4 路径 | v5 路径 |
 |------|---------|---------|
+| todos/transcripts | `<project>/.claude/` (项目级) | `~/.claude/` (全局) |
 | 项目配置 | - | `<project>/.opencode/` (ocd init 创建) |
 | 开发配置 | 共用生产配置 | `~/.config/opencode-dev/` (隔离) |
+
+---
+
+## 迁移
+
+从 v4 升级到 v5 时，运行迁移脚本将项目级 todos/transcripts 迁移到全局：
+
+```bash
+~/opencode/scripts/migrate-v5-global-claude.sh
+```

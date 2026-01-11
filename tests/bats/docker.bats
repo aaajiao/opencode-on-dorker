@@ -52,14 +52,27 @@ teardown() {
   [ -d "$omo_bin_cache/bin" ]
 }
 
-@test "docker mkdir creates project .claude directories" {
+@test "docker mkdir creates global .claude directories" {
+  local global_claude="$HOME/.claude"
+
+  mkdir -p "$global_claude"/{todos,transcripts,commands,skills,agents,rules}
+
+  [ -d "$global_claude/todos" ]
+  [ -d "$global_claude/transcripts" ]
+  [ -d "$global_claude/commands" ]
+  [ -d "$global_claude/rules" ]
+}
+
+@test "project .claude only has config dirs not todos/transcripts" {
   local project="$TEST_DIR/workspace/myproject"
   local project_claude="$project/.claude"
 
-  mkdir -p "$project_claude"/{todos,transcripts} 2>/dev/null || true
+  mkdir -p "$project_claude"/{commands,skills,agents,rules}
 
-  [ -d "$project_claude/todos" ]
-  [ -d "$project_claude/transcripts" ]
+  [ -d "$project_claude/commands" ]
+  [ -d "$project_claude/rules" ]
+  [ ! -d "$project_claude/todos" ]
+  [ ! -d "$project_claude/transcripts" ]
 }
 
 # =========================================

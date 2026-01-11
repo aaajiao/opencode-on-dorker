@@ -72,3 +72,8 @@ setup() {
   result=$(ocd_version)
   [[ "$result" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || [ "$result" = "unknown" ]
 }
+
+# OCD_CLAUDE_HOME tests
+@test "OCD_CLAUDE_HOME is set to ~/.claude" {
+  [ "$OCD_CLAUDE_HOME" = "$HOME/.claude" ]
+}

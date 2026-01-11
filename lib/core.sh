@@ -20,6 +20,9 @@ OCD_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
 OCD_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/opencode"
 OCD_OMO_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/oh-my-opencode"
 
+# Claude Code 兼容层目录 (oh-my-opencode)
+OCD_CLAUDE_HOME="$HOME/.claude"
+
 # IPC 目录 (按端口区分，支持多窗口)
 OCD_IPC_HOME="$OCD_STATE_HOME/ipc"
 

@@ -125,7 +125,7 @@ main() {
       ;;
   esac
 
-  local REBUILD=0 CLEAN_CONFIG=0 MERGE_UP=0
+  local REBUILD=0 CLEAN_CONFIG=0
   local CUSTOM_PORT=""
   local USE_QUOTIO=0
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
@@ -146,7 +146,6 @@ main() {
       -p) CUSTOM_PORT="$2"; shift 2 ;;
       --here) USE_HERE=1; shift ;;
       --clean) CLEAN_CONFIG=1; shift ;;
-      --merge-up) MERGE_UP=1; shift ;;
       -h|--help)
         cat << EOF
 OCD v$(ocd_version) - OpenCode Docker
@@ -164,7 +163,6 @@ Options:
   -r                Rebuild image and clear cache
   -p <port>         Port number
   --here            Mount current directory only (skip workspace detection)
-  --merge-up        Merge transcripts to parent project (undo --here)
   --clean           Reset global config (backup and regenerate)
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
@@ -179,63 +177,6 @@ EOF
       *) break ;;
     esac
   done
-
-  if [[ "$MERGE_UP" -eq 1 ]]; then
-    local current_dir current_transcripts
-    current_dir="$(pwd)"
-    current_transcripts="${current_dir}/.claude/transcripts"
-
-    if [[ ! -d "$current_transcripts" ]]; then
-      ocd_error "当前目录没有 .claude/transcripts/"
-      ocd_info "提示: 需要先在此目录通过 ocd --here 使用过 OpenCode"
-      return 1
-    fi
-
-    local parent_project
-    parent_project=$(ocd_find_parent_project "$current_dir")
-
-    if [[ -z "$parent_project" ]]; then
-      local direct_parent
-      direct_parent=$(dirname "$current_dir")
-
-      if [[ "$direct_parent" == "$HOME" || "$direct_parent" == "/" ]]; then
-        ocd_error "已在根目录，无法向上合并"
-        return 1
-      fi
-
-      echo "⚠️  未找到父级 git 项目，将合并到直接父目录:"
-      echo "   $direct_parent"
-      read -r -p "   确认? [y/N] " confirm
-      if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-        echo "已取消"
-        return 0
-      fi
-      parent_project="$direct_parent"
-    fi
-
-    local parent_transcripts="${parent_project}/.claude/transcripts"
-    mkdir -p "$parent_transcripts"
-
-    echo "📦 合并 transcripts..."
-    echo "   从: $current_transcripts"
-    echo "   到: $parent_transcripts"
-
-    local count
-    count=$(find "$current_transcripts" -maxdepth 1 -name "*.jsonl" -type f 2>/dev/null | wc -l | tr -d ' ')
-
-    if [[ "$count" -gt 0 ]]; then
-      mv "$current_transcripts"/*.jsonl "$parent_transcripts/" 2>/dev/null || true
-      ocd_success "已合并 $count 个文件"
-    else
-      ocd_info "没有需要合并的 .jsonl 文件"
-    fi
-
-    rmdir "$current_transcripts" 2>/dev/null || true
-    rmdir "${current_dir}/.claude/todos" 2>/dev/null || true
-    rmdir "${current_dir}/.claude" 2>/dev/null && ocd_info "已清理 ${current_dir}/.claude/" || true
-
-    return 0
-  fi
 
   local CURRENT_DIR WORKSPACE_ROOT START_DIR
   CURRENT_DIR="$(pwd)"

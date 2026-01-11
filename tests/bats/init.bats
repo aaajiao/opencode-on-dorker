@@ -102,6 +102,9 @@ teardown() {
   [ -d "$project/.claude/agents" ]
   [ -d "$project/.claude/commands" ]
   [ -d "$project/.claude/skills" ]
+  [ -d "$project/.claude/rules" ]
+  [ ! -d "$project/.claude/todos" ]
+  [ ! -d "$project/.claude/transcripts" ]
 }
 
 @test "ocd_init_project --minimal only creates AGENTS.md" {
