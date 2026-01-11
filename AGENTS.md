@@ -29,10 +29,9 @@ bats tests/bats/*.bats
 
 # Run SINGLE test file
 bats tests/bats/config.bats
-bats tests/bats/workspace.bats
 
 # Run specific test by name (regex filter)
-bats tests/bats/config.bats -f "template"   # Tests matching "template"
+bats tests/bats/config.bats -f "template"
 
 # Verbose mode with timing
 bats -t tests/bats/core.bats
@@ -45,33 +44,19 @@ docker run -it --rm --network host opencode-bun bash
 
 ```
 ~/opencode/
-├── bin/
-│   ├── ocd                    # Main entry script
-│   └── devocd                 # Dev mode (uses ~/.config/opencode-dev/)
-├── lib/
-│   ├── core.sh                # XDG paths, version, logging, env loading
-│   ├── config.sh              # v5: Config creation & port updates
-│   ├── docker.sh              # Docker build & run
-│   ├── migrate.sh             # v4→v5 migration
-│   ├── port.sh                # Port allocation, atomic locks
-│   ├── watcher.sh             # IPC monitoring (clipboard/notify/URL)
-│   └── workspace.sh           # Workspace detection, whitelist
-├── templates/
-│   ├── global/                # First-run config templates
-│   │   ├── opencode.json.tmpl
-│   │   └── oh-my-opencode.json
-│   └── project/               # `ocd init` templates
-├── tests/bats/*.bats          # Unit tests (11 files)
+├── bin/ocd, devocd            # Entry scripts
+├── lib/*.sh                   # Core modules (config, docker, port, etc.)
+├── templates/global/          # Config templates (opencode.json.tmpl)
+├── tests/bats/*.bats          # Unit tests
 ├── Dockerfile
 ├── .env                       # API keys (KEY=VALUE only!)
-├── models.conf                # Optional model overrides
-└── versions.lock              # Dependency versions
+├── versions.lock              # Dependency versions
+└── models.conf                # Optional model overrides
 
-# Runtime directories (Mac host)
-~/.config/opencode/            # Global config (user-owned after first run)
+# Runtime (Mac host)
+~/.config/opencode/            # Global config (user-owned)
 ~/.local/share/opencode/       # Sessions, auth
 ~/.local/state/opencode/ipc/   # Per-port IPC files
-~/.cache/opencode/             # Cache (safe to delete)
 ```
 
 ## Code Style Guidelines
@@ -90,24 +75,15 @@ local var
 var=$(command)                 # CORRECT
 local var=$(command)           # WRONG - triggers SC2155
 
-# Remove unused variables (ShellCheck SC2034)
-local used_var="value"
-echo "$used_var"               # Must be used or removed
-
 # Functions - prefix with ocd_ (public) or _ocd_ (private)
 ocd_public_function() {
   local arg="$1"
   echo "$arg"
 }
 
-_ocd_private_helper() {        # Private function
-  local pid="$1"
-}
-
 # Error handling
 command 2>/dev/null            # Suppress errors
 command -v cmd &>/dev/null     # Check command exists
-cmd || true                    # Allow failure
 ${VAR:-default}                # Default value syntax
 ```
 
@@ -126,52 +102,44 @@ ${VAR:-default}                # Default value syntax
 
 ### Environment Variables (.env)
 
-**CRITICAL**: Pure `KEY=VALUE` format only
-```bash
-# WRONG
-export API_KEY="sk-xxx"
-KEY=value # comment
+**CRITICAL**: Pure `KEY=VALUE` format only (no quotes, no export, no comments)
 
-# CORRECT
-API_KEY=sk-xxx
-GITHUB_TOKEN=ghp_xxxx
+## Version Locking (versions.lock)
+
+All dependency versions are centralized in `versions.lock`. Template variables use `{{VAR_NAME}}` syntax.
+
+**Adding a new MCP server**:
+1. Add version to `versions.lock`: `MY_MCP_VERSION=1.2.3`
+2. Use in template: `"command": ["npx", "my-mcp@{{MY_MCP_VERSION}}"]`
+3. Run `ocd --clean` to regenerate config
+
+Key variables:
+- `OPENCODE_AI_VERSION`, `OH_MY_OPENCODE_VERSION`
+- `PLAYWRIGHT_MCP_VERSION`, `EXA_MCP_VERSION`
+- `BUN_VERSION`, `PIP_*` versions
+
+## MCP Configuration
+
+Playwright MCP requires special flags for Docker:
+```json
+"command": ["npx", "@playwright/mcp@{{PLAYWRIGHT_MCP_VERSION}}", "--headless", "--isolated", "--no-sandbox"]
 ```
+- `--headless`: No GUI
+- `--isolated`: Memory-only profile (no disk locks)
+- `--no-sandbox`: Required for root user in Docker
 
 ## CLI Reference
 
 ```bash
-# Standard usage
 ocd                      # Auto-detect workspace, auto port
 ocd -p 5000              # Custom port
 ocd --here               # Mount only current directory
 ocd -r                   # Rebuild image + clear cache
-ocd -v                   # Show version
-
-# v5 subcommands
 ocd init                 # Initialize project config
 ocd config               # Show config status
-ocd config edit          # Open config in editor
 ocd --clean              # Reset global config (with backup)
-
-# Development (isolated from production)
-devocd                   # Uses dev/ code + opencode-bun-dev image
-devocd -r                # Rebuild dev image
+devocd                   # Dev mode (isolated from production)
 ```
-
-## v5 Config Architecture
-
-| Event | Action |
-|-------|--------|
-| First run | Create config from templates |
-| Each startup | Update port only |
-| `--clean` | Backup existing + recreate |
-| `models.conf` exists | Apply model overrides |
-
-Key functions in `lib/config.sh`:
-- `ocd_ensure_global_config()` - First-time creation
-- `ocd_update_port()` - Port-only updates  
-- `ocd_reset_global_config()` - `--clean` handler
-- `ocd_init_project()` - Project initialization
 
 ## Common Pitfalls
 
@@ -189,7 +157,17 @@ Key functions in `lib/config.sh`:
 bash -n bin/ocd lib/*.sh       # 1. Syntax check
 bats tests/bats/*.bats         # 2. Run tests
 
-# Manual testing (on Mac, after exiting container)
+# On Mac (after exiting container)
 exec zsh                       # Reload shell
 devocd                         # Test with dev code
 ```
+
+## CI Pipeline (GitHub Actions)
+
+CI runs on every PR with these checks:
+- **Syntax Check**: `bash -n` on all shell scripts
+- **ShellCheck**: Lint with `-S warning`
+- **Unit Tests**: `bats tests/bats/*.bats`
+- **Docker Build**: Full image build + verification
+
+All checks must pass before merging.
