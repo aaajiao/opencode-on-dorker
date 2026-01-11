@@ -12,12 +12,20 @@
   "mcp": {
     "playwright": {
       "type": "local",
-      "command": ["npx", "@playwright/mcp@latest", "--headless"],
+      "command": ["npx", "@playwright/mcp@{{PLAYWRIGHT_MCP_VERSION}}", "--headless", "--isolated", "--no-sandbox"],
       "enabled": true
+    },
+    "kernel": {
+      "type": "remote",
+      "url": "https://mcp.onkernel.com/mcp",
+      "headers": {
+        "Authorization": "Bearer {env:KERNEL_API_KEY}"
+      },
+      "enabled": false
     },
     "exa": {
       "type": "local",
-      "command": ["npx", "-y", "exa-mcp-server@latest"],
+      "command": ["npx", "-y", "exa-mcp-server@{{EXA_MCP_VERSION}}"],
       "enabled": false,
       "environment": {
         "EXA_API_KEY": "{env:EXA_API_KEY}"

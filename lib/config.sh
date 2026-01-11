@@ -41,7 +41,6 @@ ocd_load_models() {
 # =========================================
 # 从模板创建配置文件
 # =========================================
-# 替换 {{VAR}} 格式的占位符
 ocd_create_config_from_template() {
   local template="$1"
   local output="$2"
@@ -49,8 +48,12 @@ ocd_create_config_from_template() {
   local content
   content=$(cat "$template")
   
-  # 替换 {{OH_MY_OPENCODE_VERSION}}
-  content="${content//\{\{OH_MY_OPENCODE_VERSION\}\}/${OH_MY_OPENCODE_VERSION:-latest}}"
+  local var_name var_value
+  while [[ "$content" =~ \{\{([A-Z_][A-Z0-9_]*)\}\} ]]; do
+    var_name="${BASH_REMATCH[1]}"
+    var_value="${!var_name:-latest}"
+    content="${content//\{\{$var_name\}\}/$var_value}"
+  done
   
   echo "$content" > "$output"
 }
