@@ -1,11 +1,3 @@
 {
-  "mcpServers": {
-    "project-server": {
-      "command": "npx",
-      "args": ["-y", "some-mcp-server"],
-      "env": {
-        "API_KEY": "${PROJECT_API_KEY}"
-      }
-    }
-  }
+  "mcpServers": {}
 }

@@ -3,14 +3,6 @@
   
   "model": "anthropic/claude-opus-4-5",
   
-  "mcp": {
-    "project-server": {
-      "type": "local",
-      "command": ["npx", "-y", "some-mcp-server"],
-      "enabled": true
-    }
-  },
-  
   "agent": {
     "project-expert": {
       "description": "Project architecture expert",

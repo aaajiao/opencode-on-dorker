@@ -254,9 +254,7 @@ ocd_init_project() {
     _ocd_copy_if_not_exists "$template_dir/opencode.json.example" \
                            "$project_dir/opencode.json"
     
-    # 项目 MCP
-    _ocd_copy_if_not_exists "$template_dir/.mcp.json.example" \
-                           "$project_dir/.mcp.json"
+    # 注意：不自动创建 .mcp.json，用户需要时可参考 .mcp.json.example 手动创建
     
     # .opencode/ 目录
     mkdir -p "$project_dir/.opencode"/{agent,command,skill,plugin}
