@@ -55,60 +55,6 @@ fi
 OMO_VER="${OH_MY_OPENCODE_VERSION:-2.14.0}"
 AUTH_VER="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
 
-# 读取环境变量（用于 MCP 配置中的变量替换）
-ENV_FILE="$HOME/opencode/.env"
-if [[ -f "$ENV_FILE" ]]; then
-  while IFS= read -r line || [[ -n "$line" ]]; do
-    [[ -z "$line" || "$line" == \#* ]] && continue
-    key="${line%%=*}"
-    value="${line#*=}"
-    [[ "$key" =~ ^[A-Z_][A-Z0-9_]*$ ]] && export "$key=$value"
-  done < "$ENV_FILE"
-fi
-
-# 加载 MCP 配置（从 mcp.json 或 mcp.json.example）
-load_mcp_config() {
-  local ocd_root="$HOME/opencode"
-  local mcp_file=""
-
-  if [[ -f "$ocd_root/mcp.json" ]]; then
-    mcp_file="$ocd_root/mcp.json"
-  elif [[ -f "$ocd_root/mcp.json.example" ]]; then
-    mcp_file="$ocd_root/mcp.json.example"
-  fi
-
-  [[ -z "$mcp_file" ]] && echo '{}' && return
-
-  local content
-  content=$(cat "$mcp_file")
-
-  # 移除 JSON 注释字段
-  if command -v jq &>/dev/null; then
-    content=$(echo "$content" | jq 'del(._comment, ._variables)')
-  else
-    content=$(echo "$content" | grep -v '"_comment"' | grep -v '"_variables"')
-  fi
-
-  # 替换 ${VAR:-default} 格式
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*):-([^}]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local default="${BASH_REMATCH[2]}"
-    local value="${!var:-$default}"
-    content="${content//\$\{${var}:-${default}\}/$value}"
-  done
-
-  # 替换 ${VAR} 格式
-  while [[ "$content" =~ \$\{([A-Z_][A-Z0-9_]*)\} ]]; do
-    local var="${BASH_REMATCH[1]}"
-    local value="${!var:-}"
-    content="${content//\$\{${var}\}/$value}"
-  done
-
-  echo "$content"
-}
-
-MCP_CONFIG=$(load_mcp_config)
-
 if [[ ! -f "$CONFIG_FILE" ]]; then
   echo "📝 生成 opencode.json..."
   cat > "$CONFIG_FILE" << EOF
@@ -123,7 +69,13 @@ if [[ ! -f "$CONFIG_FILE" ]]; then
     "port": 4096,
     "hostname": "0.0.0.0"
   },
-  "mcp": ${MCP_CONFIG}
+  "mcp": {
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "@anthropic-ai/playwright-mcp@latest", "--headless"],
+      "enabled": true
+    }
+  }
 }
 EOF
   echo -e "   ${GREEN}✓${NC} opencode.json 已生成"
