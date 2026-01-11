@@ -40,12 +40,17 @@ mkdir -p ~/projects
 echo -e "   ${GREEN}✓${NC} 目录创建完成"
 
 # =========================================
-# 第二步：生成配置文件
+# 第二步：生成配置文件（从模板）
 # =========================================
 CONFIG_FILE="$HOME/.config/opencode/server/opencode.json"
 OMO_CONFIG_FILE="$HOME/.config/opencode/server/oh-my-opencode.json"
 
-# 版本号（可从 versions.lock 读取）
+# 模板路径
+TEMPLATE_DIR="$HOME/opencode/templates/global"
+OPENCODE_TEMPLATE="$TEMPLATE_DIR/opencode.json.tmpl"
+OMO_TEMPLATE="$TEMPLATE_DIR/oh-my-opencode.json"
+
+# 版本号（从 versions.lock 读取）
 VERSIONS_FILE="$HOME/opencode/versions.lock"
 if [[ -f "$VERSIONS_FILE" ]]; then
   # shellcheck disable=SC1090
@@ -53,52 +58,53 @@ if [[ -f "$VERSIONS_FILE" ]]; then
 fi
 
 OMO_VER="${OH_MY_OPENCODE_VERSION:-2.14.0}"
-AUTH_VER="${OPENCODE_ANTIGRAVITY_AUTH_VERSION:-1.2.6}"
+
+# 从模板创建配置（替换 {{VAR}} 变量）
+create_from_template() {
+  local template="$1"
+  local output="$2"
+  
+  if [[ ! -f "$template" ]]; then
+    return 1
+  fi
+  
+  local content
+  content=$(cat "$template")
+  
+  # 替换 {{VAR}} 格式的变量
+  content="${content//\{\{OH_MY_OPENCODE_VERSION\}\}/$OMO_VER}"
+  
+  echo "$content" > "$output"
+}
 
 if [[ ! -f "$CONFIG_FILE" ]]; then
   echo "📝 生成 opencode.json..."
-  cat > "$CONFIG_FILE" << EOF
+  if create_from_template "$OPENCODE_TEMPLATE" "$CONFIG_FILE"; then
+    echo -e "   ${GREEN}✓${NC} opencode.json 已从模板生成"
+  else
+    echo -e "   ${YELLOW}⚠${NC} 模板不存在，使用默认配置"
+    cat > "$CONFIG_FILE" << EOF
 {
   "\$schema": "https://opencode.ai/config.json",
-  "model": "anthropic/claude-opus-4-5",
-  "plugin": [
-    "oh-my-opencode@${OMO_VER}",
-    "opencode-antigravity-auth@${AUTH_VER}"
-  ],
-  "server": {
-    "port": 4096,
-    "hostname": "0.0.0.0"
-  },
-  "mcp": {
-    "playwright": {
-      "type": "local",
-      "command": ["npx", "@anthropic-ai/playwright-mcp@latest", "--headless"],
-      "enabled": true
-    }
-  }
+  "model": "anthropic/claude-sonnet-4-5",
+  "plugin": ["oh-my-opencode@${OMO_VER}"],
+  "server": {"port": 4096, "hostname": "0.0.0.0"}
 }
 EOF
-  echo -e "   ${GREEN}✓${NC} opencode.json 已生成"
+  fi
 else
   echo -e "   ${YELLOW}⚠${NC} opencode.json 已存在，跳过"
 fi
 
 if [[ ! -f "$OMO_CONFIG_FILE" ]]; then
   echo "📝 生成 oh-my-opencode.json..."
-  cat > "$OMO_CONFIG_FILE" << 'EOF'
-{
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
-  "google_auth": false,
-  "disabled_mcps": [],
-  "disabled_hooks": [],
-  "agents": {
-    "Planner-Sisyphus": {
-      "model": "anthropic/claude-opus-4-5"
-    }
-  }
-}
-EOF
-  echo -e "   ${GREEN}✓${NC} oh-my-opencode.json 已生成"
+  if [[ -f "$OMO_TEMPLATE" ]]; then
+    cp "$OMO_TEMPLATE" "$OMO_CONFIG_FILE"
+    echo -e "   ${GREEN}✓${NC} oh-my-opencode.json 已从模板复制"
+  else
+    echo -e "   ${YELLOW}⚠${NC} 模板不存在，使用默认配置"
+    echo '{"google_auth": false}' > "$OMO_CONFIG_FILE"
+  fi
 else
   echo -e "   ${YELLOW}⚠${NC} oh-my-opencode.json 已存在，跳过"
 fi
