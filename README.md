@@ -1,8 +1,17 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg)](./CHANGELOG.md)
 
 在 macOS + OrbStack 环境下运行 OpenCode AI 编程助手的完整配置，集成 oh-my-opencode 插件。
+
+## v5 新特性
+
+- ✅ **配置文件用户所有**：首次创建后由用户管理，OCD 不再覆盖
+- ✅ **每次启动只更新端口**：配置保持稳定，用户修改不会丢失
+- ✅ **`ocd init` 项目初始化**：一键创建项目级配置模板
+- ✅ **`ocd config` 配置管理**：查看和编辑配置文件
+- ✅ **模板系统**：从 `templates/` 生成配置，支持变量替换
+- ✅ **v4 自动迁移**：首次运行时自动检测并迁移旧配置
 
 ## 功能特性
 
@@ -56,6 +65,11 @@ source ~/.zshrc
 ocd -r
 ```
 
+首次运行时，OCD 会：
+1. 从 `templates/global/` 创建配置文件
+2. 显示欢迎信息和配置路径
+3. 配置文件之后由你管理，OCD 只更新端口
+
 ### 5. 安装可选依赖（推荐）
 
 ```bash
@@ -87,6 +101,22 @@ ocd -r
 ocd -h
 ```
 
+### v5 新命令
+
+```bash
+# 初始化项目配置（创建 .opencode/, .claude/ 等）
+ocd init
+
+# 查看配置状态
+ocd config
+
+# 编辑全局配置
+ocd config edit
+
+# 重置配置（备份现有 + 重新创建）
+ocd --clean
+```
+
 ### 工作区模式
 
 OCD 会自动检测 Git 仓库，将其父目录作为工作区：
@@ -111,7 +141,7 @@ ocd
 **启动输出：**
 
 ```text
-🚀 OCD v4.0.0 │ http://localhost:4096
+🚀 OCD v5.0.0 │ http://localhost:4096
    └─ 项目: webapp
 ```
 
@@ -123,14 +153,20 @@ ocd
 | `-h` | 显示帮助 | `ocd -h` |
 | `-p <port>` | 指定端口 | `ocd -p 5000` |
 | `--here` | 只挂载当前目录 | `ocd --here` |
-| `--merge-up` | 合并 transcripts 到父项目（撤销 --here） | `ocd --merge-up` |
+| `--merge-up` | 合并 transcripts 到父项目 | `ocd --merge-up` |
 | `-r` | 重建镜像 + 清理缓存 | `ocd -r` |
-| `--clean` | 清理共享配置（保留对话） | `ocd --clean` |
+| `--clean` | 重置配置（备份 + 重建） | `ocd --clean` |
 | `--https` | 通过 Tailscale Serve 启用 HTTPS | `ocd --https` |
 | `--awake` | 防止 Mac 进入休眠 | `ocd --awake` |
 | `--quotio` | 启用 Quotio 代理 | `ocd --quotio` |
-| `--dev` | 使用开发版（从 dev/ 加载） | `ocd --dev` |
-| `--dev-root` | 指定开发目录 | `ocd --dev-root ~/fork` |
+
+### v5 子命令
+
+| 子命令 | 说明 |
+|--------|------|
+| `ocd init` | 初始化项目配置（.opencode/, .claude/） |
+| `ocd config` | 显示配置路径和状态 |
+| `ocd config edit` | 用编辑器打开配置文件 |
 
 ### 开发模式
 
@@ -147,64 +183,93 @@ nano lib/docker.sh
 
 # 3. 使用开发版启动（推荐 devocd）
 devocd                   # 直接执行 dev/bin/ocd（推荐）
-ocd --dev                # 备选方式
 
 # 4. 重建开发镜像（修改 Dockerfile 后）
 devocd -r
-
-# 5. 使用自定义路径
-OCD_DEV_ROOT=~/fork devocd
 ```
-
-**`devocd` vs `ocd --dev`**：
-- `devocd`：直接执行 `dev/bin/ocd`，修改 `bin/ocd` 后立即生效（**推荐**）
-- `ocd --dev`：通过主目录 `bin/ocd` 加载，只有 `lib/*.sh` 的修改生效
 
 **开发模式特性**：
 - 使用独立镜像 `opencode-bun-dev`（不污染生产镜像）
-- 优先加载 `dev/.env`（如存在），否则使用主目录 `.env`
-- 启动信息显示 `[DEV]` 标识和开发目录路径
-- 对话数据独立存储（`dev/.claude/transcripts/`，不与主目录混用）
+- 使用独立配置目录 `~/.config/opencode-dev/`（不影响生产配置）
+- 启动信息显示 `[DEV]` 标识
 
 **清理开发环境**：
 ```bash
-# 删除开发镜像
 docker rmi opencode-bun-dev
-
-# 删除 worktree
 git worktree remove dev
 ```
 
-## 目录结构
+## v5 配置架构
 
-OCD v4.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html)：
+### 设计原则
+
+| 原则 | 说明 |
+|------|------|
+| **用户拥有配置** | 首次创建后由用户管理，OCD 不覆盖 |
+| **最小化干预** | 每次启动只更新端口，其他不动 |
+| **模板驱动** | 从 `templates/` 生成，支持变量替换 |
+
+### 配置生命周期
+
+| 事件 | OCD 行为 |
+|------|----------|
+| 首次运行 | 从模板创建配置，显示欢迎信息 |
+| 每次启动 | 只更新端口号 |
+| `--clean` | 备份现有配置，重新从模板创建 |
+| `models.conf` 存在 | 应用模型覆盖设置 |
+
+### 目录结构
 
 ```
-~/.config/opencode/                    # 配置 (单副本，共享)
-├── opencode.json                     # 主配置文件
-├── oh-my-opencode.json               # 插件配置文件
-├── skill/                            # 全局技能
-├── command/                          # 全局命令
-└── agent/                            # 全局 Agent
+~/opencode/                            # OCD 安装目录
+├── .env                               # API Keys（必需）
+├── models.conf                        # 模型配置（可选）
+├── versions.lock                      # 版本锁定
+├── templates/
+│   ├── global/                        # 全局配置模板
+│   │   ├── opencode.json.tmpl         # 主配置（支持 {{VAR}} 替换）
+│   │   └── oh-my-opencode.json        # 插件配置
+│   └── project/                       # 项目配置模板（ocd init 使用）
+│       ├── AGENTS.md.example
+│       ├── .mcp.json.example
+│       ├── .opencode/
+│       └── .claude/
+├── bin/
+│   ├── ocd                            # 主程序
+│   └── devocd                         # 开发模式
+└── lib/
+    ├── core.sh                        # 核心函数
+    ├── config.sh                      # v5 配置管理
+    ├── migrate.sh                     # v4→v5 迁移
+    ├── docker.sh                      # Docker 操作
+    ├── port.sh                        # 端口分配
+    ├── workspace.sh                   # 工作区检测
+    └── watcher.sh                     # IPC 监控
 
-~/.local/share/opencode/               # 数据 (必须备份)
-├── storage/                          # 会话和消息 (按 git SHA 存储)
-│   └── session/<git-sha>/
-├── auth.json                          # OAuth 认证令牌 (共享)
-└── bin/                               # 二进制缓存
+~/.config/opencode/                    # 全局配置（用户所有）
+├── opencode.json                      # 主配置文件
+├── oh-my-opencode.json                # 插件配置
+├── skill/                             # 全局技能
+├── command/                           # 全局命令
+└── agent/                             # 全局 Agent
 
-~/.local/state/opencode/               # 状态 (可重建)
-└── ipc/<port>/                       # 跨窗口隔离的 IPC 文件
-    ├── open_url                      # URL 打开
-    ├── notifications                 # 桌面通知
-    ├── clipboard                     # 剪贴板同步
-    └── .watcher.pid                  # Watcher 进程 PID
+~/.local/share/opencode/               # 数据目录（需备份）
+├── storage/                           # 会话数据
+└── auth.json                          # OAuth 令牌
 
-~/.cache/opencode/                     # OpenCode 缓存 (可删除)
-~/.cache/oh-my-opencode/               # 插件缓存 (ast-grep, ripgrep)
+~/.local/state/opencode/               # 状态目录
+└── ipc/<port>/                        # IPC 文件
 
-<project>/.claude/                     # 项目级对话 (跟随项目)
-├── todos/
+~/.cache/opencode/                     # 缓存（可删除）
+
+<project>/.opencode/                   # 项目级配置（ocd init 创建）
+├── oh-my-opencode.json
+├── agent/
+├── command/
+└── skill/
+
+<project>/.claude/                     # 项目级对话
+├── settings.json
 └── transcripts/
 ```
 
@@ -212,92 +277,69 @@ OCD v4.0 遵循 [XDG Base Directory 规范](https://specifications.freedesktop.o
 
 | 目录 | 内容 | `-r` | `--clean` | 手动 |
 |------|------|:----:|:---------:|:----:|
-| `~/.cache/opencode/` | 缓存 (playwright, ast-grep) | ✅ | - | ✅ |
-| `~/.config/opencode/` | 共享配置 | - | ✅ | ✅ |
+| `~/.cache/opencode/` | 缓存 | ✅ | - | ✅ |
+| `~/.config/opencode/` | 全局配置 | - | ✅ (备份) | ✅ |
 | `~/.local/state/opencode/ipc/` | IPC 状态 | - | ✅ | ✅ |
 | `~/.local/share/opencode/storage/` | 对话历史 | - | - | ✅ |
 | `~/.local/share/opencode/auth.json` | 认证令牌 | - | - | ✅ |
-| `<project>/.claude/` | 项目对话 | - | - | ✅ |
 
-**图例**：✅ = 会删除，- = 不删除
+**图例**：✅ = 会删除/备份，- = 不删除
 
-**命令说明**：
+## 模型配置
 
-- `ocd -r` - 重建镜像，清理缓存
-- `ocd --clean` - 清理共享配置，重新生成
+通过 `models.conf` 配置文件自定义默认模型：
 
-### 神圣不可删除
+```bash
+cp models.conf.example ~/opencode/models.conf
+nano ~/opencode/models.conf
+```
 
-以下目录**不会被任何 ocd 命令自动删除**，只能手动清理：
+```bash
+# ~/opencode/models.conf
 
-- `~/.local/share/opencode/auth.json` - OAuth 认证令牌
-- `~/.config/opencode/{skill,command,agent}/` - 全局自定义组件
+# 主模型 (opencode.json)
+MAIN_MODEL=anthropic/claude-opus-4-5
 
-## 从 v3.x 升级
+# Agent 模型 (oh-my-opencode.json)
+PLANNER_MODEL=anthropic/claude-opus-4-5
+ORACLE_MODEL=openai/gpt-5.2
+DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
+```
+
+> **注意**：修改 `models.conf` 后需运行 `ocd --clean` 重新生成配置。
+
+## 从 v4.x 升级
 
 ### 自动迁移
 
-OCD v4.0 提供了迁移脚本来合并 v3.x 的实例数据：
+OCD v5.0 首次运行时会自动检测 v4.x 配置并迁移：
+
+1. 检测 `~/.config/opencode/opencode.json` 是否存在
+2. 如果是旧格式，备份到 `~/.config/opencode/backup-v4/`
+3. 从模板创建新配置
+4. 显示迁移完成信息
+
+### 手动迁移
+
+如果自动迁移失败，可以手动操作：
 
 ```bash
-# 运行迁移脚本
-~/opencode/scripts/migrate-v4.sh
+# 备份旧配置
+mv ~/.config/opencode ~/.config/opencode-v4-backup
+
+# 重新启动（会创建新配置）
+ocd
 ```
 
-该脚本会将所有 `instances/` 下的配置合并到共享配置，并移动会话数据。
+### v4 → v5 变更
 
-### 路径变更
-
-| 路径描述 | v3.x 路径 | v4.0 路径 |
-|-----------|-----------|-----------|
-| 实例配置 | `~/.config/opencode/instances/<inst>/` | `~/.config/opencode/` (合并) |
-| 会话数据 | `~/.local/share/opencode/instances/<inst>/` | `~/.local/share/opencode/storage/` |
-| IPC 状态 | `~/.local/state/opencode/instances/<inst>/` | `~/.local/state/opencode/ipc/<port>/` |
-| 全局配置 | `~/.config/opencode/global/` | `~/.config/opencode/` |
-
-### 清理 v3.x 残留
-
-确认 v4.0 运行正常后，可以清理旧的实例目录：
-
-```bash
-rm -rf ~/.config/opencode/instances
-rm -rf ~/.local/share/opencode/instances
-rm -rf ~/.local/state/opencode/instances
-```
-
-## 架构
-
-### 模块化设计
-
-OCD 采用模块化架构：
-
-| 模块 | 职责 |
-|------|------|
-| `lib/core.sh` | XDG 路径、版本、日志、环境加载 |
-| `lib/port.sh` | 端口分配、原子锁机制 |
-| `lib/workspace.sh` | 工作区检测、项目识别、白名单验证 |
-| `lib/watcher.sh` | IPC 文件监控（剪贴板/通知/URL） |
-| `lib/config.sh` | 配置文件生成 |
-| `lib/docker.sh` | Docker 构建与运行 |
-
-### CI/CD
-
-项目集成 GitHub Actions 自动化流水线：
-
-```yaml
-jobs:
-  lint:      # ShellCheck 静态分析
-  test:      # Bats 单元测试
-  syntax:    # Bash 语法检查
-  docker:    # Docker 构建验证
-```
-
-本地运行测试：
-
-```bash
-brew install bats-core jq
-bats tests/bats/
-```
+| 方面 | v4 | v5 |
+|------|-----|-----|
+| 配置生成 | 每次启动重新生成 | 首次创建，之后只更新端口 |
+| 用户修改 | 下次启动会丢失 | 永久保留 |
+| 模板位置 | 硬编码在脚本中 | `templates/` 目录 |
+| 项目初始化 | 无 | `ocd init` 命令 |
+| 配置管理 | 无 | `ocd config` 命令 |
 
 ## oh-my-opencode Agent
 
@@ -342,89 +384,6 @@ ultrathink         # 深度思考
 | grep_app | oh-my-opencode | 代码搜索 |
 | playwright | 配置 | 浏览器自动化 |
 
-### MCP 配置
-
-通过 `mcp.json` 配置文件管理 MCP 服务器：
-
-```bash
-cp mcp.json.example ~/opencode/mcp.json
-nano ~/opencode/mcp.json
-```
-
-**配置格式**：
-
-```json
-{
-  "playwright": {
-    "type": "local",
-    "command": ["npx", "@playwright/mcp@${PLAYWRIGHT_MCP_VERSION:-0.0.54}", "--headless"],
-    "enabled": true
-  },
-  "exa": {
-    "type": "local",
-    "command": ["npx", "-y", "exa-mcp-server@${EXA_MCP_VERSION:-3.1.3}"],
-    "timeout": 60000,
-    "enabled": false,
-    "environment": {
-      "EXA_API_KEY": "${EXA_API_KEY}"
-    }
-  }
-}
-```
-
-**变量替换**：
-- `${VAR}` - 从 `.env` 或 `versions.lock` 读取
-- `${VAR:-default}` - 带默认值
-
-**添加新 MCP**：
-
-```json
-{
-  "filesystem": {
-    "type": "local",
-    "command": ["npx", "-y", "@anthropics/mcp-filesystem@latest", "/workspace"],
-    "enabled": true
-  }
-}
-```
-
-> **注意**：修改后需重新生成配置：`ocd --clean && ocd`
-
-## 模型配置
-
-通过 `models.conf` 配置文件自定义默认模型：
-
-```bash
-cp models.conf.example ~/opencode/models.conf
-nano ~/opencode/models.conf
-```
-
-### 配置格式
-
-```bash
-# ~/opencode/models.conf
-
-# 主模型 (opencode.json)
-MAIN_MODEL=anthropic/claude-opus-4-5
-
-# Agent 模型 (oh-my-opencode.json)
-PLANNER_MODEL=anthropic/claude-opus-4-5
-ORACLE_MODEL=openai/gpt-5.2
-DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
-FRONTEND_MODEL=quotio/gemini-3-pro-preview
-MULTIMODAL_MODEL=quotio/gemini-3-flash-preview
-```
-
-### 可用模型
-
-| 前缀 | 来源 | 示例 |
-|------|------|------|
-| `anthropic/` | Anthropic Claude | `anthropic/claude-opus-4-5` |
-| `openai/` | OpenAI GPT | `openai/gpt-5.2` |
-| `quotio/` | Quotio 代理 | `quotio/gemini-3-pro-preview` |
-
-> **注意**：修改后需重新生成配置：`ocd --clean && ocd`（对话历史会保留）
-
 ## 环境变量
 
 ### .env 文件格式
@@ -438,7 +397,6 @@ GITHUB_TOKEN=ghp_xxxx
 export KEY=value      # 不要 export
 KEY="value"           # 不要引号
 KEY=value # comment   # 不要注释
-KEY=$(cmd)            # 不要命令替换
 ```
 
 ### 变量说明
@@ -450,8 +408,6 @@ KEY=$(cmd)            # 不要命令替换
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥 | 否 |
 | `EXA_API_KEY` | Exa AI 密钥 | 否 |
 | `QUOTIO_API_KEY` | Quotio 密钥 | 否 |
-| `QUOTIO_BASE_URL` | Quotio 地址 | 否 |
-| `OCD_WORKSPACE` | 默认工作区根目录 | 否 |
 
 ## macOS 集成
 
@@ -463,27 +419,23 @@ KEY=$(cmd)            # 不要命令替换
 notify "标题" "内容"
 ```
 
-oh-my-opencode 的通知 hook 会自动使用此机制。
-
 ### 剪贴板桥接
 
 容器内的剪贴板操作（如 `/share` 命令）会自动同步到 Mac 剪贴板。
 
-**工作原理**：
-1. 容器内 `xclip` 命令写入 IPC 文件
-2. Mac watcher 检测到变化后执行 `pbcopy`
-
-**延迟**：约 1 秒（轮询模式）或即时（fswatch 模式）
-
 ## 常见问题
 
-### Q: 环境变量没有加载？
+### Q: 配置文件被覆盖了？
 
-确保 `.env` 格式正确：不能有 `export`、引号、注释。
+v5 不会覆盖配置。如果需要重置，使用 `ocd --clean`（会先备份）。
 
-### Q: 多窗口端口冲突？
+### Q: 如何查看当前配置？
 
-OCD 使用锁机制防止冲突。如遇问题：
+```bash
+ocd config
+```
+
+### Q: 端口冲突？
 
 ```bash
 rm ~/.config/opencode/.port.lock
@@ -491,20 +443,16 @@ rm ~/.config/opencode/.port.lock
 
 ### Q: OAuth 认证失败？
 
-1. 运行 `opencode auth login`
-2. 选择对应的认证方式
-3. 浏览器会自动打开
-
-### Q: 想重新看依赖提示？
-
 ```bash
-rm ~/.config/opencode/.deps-hint-shown
-ocd
+opencode auth login
 ```
 
-### Q: TUI 和 WebUI 对话不同步？
+### Q: 如何初始化项目配置？
 
-确保从正确的目录启动。OCD 根据启动目录确定项目，项目级对话存储在 `<project>/.claude/transcripts/`。
+```bash
+cd your-project
+ocd init
+```
 
 ## 依赖要求
 

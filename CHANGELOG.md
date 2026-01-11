@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-01-11
+
+### Added
+- **v5 配置架构**: 配置文件首次创建后由用户所有，OCD 不再覆盖
+  - 每次启动只更新端口号
+  - 用户修改的配置永久保留
+- **模板系统**: `templates/` 目录
+  - `templates/global/` - 全局配置模板
+  - `templates/project/` - 项目配置模板
+  - 支持 `{{VAR}}` 变量替换
+- **新命令**: `ocd init` - 初始化项目级配置
+  - 创建 `.opencode/` 目录结构
+  - 创建 `.claude/` 目录结构
+  - 复制示例配置文件
+- **新命令**: `ocd config` - 配置管理
+  - `ocd config` - 显示配置路径和状态
+  - `ocd config edit` - 用编辑器打开配置
+- **v4 自动迁移**: `lib/migrate.sh`
+  - 首次运行检测旧配置
+  - 自动备份到 `backup-v4/`
+  - 从模板创建新配置
+- **欢迎信息**: 首次运行显示配置说明
+- **devocd 配置隔离**: 使用 `~/.config/opencode-dev/` 独立配置目录
+
+### Changed
+- **`--clean` 行为变更**: 现在会先备份再重建（不会丢失用户配置）
+- **配置生成逻辑**: 从脚本硬编码改为模板文件
+- **lib/config.sh**: 完全重写，实现 v5 配置管理
+  - `ocd_ensure_global_config()` - 首次创建
+  - `ocd_update_port()` - 端口更新
+  - `ocd_reset_global_config()` - 重置（带备份）
+  - `ocd_init_project()` - 项目初始化
+- **versions.lock**: 简化，只保留核心依赖版本
+
+### Removed
+- 每次启动重新生成配置的行为
+- `mcp.json` 独立配置文件（合并到 opencode.json）
+
+## [4.0.0] - 2026-01-10
+
+### Changed
+- **统一配置**: 合并所有实例配置到单一共享配置
+  - `~/.config/opencode/opencode.json` - 主配置
+  - `~/.config/opencode/oh-my-opencode.json` - 插件配置
+- **会话存储**: 按 Git SHA 存储会话
+  - `~/.local/share/opencode/storage/session/<git-sha>/`
+
+### Added
+- **多窗口 IPC 隔离**: 按端口隔离 IPC 文件
+  - `~/.local/state/opencode/ipc/<port>/`
+- **Docker 挂载 ~/.claude**: 如果存在则挂载 Claude 配置目录
+
 ## [3.0.0] - 2026-01-09
 
 ### Changed

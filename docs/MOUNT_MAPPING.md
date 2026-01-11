@@ -1,22 +1,21 @@
-# OCD 挂载映射参考 (v4.0)
+# OCD 挂载映射参考 (v5.0)
 
 Mac 与 Docker 容器之间的目录映射关系。
 
 ---
 
-## 核心挂载 (v4.0 简化架构)
-
-v4.0 移除了 instance 概念，所有配置和数据共享：
+## 核心挂载
 
 | Mac | Docker | 说明 |
 |-----|--------|------|
 | `<workspace>/` | `/workspace/` | 工作区（双向同步） |
-| `~/.config/opencode/` | `/root/.config/opencode/` | 共享配置 |
-| `~/.local/share/opencode/` | `/root/.local/share/opencode/` | 共享数据（会话按 git SHA 存储） |
+| `~/.config/opencode/` | `/root/.config/opencode/` | 全局配置（用户所有） |
+| `~/.local/share/opencode/` | `/root/.local/share/opencode/` | 数据（会话按 git SHA 存储） |
 | `~/.local/state/opencode/` | `/root/.local/state/opencode/` | 状态 |
 | `~/.cache/opencode/` | `/root/.cache/opencode/` | OpenCode 缓存 |
 | `~/.cache/oh-my-opencode/` | `/root/.cache/oh-my-opencode/` | 插件缓存 |
 | `~/.ssh/` | `/root/.ssh/:ro` | SSH 密钥（只读） |
+| `~/.claude/` | `/root/.claude/` | Claude 配置（如存在） |
 
 ---
 
@@ -48,6 +47,12 @@ IPC 目录内容：
 | `<project>/.claude/` | `/root/.claude/` |
 | `<project>/.claude/todos/` | `/root/.claude/todos/` |
 | `<project>/.claude/transcripts/` | `/root/.claude/transcripts/` |
+
+### 项目 OpenCode 配置（v5 新增）
+
+| Mac | Docker | 说明 |
+|-----|--------|------|
+| `<project>/.opencode/` | `/root/.opencode-project/` | 项目级配置 |
 
 ### 项目配置（条件覆盖）
 
@@ -107,10 +112,31 @@ IPC 目录内容：
 
 ---
 
-## v3.x → v4.0 路径变更
+## v5 配置特性
 
-| 说明 | v3.x 路径 | v4.0 路径 |
-|------|-----------|-----------|
-| 配置 | `~/.config/opencode/instances/<inst>/` | `~/.config/opencode/` |
-| 会话 | `~/.local/share/opencode/instances/<inst>/` | `~/.local/share/opencode/storage/` |
-| IPC | `~/.local/state/opencode/instances/<inst>/` | `~/.local/state/opencode/ipc/<port>/` |
+### 配置不会被覆盖
+
+v5 中，`~/.config/opencode/` 下的配置文件首次创建后由用户管理：
+
+| 文件 | 首次创建 | 每次启动 |
+|------|----------|----------|
+| `opencode.json` | 从模板创建 | 只更新端口 |
+| `oh-my-opencode.json` | 从模板复制 | 不修改 |
+
+### devocd 隔离
+
+开发模式使用独立配置目录：
+
+| 模式 | 配置目录 |
+|------|----------|
+| `ocd` | `~/.config/opencode/` |
+| `devocd` | `~/.config/opencode-dev/` |
+
+---
+
+## 版本路径变更
+
+| 说明 | v4 路径 | v5 路径 |
+|------|---------|---------|
+| 项目配置 | - | `<project>/.opencode/` (ocd init 创建) |
+| 开发配置 | 共用生产配置 | `~/.config/opencode-dev/` (隔离) |
