@@ -129,10 +129,9 @@ ocd_start_watcher() {
       done
     fi
   ) &
-  local pid=$!
-  set +m  # 恢复默认（禁用 job control）
+  _OCD_WATCHER_PID=$!
+  set +m
 
-  echo "$pid"
 }
 
 # =========================================
