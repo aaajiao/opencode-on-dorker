@@ -99,19 +99,19 @@ teardown() {
 # ocd_start_watcher 测试
 # =========================================
 
-@test "ocd_start_watcher returns a PID" {
+@test "ocd_start_watcher sets _OCD_WATCHER_PID" {
   skip_if_no_fswatch
 
-  pid=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
+  ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE"
 
-  # 应返回有效 PID
-  [[ "$pid" =~ ^[0-9]+$ ]]
+  # 应设置有效 PID
+  [[ "$_OCD_WATCHER_PID" =~ ^[0-9]+$ ]]
 
   # 进程应存在
-  kill -0 "$pid" 2>/dev/null
+  kill -0 "$_OCD_WATCHER_PID" 2>/dev/null
 
   # 清理
-  kill "$pid" 2>/dev/null || true
+  kill "$_OCD_WATCHER_PID" 2>/dev/null || true
 }
 
 @test "watcher responds to file changes" {
@@ -120,7 +120,7 @@ teardown() {
   open() { echo "OPENED: $1" >> "$TEST_DIR/opened.log"; }
   export -f open
 
-  pid=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
+  ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE"
   sleep 0.5  # 等待 watcher 启动
 
   echo "https://test.com" > "$TEST_URL_FILE"
@@ -129,7 +129,7 @@ teardown() {
   # 应该有打开记录
   [ -f "$TEST_DIR/opened.log" ]
 
-  kill "$pid" 2>/dev/null || true
+  kill "$_OCD_WATCHER_PID" 2>/dev/null || true
 }
 
 # =========================================
@@ -140,8 +140,10 @@ teardown() {
   skip_if_no_fswatch
 
   # 启动多个 watcher
-  pid1=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
-  pid2=$(ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE")
+  ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE"
+  local pid1=$_OCD_WATCHER_PID
+  ocd_start_watcher "$TEST_URL_FILE" "$TEST_NOTIFY_FILE" "$TEST_CLIPBOARD_FILE"
+  local pid2=$_OCD_WATCHER_PID
 
   sleep 0.5
 
