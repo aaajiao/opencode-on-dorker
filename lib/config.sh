@@ -87,6 +87,47 @@ ocd_ensure_global_config() {
     fi
   fi
   
+  # 复制全局 agent/skill/command 模板（首次创建，不覆盖已有文件）
+  local template_opencode="$ocd_root/templates/global/opencode"
+  if [[ -d "$template_opencode" ]]; then
+    local src dest
+    # 复制 agent
+    if [[ -d "$template_opencode/agent" ]]; then
+      for src in "$template_opencode/agent"/*.md; do
+        [[ -f "$src" ]] || continue
+        dest="$config_dir/agent/$(basename "$src")"
+        if [[ ! -f "$dest" ]]; then
+          cp "$src" "$dest"
+          ocd_info "已创建 $dest"
+        fi
+      done
+    fi
+    # 复制 skill（支持子目录）
+    if [[ -d "$template_opencode/skill" ]]; then
+      local skill_dir
+      for skill_dir in "$template_opencode/skill"/*/; do
+        [[ -d "$skill_dir" ]] || continue
+        local skill_name
+        skill_name=$(basename "$skill_dir")
+        if [[ ! -d "$config_dir/skill/$skill_name" ]]; then
+          cp -r "$skill_dir" "$config_dir/skill/"
+          ocd_info "已创建 $config_dir/skill/$skill_name"
+        fi
+      done
+    fi
+    # 复制 command
+    if [[ -d "$template_opencode/command" ]]; then
+      for src in "$template_opencode/command"/*.md; do
+        [[ -f "$src" ]] || continue
+        dest="$config_dir/command/$(basename "$src")"
+        if [[ ! -f "$dest" ]]; then
+          cp "$src" "$dest"
+          ocd_info "已创建 $dest"
+        fi
+      done
+    fi
+  fi
+  
   return 0
 }
 
