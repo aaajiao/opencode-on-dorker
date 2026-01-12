@@ -1,29 +1,80 @@
 #!/usr/bin/env bash
 # lib/watcher.sh - IPC 文件监听器（容器与 macOS 通信）
 
+# 防抖状态目录
+_OCD_STATE_DIR="/tmp/.ocd_ipc_state"
+
 # =========================================
-# 处理 URL 打开
+# 处理 URL 打开（带防抖）
 # =========================================
 ocd_handle_url() {
   local url_file="$1"
+  local state_file="${_OCD_STATE_DIR}/url_state"
+  
   [[ ! -s "$url_file" ]] && return
 
-  # 读取第一行 URL 并打开
+  # 原子消费：先读取再立即清空，防止竞态
   local url
-  read -r url < "$url_file"
-  [[ -n "$url" ]] && open "$url"
-
+  url=$(cat "$url_file" 2>/dev/null)
   : > "$url_file"
+  
+  # 清理 URL（取第一行，去除空白）
+  url=$(echo "$url" | head -1 | tr -d '\r\n' | xargs)
+  [[ -z "$url" ]] && return
+
+  # 确保状态目录存在
+  mkdir -p "$_OCD_STATE_DIR" 2>/dev/null
+
+  # 防抖：3秒内相同 URL 不重复打开
+  local last_time=0 last_url="" now
+  now=$(date +%s)
+  
+  if [[ -f "$state_file" ]]; then
+    read -r last_time last_url < "$state_file" 2>/dev/null || true
+  fi
+  
+  if [[ "$url" == "$last_url" ]] && (( now - last_time < 3 )); then
+    return  # 3秒内相同 URL，跳过
+  fi
+  
+  # 记录状态并打开
+  echo "$now $url" > "$state_file"
+  open "$url"
 }
 
 # =========================================
-# 处理通知
+# 处理通知（带防抖）
 # =========================================
 ocd_handle_notify() {
   local notify_file="$1"
+  local state_file="${_OCD_STATE_DIR}/notify_state"
   local icon_file="$HOME/opencode/ghostty-128.png"
 
   [[ ! -s "$notify_file" ]] && return
+
+  # 原子消费：先读取再立即清空
+  local content
+  content=$(cat "$notify_file" 2>/dev/null)
+  : > "$notify_file"
+  
+  [[ -z "$content" ]] && return
+
+  mkdir -p "$_OCD_STATE_DIR" 2>/dev/null
+
+  # 防抖：3秒内相同内容不重复通知（使用 md5 哈希比较）
+  local content_hash last_hash="" last_time=0 now
+  content_hash=$(echo "$content" | md5 2>/dev/null || echo "$content" | md5sum 2>/dev/null | cut -d' ' -f1)
+  now=$(date +%s)
+  
+  if [[ -f "$state_file" ]]; then
+    read -r last_time last_hash < "$state_file" 2>/dev/null || true
+  fi
+  
+  if [[ "$content_hash" == "$last_hash" ]] && (( now - last_time < 3 )); then
+    return
+  fi
+  
+  echo "$now $content_hash" > "$state_file"
 
   while IFS='|' read -r title msg; do
     if [[ -n "$msg" ]]; then
@@ -33,8 +84,7 @@ ocd_handle_notify() {
         osascript -e "display notification \"$msg\" with title \"$title\"" 2>/dev/null || true
       fi
     fi
-  done < "$notify_file"
-  : > "$notify_file"
+  done <<< "$content"
 }
 
 # =========================================
