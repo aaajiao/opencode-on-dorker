@@ -76,6 +76,11 @@ _OCD_CAFFEINATE_PID=""
 _OCD_URL_FILE=""
 
 _ocd_cleanup() {
+  local ipc_dir=""
+  if [[ -n "$_OCD_URL_FILE" ]]; then
+    ipc_dir=$(dirname "$_OCD_URL_FILE")
+  fi
+
   if [[ -n "$_OCD_WATCHER_PID" ]]; then
     kill -TERM -- -"$_OCD_WATCHER_PID" 2>/dev/null
     kill -TERM "$_OCD_WATCHER_PID" 2>/dev/null
@@ -84,10 +89,11 @@ _ocd_cleanup() {
     kill -KILL "$_OCD_WATCHER_PID" 2>/dev/null
     _OCD_WATCHER_PID=""
   fi
+
+  [[ -n "$ipc_dir" ]] && pkill -f "fswatch.*${ipc_dir}" 2>/dev/null || true
+
   if [[ -n "$_OCD_URL_FILE" && -f "$_OCD_URL_FILE" ]]; then
     : > "$_OCD_URL_FILE"
-    local ipc_dir
-    ipc_dir=$(dirname "$_OCD_URL_FILE")
     rm -f "${ipc_dir}/.watcher.pid" 2>/dev/null
   fi
   if [[ -n "$_OCD_CAFFEINATE_PID" ]]; then
@@ -285,11 +291,15 @@ EOF
   if [[ -f "$WATCHER_PID_FILE" ]]; then
     local old_pid
     old_pid=$(cat "$WATCHER_PID_FILE" 2>/dev/null)
-    [[ -n "$old_pid" ]] && kill "$old_pid" 2>/dev/null || true
+    if [[ -n "$old_pid" ]]; then
+      kill -TERM -- -"$old_pid" 2>/dev/null || true
+      kill -TERM "$old_pid" 2>/dev/null || true
+    fi
     rm -f "$WATCHER_PID_FILE"
   fi
+  pkill -f "fswatch.*${IPC_DIR}" 2>/dev/null || true
 
-  _OCD_WATCHER_PID=$(ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE")
+  ocd_start_watcher "$URL_FILE" "$NOTIFY_FILE" "$CLIPBOARD_FILE"
   echo "$_OCD_WATCHER_PID" > "$WATCHER_PID_FILE"
 
   local TS_HOSTNAME=""
