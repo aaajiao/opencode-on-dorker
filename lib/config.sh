@@ -12,6 +12,8 @@
 MAIN_MODEL="${MAIN_MODEL:-}"
 PLANNER_MODEL="${PLANNER_MODEL:-}"
 ORACLE_MODEL="${ORACLE_MODEL:-}"
+LIBRARIAN_MODEL="${LIBRARIAN_MODEL:-}"
+EXPLORE_MODEL="${EXPLORE_MODEL:-}"
 DOCUMENT_WRITER_MODEL="${DOCUMENT_WRITER_MODEL:-}"
 FRONTEND_MODEL="${FRONTEND_MODEL:-}"
 MULTIMODAL_MODEL="${MULTIMODAL_MODEL:-}"
@@ -179,6 +181,8 @@ ocd_update_omo_agents() {
   # 条件更新 agents
   [[ -n "$PLANNER_MODEL" ]] && jq_cmd+="| .agents.\"Sisyphus\".model = \"$PLANNER_MODEL\" "
   [[ -n "$ORACLE_MODEL" ]] && jq_cmd+="| .agents.oracle.model = \"$ORACLE_MODEL\" "
+  [[ -n "$LIBRARIAN_MODEL" ]] && jq_cmd+="| .agents.librarian.model = \"$LIBRARIAN_MODEL\" "
+  [[ -n "$EXPLORE_MODEL" ]] && jq_cmd+="| .agents.explore.model = \"$EXPLORE_MODEL\" "
   [[ -n "$DOCUMENT_WRITER_MODEL" ]] && jq_cmd+="| .agents.\"document-writer\".model = \"$DOCUMENT_WRITER_MODEL\" "
   [[ -n "$FRONTEND_MODEL" ]] && jq_cmd+="| .agents.\"frontend-ui-ux-engineer\".model = \"$FRONTEND_MODEL\" "
   [[ -n "$MULTIMODAL_MODEL" ]] && jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
