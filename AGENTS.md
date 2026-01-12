@@ -174,13 +174,13 @@ All checks must pass before merging.
 
 ## Task Completion Notification
 
-完成以下操作后，**必须**执行 `notify "标题" "结果"` 发送 macOS 桌面通知：
+After completing the following operations, **MUST** run `notify "title" "result"` to send macOS desktop notification:
 
-| 触发场景 | 示例 |
-|----------|------|
-| Subagent 任务返回 | `notify "Oracle 分析完成" "架构建议已生成"` |
-| `git push` 完成 | `notify "Git Push 完成 ✅" "3 commits → origin/main"` |
-| 长时间命令 (>30s) 完成 | `notify "构建完成 ✅" "Docker 镜像构建成功"` |
-| 用户明确说"完成后提醒我" | 按用户要求通知 |
+| Trigger | Example |
+|---------|---------|
+| Subagent task returns | `notify "Oracle Analysis Done" "Architecture suggestions ready"` |
+| `git push` completes | `notify "Git Push Done ✅" "3 commits → origin/main"` |
+| Long-running command (>30s) completes | `notify "Build Done ✅" "Docker image built successfully"` |
+| User explicitly says "remind me when done" | Notify as requested |
 
-**不需要通知**：普通文件读写、简单问答、快速命令执行。
+**No notification needed**: Normal file read/write, simple Q&A, quick command execution.
