@@ -188,3 +188,56 @@ teardown() {
 
   [ ! -f "$dst" ]
 }
+
+# =========================================
+# .example file tests (v5.1)
+# =========================================
+
+@test "ocd_init_project creates .example reference files" {
+  local project="$TEST_DIR/myproject"
+  mkdir -p "$project"
+  cd "$project"
+  git init --quiet
+
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+  echo "{}" > "$OCD_ROOT/templates/project/opencode.json.example"
+  echo "{}" > "$OCD_ROOT/templates/project/.mcp.json.example.claude"
+  echo "{}" > "$OCD_ROOT/templates/project/.opencode/oh-my-opencode.json.example"
+  echo "{}" > "$OCD_ROOT/templates/project/.claude/settings.json.example"
+
+  ocd_init_project "full"
+
+  [ -f "$project/opencode.json.example" ]
+  [ -f "$project/.mcp.json.example.claude" ]
+  [ -f "$project/.opencode/oh-my-opencode.json.example" ]
+  [ -f "$project/.claude/settings.json.example" ]
+}
+
+@test "ocd_init_project does not create actual config files" {
+  local project="$TEST_DIR/myproject"
+  mkdir -p "$project"
+  cd "$project"
+  git init --quiet
+
+  echo "# Test" > "$OCD_ROOT/templates/project/AGENTS.md.example"
+  echo "{}" > "$OCD_ROOT/templates/project/opencode.json.example"
+  echo "{}" > "$OCD_ROOT/templates/project/.opencode/oh-my-opencode.json.example"
+
+  ocd_init_project "full"
+
+  [ ! -f "$project/opencode.json" ]
+  [ ! -f "$project/.opencode/oh-my-opencode.json" ]
+  [ ! -f "$project/.claude/settings.json" ]
+}
+
+@test "_ocd_copy_example always overwrites existing file" {
+  local src="$TEST_DIR/source.txt"
+  local dst="$TEST_DIR/dest.txt"
+
+  echo "new content" > "$src"
+  echo "old content" > "$dst"
+
+  run _ocd_copy_example "$src" "$dst"
+
+  [ "$(cat "$dst")" = "new content" ]
+}
