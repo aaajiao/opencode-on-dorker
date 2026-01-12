@@ -12,6 +12,35 @@ Guidelines for AI agents working on this repository.
 
 **v5 Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup.
 
+## WHERE TO LOOK
+
+| Task | Location | Notes |
+|------|----------|-------|
+| Add CLI option | `bin/ocd` | Parse in `while` loop, add to help |
+| Add shell function | `lib/*.sh` | Match module (config/docker/port/etc) |
+| Fix Docker build | `Dockerfile` | Chinese comments: `# 第N步` |
+| Update dependency | `versions.lock` | Then `ocd -r` to rebuild |
+| Add MCP server | `templates/global/opencode.json.tmpl` | Use `{{VAR}}` for version |
+| Add test | `tests/bats/*.bats` | Match module name |
+| Debug container | `lib/docker.sh` → `ocd_run_container` | Check mount args |
+| Debug workspace | `lib/workspace.sh` | `ocd_find_workspace_root` |
+| Debug port | `lib/port.sh` | `ocd_find_free_port` |
+| Debug config | `lib/config.sh` | `ocd_ensure_global_config` |
+
+## CODE MAP
+
+| Module | Lines | Key Functions | Purpose |
+|--------|-------|---------------|---------|
+| `lib/config.sh` | 430 | `ocd_ensure_global_config`, `ocd_update_port`, `ocd_init_project` | v5 config management |
+| `lib/scan.sh` | 336 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
+| `bin/ocd` | 329 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
+| `lib/core.sh` | 159 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |
+| `lib/docker.sh` | 149 | `ocd_build_image`, `ocd_run_container` | Docker operations |
+| `lib/workspace.sh` | 127 | `ocd_find_workspace_root`, `ocd_find_project_dir` | Workspace detection |
+| `lib/watcher.sh` | 92 | `ocd_start_watcher`, `ocd_handle_*` | IPC file monitoring |
+| `lib/migrate.sh` | 88 | `ocd_check_migration` | v4→v5 migration |
+| `lib/port.sh` | 69 | `ocd_find_free_port` | Port allocation with locking |
+
 ## Build & Test Commands
 
 ```bash
