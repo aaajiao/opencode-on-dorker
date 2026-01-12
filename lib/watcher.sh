@@ -99,12 +99,16 @@ ocd_handle_clipboard() {
 
 # =========================================
 # 启动 Watcher（自动选择 fswatch 或轮询）
+# 使用 job control 确保子进程成为独立进程组，便于清理
 # =========================================
 ocd_start_watcher() {
   local url_file="$1"
   local notify_file="$2"
   local clipboard_file="$3"
 
+  # 启用 job control，让后台任务成为独立进程组 leader
+  # 这样 kill -- -$PID 才能正确杀死整个进程组（包括 fswatch）
+  set -m
   (
     exec </dev/null >/dev/null 2>&1
     if command -v fswatch &>/dev/null; then
@@ -125,8 +129,10 @@ ocd_start_watcher() {
       done
     fi
   ) &
+  local pid=$!
+  set +m  # 恢复默认（禁用 job control）
 
-  echo "$!"
+  echo "$pid"
 }
 
 # =========================================
