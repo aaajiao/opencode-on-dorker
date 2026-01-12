@@ -263,8 +263,10 @@ ocd_reset_global_config() {
 # =========================================
 # 初始化项目配置 (ocd init)
 # =========================================
+# v5.1: 创建 .example 参考文件，让项目继承全局配置
+# 用户需要项目级覆盖时，复制 .example 为实际配置文件
 ocd_init_project() {
-  local mode="${1:-full}"
+  local mode="${1:-}"
   local project_dir="$PWD"
   local ocd_root="${OCD_ROOT:-$HOME/opencode}"
   local template_dir="$ocd_root/templates/project"
@@ -289,33 +291,36 @@ ocd_init_project() {
     echo ""
   fi
   
-  # 2. 创建配置文件
   echo "创建配置文件："
   echo ""
   
-  # AGENTS.md（始终创建）
+  # AGENTS.md（实际文件，项目必需）
   _ocd_copy_if_not_exists "$template_dir/AGENTS.md.example" \
                          "$project_dir/AGENTS.md"
   
   if [[ "$mode" != "--minimal" ]]; then
-    # OpenCode 配置
-    _ocd_copy_if_not_exists "$template_dir/opencode.json.example" \
-                           "$project_dir/opencode.json"
-    
-    # 注意：不自动创建 .mcp.json，用户需要时可参考 .mcp.json.example 手动创建
-    
-    # .opencode/ 目录
+    # 创建目录结构
     mkdir -p "$project_dir/.opencode"/{agent,command,skill,plugin}
-    _ocd_copy_if_not_exists "$template_dir/.opencode/oh-my-opencode.json.example" \
-                           "$project_dir/.opencode/oh-my-opencode.json"
-    
-    # .claude/ 目录 (v5: 只创建 commands/skills/agents/rules，不创建 todos/transcripts)
     mkdir -p "$project_dir/.claude"/{commands,skills,agents,rules}
-    _ocd_copy_if_not_exists "$template_dir/.claude/settings.json.example" \
-                           "$project_dir/.claude/settings.json"
+    # 创建 .example 参考文件（总是更新，作为最新模板参考）
+    # OpenCode 配置参考
+    _ocd_copy_example "$template_dir/opencode.json.example" \
+                      "$project_dir/opencode.json.example"
+    
+    # Claude Code MCP 配置参考（根目录，加 .claude 后缀更明显）
+    _ocd_copy_example "$template_dir/.mcp.json.example.claude" \
+                      "$project_dir/.mcp.json.example.claude"
+    
+    # oh-my-opencode 配置参考
+    _ocd_copy_example "$template_dir/.opencode/oh-my-opencode.json.example" \
+                      "$project_dir/.opencode/oh-my-opencode.json.example"
+    
+    # Claude Code 设置参考
+    _ocd_copy_example "$template_dir/.claude/settings.json.example" \
+                      "$project_dir/.claude/settings.json.example"
   fi
   
-  # 3. 更新 .gitignore
+  # 4. 更新 .gitignore
   if [[ -d "$project_dir/.git" ]]; then
     local gitignore="$project_dir/.gitignore"
     local patterns=(
@@ -331,18 +336,26 @@ ocd_init_project() {
     done
   fi
   
-  # 4. 完成提示
+  # 5. 完成提示
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "  ✅ 初始化完成"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
+  echo "  💡 配置继承："
+  echo "     项目自动继承全局配置 (~/.config/opencode/)"
+  echo ""
+  echo "  🔧 需要项目级覆盖时："
+  echo "     cp opencode.json.example opencode.json"
+  echo "     cp .opencode/oh-my-opencode.json.example .opencode/oh-my-opencode.json"
+  echo "     # 只需填写要覆盖的字段（会与全局配置合并）"
+  echo ""
   echo "  下一步："
-  echo "  1. 编辑 AGENTS.md 描述你的项目"
-  echo "  2. 或在 OpenCode 内运行 /init 自动生成"
+  echo "     1. 编辑 AGENTS.md 描述你的项目"
+  echo "     2. 或在 OpenCode 内运行 /init 自动生成"
   echo ""
   echo "  启动 OpenCode："
-  echo "    ocd"
+  echo "     ocd"
   echo ""
 }
 
@@ -362,6 +375,21 @@ _ocd_copy_if_not_exists() {
     fi
   else
     echo "  ⏭️  已存在: $dst"
+  fi
+}
+
+# =========================================
+# 辅助函数：复制 .example 参考文件（总是更新）
+# =========================================
+_ocd_copy_example() {
+  local src="$1"
+  local dst="$2"
+  
+  if [[ -f "$src" ]]; then
+    cp "$src" "$dst"
+    echo "  📋 参考: $dst"
+  else
+    echo "  ⚠️  模板不存在: $src"
   fi
 }
 
