@@ -17,6 +17,7 @@ ocd_build_image() {
   local v_matplotlib="${PIP_MATPLOTLIB:-3.10.0}"
   local v_bs4="${PIP_BEAUTIFULSOUP4:-4.12.3}"
   local v_pillow="${PIP_PILLOW:-11.1.0}"
+  local v_notebooklm="${PIP_NOTEBOOKLM_PY:-0.1.4}"
   local v_opencode="${OPENCODE_AI_VERSION:-1.1.6}"
 
   local build_args=(
@@ -27,6 +28,7 @@ ocd_build_image() {
     --build-arg "PIP_MATPLOTLIB=${v_matplotlib}"
     --build-arg "PIP_BEAUTIFULSOUP4=${v_bs4}"
     --build-arg "PIP_PILLOW=${v_pillow}"
+    --build-arg "PIP_NOTEBOOKLM_PY=${v_notebooklm}"
     --build-arg "OPENCODE_AI_VERSION=${v_opencode}"
   )
 
