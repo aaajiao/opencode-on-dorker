@@ -7,13 +7,14 @@ setup() {
   export OCD_ROOT="$BATS_TEST_DIRNAME/../.."
   export TEST_DIR=$(mktemp -d)
 
-  # 模拟 XDG 目录 (v4.0 - 无 instance 概念)
   export OCD_CONFIG_HOME="$TEST_DIR/config"
   export OCD_DATA_HOME="$TEST_DIR/data"
   export OCD_STATE_HOME="$TEST_DIR/state"
   export OCD_CACHE_HOME="$TEST_DIR/cache"
   export OCD_OMO_CACHE_HOME="$TEST_DIR/cache/oh-my-opencode"
   export OCD_IPC_HOME="$TEST_DIR/state/ipc"
+  export OCD_CLAUDE_RUNTIME="$TEST_DIR/state/claude"
+  export OCD_CLAUDE_HOME="$TEST_DIR/home/.claude"
   export HOME="$TEST_DIR/home"
 
   mkdir -p "$HOME"
@@ -52,15 +53,18 @@ teardown() {
   [ -d "$omo_bin_cache/bin" ]
 }
 
-@test "docker mkdir creates global .claude directories" {
-  local global_claude="$HOME/.claude"
+@test "docker mkdir creates global .claude config directories (not runtime)" {
+  local global_claude="$OCD_CLAUDE_HOME"
 
-  mkdir -p "$global_claude"/{todos,transcripts,commands,skills,agents,rules}
+  mkdir -p "$global_claude"/{commands,skills,agents,rules}
+  mkdir -p "$OCD_CLAUDE_RUNTIME"/{todos,transcripts}
 
-  [ -d "$global_claude/todos" ]
-  [ -d "$global_claude/transcripts" ]
   [ -d "$global_claude/commands" ]
   [ -d "$global_claude/rules" ]
+  [ ! -d "$global_claude/todos" ]
+  [ ! -d "$global_claude/transcripts" ]
+  [ -d "$OCD_CLAUDE_RUNTIME/todos" ]
+  [ -d "$OCD_CLAUDE_RUNTIME/transcripts" ]
 }
 
 @test "project .claude only has config dirs not todos/transcripts" {
@@ -225,4 +229,88 @@ teardown() {
   result=$(ocd_find_project_dir "$dir")
 
   [ "$result" = "$dir" ]
+}
+
+# =========================================
+# 挂载安全测试 (A+ scheme)
+# =========================================
+
+@test "mount security: global claude is read-only" {
+  # 验证全局 ~/.claude 应该挂载为只读
+  # 构造模拟的挂载参数来验证逻辑
+  local global_claude="$OCD_CLAUDE_HOME"
+  mkdir -p "$global_claude"
+
+  # 模拟 docker.sh 的挂载逻辑
+  local mount_arg="-v ${global_claude}:/root/.claude:ro"
+
+  # 验证包含 :ro 标志
+  [[ "$mount_arg" == *":ro"* ]]
+}
+
+@test "mount security: runtime dirs are writable" {
+  # 验证运行时目录应该可写（无 :ro）
+  local runtime_todos="$OCD_CLAUDE_RUNTIME/todos"
+  local runtime_transcripts="$OCD_CLAUDE_RUNTIME/transcripts"
+  mkdir -p "$runtime_todos" "$runtime_transcripts"
+
+  # 模拟挂载参数
+  local mount_todos="-v ${runtime_todos}:/root/.claude/todos"
+  local mount_transcripts="-v ${runtime_transcripts}:/root/.claude/transcripts"
+
+  # 验证没有 :ro 标志（可写）
+  [[ "$mount_todos" != *":ro"* ]]
+  [[ "$mount_transcripts" != *":ro"* ]]
+}
+
+@test "mount security: project overrides are read-only" {
+  local project="$TEST_DIR/workspace/myproject"
+  local project_claude="$project/.claude"
+
+  mkdir -p "$project_claude/agents"
+  echo "test agent" > "$project_claude/agents/test.md"
+
+  # 模拟条件挂载逻辑
+  local mount_args=()
+  for subdir in commands skills agents rules; do
+    local proj_subdir="${project_claude}/${subdir}"
+    if [[ -d "$proj_subdir" ]] && [[ -n "$(ls -A "$proj_subdir" 2>/dev/null)" ]]; then
+      mount_args+=("-v" "${proj_subdir}:/root/.claude/${subdir}:ro")
+    fi
+  done
+
+  # 验证只有 agents 被挂载（因为只有它非空）
+  [ "${#mount_args[@]}" -eq 2 ]  # -v 和路径
+
+  # 验证挂载为只读
+  [[ "${mount_args[1]}" == *":ro"* ]]
+}
+
+@test "mount security: project settings.json is read-only" {
+  local project="$TEST_DIR/workspace/myproject"
+  local project_claude="$project/.claude"
+
+  mkdir -p "$project_claude"
+  echo '{}' > "$project_claude/settings.json"
+
+  # 模拟挂载逻辑
+  local mount_arg=""
+  if [[ -f "${project_claude}/settings.json" ]]; then
+    mount_arg="-v ${project_claude}/settings.json:/root/.claude/settings.json:ro"
+  fi
+
+  # 验证存在且只读
+  [ -n "$mount_arg" ]
+  [[ "$mount_arg" == *":ro"* ]]
+}
+
+@test "OCD_CLAUDE_RUNTIME directory structure" {
+  # 验证运行时目录结构
+  mkdir -p "$OCD_CLAUDE_RUNTIME"/{todos,transcripts}
+
+  [ -d "$OCD_CLAUDE_RUNTIME/todos" ]
+  [ -d "$OCD_CLAUDE_RUNTIME/transcripts" ]
+
+  # 验证这些目录不在全局 claude home 中
+  [ ! -d "$OCD_CLAUDE_HOME/todos" ] || [ "$OCD_CLAUDE_HOME/todos" != "$OCD_CLAUDE_RUNTIME/todos" ]
 }

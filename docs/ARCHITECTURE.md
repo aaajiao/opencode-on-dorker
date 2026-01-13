@@ -62,13 +62,15 @@ OCD (OpenCode Docker) 文件结构与 Mac/Docker 映射关系。
 ~/.cache/oh-my-opencode/           # 插件缓存
 └── bin/                           # ast-grep, ripgrep 等
 
-~/.claude/                         # Claude 兼容层 (全局)
-├── todos/                         # 全局 todos
-├── transcripts/                   # 全局 transcripts
+~/.claude/                         # Claude 兼容层 (全局配置，只读挂载)
 ├── commands/                      # 用户 commands
 ├── skills/                        # 用户 skills
 ├── agents/                        # 用户 agents
 └── rules/                         # 用户 rules
+
+~/.local/state/opencode/claude/   # Claude 运行时数据 (可写)
+├── todos/                         # 会话 todos
+└── transcripts/                   # 会话 transcripts
 ```
 
 ---
@@ -93,25 +95,34 @@ OCD (OpenCode Docker) 文件结构与 Mac/Docker 映射关系。
 |-----|--------|------|
 | `~/.local/state/opencode/ipc/<port>/` | `/root/.opencode/` | IPC 桥接文件 |
 
-### Claude 兼容层
+### Claude 兼容层 (A+ 安全挂载方案)
 
-**全局存储 (基础层)**:
+> **安全设计**: 全局 `~/.claude/` 以只读挂载，防止容器内 prompt injection 修改 Mac 上的 Claude 配置。
+> 运行时数据 (todos/transcripts) 使用独立的可写目录。
 
-| Mac | Docker |
-|-----|--------|
-| `~/.claude/` | `/root/.claude/` |
-| `~/.claude/todos/` | `/root/.claude/todos/` |
-| `~/.claude/transcripts/` | `/root/.claude/transcripts/` |
+**基础层 (只读)**:
 
-**项目覆盖 (条件挂载)** - 仅当目录存在且非空时:
-
-| Mac | Docker | 条件 |
+| Mac | Docker | 权限 |
 |-----|--------|------|
-| `<project>/.claude/commands/` | `/root/.claude/commands/` | 非空时覆盖 |
-| `<project>/.claude/skills/` | `/root/.claude/skills/` | 非空时覆盖 |
-| `<project>/.claude/agents/` | `/root/.claude/agents/` | 非空时覆盖 |
-| `<project>/.claude/rules/` | `/root/.claude/rules/` | 非空时覆盖 |
-| `<project>/.claude/settings.json` | `/root/.claude/settings.json` | 存在时 (只读) |
+| `~/.claude/` | `/root/.claude/` | **:ro** |
+
+**运行时数据 (可写)**:
+
+| Mac | Docker | 说明 |
+|-----|--------|------|
+| `~/.local/state/opencode/claude/todos/` | `/root/.claude/todos/` | 会话 todos |
+| `~/.local/state/opencode/claude/transcripts/` | `/root/.claude/transcripts/` | 会话 transcripts |
+
+**项目覆盖 (条件挂载，只读)** - 仅当目录存在且非空时:
+
+| Mac | Docker | 权限 |
+|-----|--------|------|
+| `<project>/.claude/commands/` | `/root/.claude/commands/` | **:ro** |
+| `<project>/.claude/skills/` | `/root/.claude/skills/` | **:ro** |
+| `<project>/.claude/agents/` | `/root/.claude/agents/` | **:ro** |
+| `<project>/.claude/rules/` | `/root/.claude/rules/` | **:ro** |
+| `<project>/.claude/settings.json` | `/root/.claude/settings.json` | **:ro** |
+| `<project>/.claude/.mcp.json` | `/root/.claude/.mcp.json` | **:ro** |
 
 ### 镜像内置 (不挂载)
 
