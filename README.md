@@ -342,15 +342,13 @@ git worktree remove dev
 ├── opencode.json.example              # OpenCode 配置参考
 ├── .mcp.json.example.claude           # Claude MCP 配置参考
 ├── .opencode/
-│   ├── oh-my-opencode.json
-│   ├── oh-my-opencode.json.example
+│   ├── oh-my-opencode.json.example    # 按需复制为 oh-my-opencode.json
 │   ├── agent/
 │   ├── command/
 │   ├── skill/
 │   └── plugin/
 └── .claude/
-    ├── settings.json
-    ├── settings.json.example
+    ├── settings.json.example          # 按需复制为 settings.json
     ├── agents/
     ├── commands/
     ├── skills/
