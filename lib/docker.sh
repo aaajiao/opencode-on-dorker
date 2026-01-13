@@ -95,7 +95,8 @@ ocd_run_container() {
   mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
   mkdir -p "$OCD_DATA_HOME"/{bin,storage}
   mkdir -p "$OCD_OMO_CACHE_HOME/bin"
-  mkdir -p "$global_claude"/{todos,transcripts,commands,skills,agents,rules}
+  mkdir -p "$global_claude"/{commands,skills,agents,rules}
+  mkdir -p "$OCD_CLAUDE_RUNTIME"/{todos,transcripts}
   touch "$OCD_DATA_HOME/auth.json" 2>/dev/null || true
 
   docker rm -f "$container_name" 2>/dev/null
@@ -112,14 +113,16 @@ ocd_run_container() {
     -v "$OCD_CACHE_HOME:/root/.cache/opencode"
     -v "$OCD_OMO_CACHE_HOME:/root/.cache/oh-my-opencode"
     -v "$HOME/.ssh:/root/.ssh:ro"
-    -v "$global_claude:/root/.claude"
+    -v "$global_claude:/root/.claude:ro"
+    -v "$OCD_CLAUDE_RUNTIME/todos:/root/.claude/todos"
+    -v "$OCD_CLAUDE_RUNTIME/transcripts:/root/.claude/transcripts"
   )
 
   local subdir proj_subdir
   for subdir in commands skills agents rules; do
     proj_subdir="${project_claude}/${subdir}"
     if [[ -d "$proj_subdir" ]] && [[ -n "$(ls -A "$proj_subdir" 2>/dev/null)" ]]; then
-      mount_args+=(-v "${proj_subdir}:/root/.claude/${subdir}")
+      mount_args+=(-v "${proj_subdir}:/root/.claude/${subdir}:ro")
     fi
   done
 
