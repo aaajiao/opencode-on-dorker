@@ -281,7 +281,11 @@ git worktree remove dev
 ├── templates/
 │   ├── global/                        # 全局配置模板
 │   │   ├── opencode.json.tmpl         # 主配置（支持 {{VAR}} 替换）
-│   │   └── oh-my-opencode.json        # 插件配置
+│   │   ├── oh-my-opencode.json        # 插件配置
+│   │   └── opencode/                  # 全局扩展模板
+│   │       ├── agent/github.md        # @github agent
+│   │       ├── skill/remind/          # 通知 skill
+│   │       └── command/               # 自定义命令
 │   └── project/                       # 项目配置模板（ocd init 使用）
 │       ├── AGENTS.md.example
 │       ├── .mcp.json.example
