@@ -288,9 +288,19 @@ git worktree remove dev
 │   │       └── command/               # 自定义命令
 │   └── project/                       # 项目配置模板（ocd init 使用）
 │       ├── AGENTS.md.example
-│       ├── .mcp.json.example
+│       ├── opencode.json.example
 │       ├── .opencode/
+│       │   ├── oh-my-opencode.json.example
+│       │   ├── agent/
+│       │   ├── command/
+│       │   ├── skill/
+│       │   └── plugin/
 │       └── .claude/
+│           ├── settings.json.example
+│           ├── agents/
+│           ├── commands/
+│           ├── skills/
+│           └── rules/
 ├── bin/
 │   ├── ocd                            # 主程序
 │   └── devocd                         # 开发模式
@@ -323,11 +333,15 @@ git worktree remove dev
 ├── oh-my-opencode.json
 ├── agent/
 ├── command/
-└── skill/
+├── skill/
+└── plugin/
 
-<project>/.claude/                     # 项目级对话
+<project>/.claude/                     # 项目级配置
 ├── settings.json
-└── transcripts/
+├── agents/
+├── commands/
+├── skills/
+└── rules/
 ```
 
 ### 目录清理对照表
