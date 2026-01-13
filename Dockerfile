@@ -8,6 +8,7 @@ ARG PIP_NUMPY=2.2.1
 ARG PIP_MATPLOTLIB=3.10.0
 ARG PIP_BEAUTIFULSOUP4=4.12.3
 ARG PIP_PILLOW=11.1.0
+ARG PIP_NOTEBOOKLM_PY=0.1.4
 ARG OPENCODE_AI_VERSION=1.1.4
 
 FROM oven/bun:${BUN_VERSION}
@@ -93,6 +94,7 @@ ARG PIP_NUMPY
 ARG PIP_MATPLOTLIB
 ARG PIP_BEAUTIFULSOUP4
 ARG PIP_PILLOW
+ARG PIP_NOTEBOOKLM_PY
 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir \
@@ -101,7 +103,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     numpy==${PIP_NUMPY} \
     matplotlib==${PIP_MATPLOTLIB} \
     beautifulsoup4==${PIP_BEAUTIFULSOUP4} \
-    pillow==${PIP_PILLOW}
+    pillow==${PIP_PILLOW} \
+    notebooklm-py==${PIP_NOTEBOOKLM_PY}
 
 # -------------------------------------------------------
 # 第九步：安装 OpenCode
@@ -246,6 +249,48 @@ fi\n\
 if [[ -n "$OCD_START_DIR" && -d "/workspace/$OCD_START_DIR" ]]; then\n\
     cd "/workspace/$OCD_START_DIR"\n\
 fi\n\
+\n\
+# === NotebookLM Skill ===\n\
+# 清理可能的断链\n\
+[[ -L /root/.notebooklm && ! -e /root/.notebooklm ]] && rm -f /root/.notebooklm\n\
+\n\
+# 定位当前项目根目录\n\
+PROJECT_ROOT="/workspace"\n\
+if [[ -n "$OCD_START_DIR" ]]; then\n\
+    check_dir="/workspace/$OCD_START_DIR"\n\
+    while [[ "$check_dir" != "/workspace" && ! -d "$check_dir/.git" ]]; do\n\
+        check_dir=$(dirname "$check_dir")\n\
+    done\n\
+    [[ -d "$check_dir/.git" ]] && PROJECT_ROOT="$check_dir"\n\
+fi\n\
+\n\
+NOTEBOOKLM_SKILL="$PROJECT_ROOT/.opencode/skill/notebooklm-py"\n\
+if [[ -d "$NOTEBOOKLM_SKILL" ]]; then\n\
+    # data/ → ~/.notebooklm (认证数据)\n\
+    if [[ -d "$NOTEBOOKLM_SKILL/data" ]]; then\n\
+        rm -f /root/.notebooklm\n\
+        ln -sf "$NOTEBOOKLM_SKILL/data" /root/.notebooklm\n\
+        echo "✅ NotebookLM: 已链接认证数据"\n\
+    fi\n\
+\n\
+    # .browsers/* → ~/.cache/ms-playwright/ (合并，不覆盖)\n\
+    if [[ -d "$NOTEBOOKLM_SKILL/.browsers" && -n "$(ls -A "$NOTEBOOKLM_SKILL/.browsers" 2>/dev/null)" ]]; then\n\
+        for browser_dir in "$NOTEBOOKLM_SKILL/.browsers"/*; do\n\
+            [[ -d "$browser_dir" ]] || continue\n\
+            browser_name=$(basename "$browser_dir")\n\
+            target="/root/.cache/ms-playwright/$browser_name"\n\
+            if [[ ! -e "$target" ]]; then\n\
+                ln -sf "$browser_dir" "$target"\n\
+                echo "✅ NotebookLM: 已链接 $browser_name"\n\
+            fi\n\
+        done\n\
+    else\n\
+        echo "ℹ️  NotebookLM: .browsers/ 为空，首次使用请运行:"\n\
+        echo "   playwright install chromium"\n\
+        echo "   cp -r ~/.cache/ms-playwright/chromium_headless_shell* $NOTEBOOKLM_SKILL/.browsers/"\n\
+    fi\n\
+fi\n\
+# === End NotebookLM Skill ===\n\
 \n\
 # 始终传递当前工作目录给 opencode（使用 -c 选项明确指定）\n\
 exec opencode -c . "$@"\n\
