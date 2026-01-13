@@ -26,6 +26,7 @@
 - ✅ Web UI 可访问
 - ✅ **oh-my-opencode 多 Agent 协作**
 - ✅ **MCP 服务器 (Playwright, Exa)**
+- ✅ **安全挂载**（`~/.claude` 只读，防止 prompt injection）
 
 ## 快速开始
 
@@ -333,7 +334,8 @@ git worktree remove dev
 └── auth.json                          # OAuth 令牌
 
 ~/.local/state/opencode/               # 状态目录
-└── ipc/<port>/                        # IPC 文件
+├── ipc/<port>/                        # IPC 文件
+└── claude/                            # Claude 运行时 (todos/transcripts)
 
 ~/.cache/opencode/                     # 缓存（可删除）
 
