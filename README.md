@@ -273,24 +273,42 @@ git worktree remove dev
 
 ### 目录结构
 
+> **模板文件命名规则：**
+> - `.tmpl` — OCD 处理，`{{VAR}}` 变量从 `versions.lock` 替换
+> - `.example` — 用户参考模板，手动复制使用
+> - 无后缀 — 直接复制，不做处理
+
 ```
 ~/opencode/                            # OCD 安装目录
 ├── .env                               # API Keys（必需）
 ├── models.conf                        # 模型配置（可选）
 ├── versions.lock                      # 版本锁定
 ├── templates/
-│   ├── global/                        # 全局配置模板
-│   │   ├── opencode.json.tmpl         # 主配置（支持 {{VAR}} 替换）
-│   │   ├── oh-my-opencode.json        # 插件配置
-│   │   └── opencode/                  # 全局扩展模板
-│   │       ├── agent/github.md        # @github agent
-│   │       ├── skill/remind/          # 通知 skill
-│   │       └── command/               # 自定义命令
-│   └── project/                       # 项目配置模板（ocd init 使用）
-│       ├── AGENTS.md.example
-│       ├── .mcp.json.example
+│   ├── global/                            # 全局配置模板（首次运行时自动应用）
+│   │   ├── opencode.json.tmpl             # .tmpl = 变量替换 ({{VAR}} → versions.lock)
+│   │   ├── oh-my-opencode.json            # 直接复制
+│   │   └── opencode/                      # 全局扩展（首次运行时复制到 ~/.config/opencode/）
+│   │       ├── agent/
+│   │       │   └── github.md              # @github agent
+│   │       ├── command/
+│   │       └── skill/
+│   │           └── remind/SKILL.md        # 通知 skill
+│   └── project/                           # 项目模板（ocd init 时参考）
+│       ├── AGENTS.md.example              # .example = 用户参考，手动复制
+│       ├── opencode.json.example
+│       ├── .mcp.json.example.claude       # Claude Code MCP 配置示例
 │       ├── .opencode/
+│       │   ├── oh-my-opencode.json.example
+│       │   ├── agent/
+│       │   ├── command/
+│       │   ├── skill/
+│       │   └── plugin/
 │       └── .claude/
+│           ├── settings.json.example
+│           ├── agents/
+│           ├── commands/
+│           ├── skills/
+│           └── rules/
 ├── bin/
 │   ├── ocd                            # 主程序
 │   └── devocd                         # 开发模式
@@ -319,15 +337,24 @@ git worktree remove dev
 
 ~/.cache/opencode/                     # 缓存（可删除）
 
-<project>/.opencode/                   # 项目级配置（ocd init 创建）
-├── oh-my-opencode.json
-├── agent/
-├── command/
-└── skill/
-
-<project>/.claude/                     # 项目级对话
-├── settings.json
-└── transcripts/
+<project>/                             # 项目根目录（ocd init 创建）
+├── AGENTS.md                          # 项目 Agent 指南
+├── opencode.json.example              # OpenCode 配置参考
+├── .mcp.json.example.claude           # Claude MCP 配置参考
+├── .opencode/
+│   ├── oh-my-opencode.json
+│   ├── oh-my-opencode.json.example
+│   ├── agent/
+│   ├── command/
+│   ├── skill/
+│   └── plugin/
+└── .claude/
+    ├── settings.json
+    ├── settings.json.example
+    ├── agents/
+    ├── commands/
+    ├── skills/
+    └── rules/
 ```
 
 ### 目录清理对照表
