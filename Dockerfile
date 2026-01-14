@@ -176,7 +176,18 @@ fi\n\
     chmod +x /usr/local/bin/check-exa
 
 # -------------------------------------------------------
-# 第十三步：收尾配置
+# 第十三步：预创建 .claude 挂载点目录
+# 支持父目录只读挂载后的子目录覆盖挂载
+# -------------------------------------------------------
+RUN mkdir -p /root/.claude/todos \
+             /root/.claude/transcripts \
+             /root/.claude/commands \
+             /root/.claude/skills \
+             /root/.claude/agents \
+             /root/.claude/rules
+
+# -------------------------------------------------------
+# 第十四步：收尾配置
 # -------------------------------------------------------
 WORKDIR /workspace
 
@@ -186,7 +197,7 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
 
 # -------------------------------------------------------
-# 第十四步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
+# 第十五步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
