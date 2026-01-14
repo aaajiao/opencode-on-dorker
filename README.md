@@ -71,17 +71,17 @@ ocd -r
 2. 显示欢迎信息和配置路径
 3. 配置文件之后由你管理，OCD 只更新端口
 
-### 5. 安装可选依赖（推荐）
+### 5. 安装依赖
 
 ```bash
 brew install jq fswatch terminal-notifier
 ```
 
-| 依赖 | 作用 | 没有会怎样 |
-|------|------|-----------|
-| `jq` | 智能配置更新 | fallback 到 sed |
-| `fswatch` | 高效文件监控 | fallback 到轮询 |
-| `terminal-notifier` | 自定义通知图标 | fallback 到 osascript |
+| 依赖 | 作用 |
+|------|------|
+| `jq` | JSON 配置更新（models.conf 等） |
+| `fswatch` | 高效文件监控（降低 CPU 占用） |
+| `terminal-notifier` | macOS 桌面通知 |
 
 ## 使用方法
 
@@ -542,9 +542,9 @@ ocd init
 
 - macOS
 - [OrbStack](https://orbstack.dev/)（推荐）或 Docker Desktop
-- [jq](https://jqlang.github.io/jq/)（可选）
-- [fswatch](https://emcrisostomo.github.io/fswatch/)（可选）
-- [terminal-notifier](https://github.com/julienXX/terminal-notifier)（可选）
+- [jq](https://jqlang.github.io/jq/)
+- [fswatch](https://emcrisostomo.github.io/fswatch/)
+- [terminal-notifier](https://github.com/julienXX/terminal-notifier)
 
 ```bash
 brew install jq fswatch terminal-notifier
