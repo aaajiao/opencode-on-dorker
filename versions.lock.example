@@ -26,6 +26,8 @@ PIP_NUMPY=2.2.1
 PIP_MATPLOTLIB=3.10.0
 PIP_BEAUTIFULSOUP4=4.12.3
 PIP_PILLOW=11.1.0
+
+# NotebookLM Skill
 PIP_NOTEBOOKLM_PY=0.2.0
 
 # ================================================
