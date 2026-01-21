@@ -219,6 +219,8 @@ EOF
   local CONTAINER_NAME="opencode-${WORKSPACE_NAME}"
   [[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && CONTAINER_NAME="${CONTAINER_NAME}-dev"
 
+  ocd_load_versions
+
   if [[ "$CLEAN_CONFIG" -eq 1 ]]; then
     ocd_reset_global_config
     return 0
@@ -226,8 +228,6 @@ EOF
 
   local PORT
   PORT="${CUSTOM_PORT:-$(ocd_find_free_port 4096)}"
-
-  ocd_load_versions
 
   ocd_debug "OCD_CACHE_HOME=$OCD_CACHE_HOME"
   ocd_debug "OCD_CONFIG_HOME=$OCD_CONFIG_HOME"
