@@ -7,14 +7,18 @@ OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 # =========================================
 # XDG 标准路径定义 (v4.0 - 无 instance 概念)
 # =========================================
+# Dev 模式后缀 (devocd 或 ocd --dev)
+_OCD_SUFFIX=""
+[[ "${OCD_DEV_MODE:-0}" -eq 1 ]] && _OCD_SUFFIX="-dev"
+
 # 配置目录 - 可版本控制
-OCD_CONFIG_HOME="${OCD_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode}"
+OCD_CONFIG_HOME="${OCD_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/opencode${_OCD_SUFFIX}}"
 
 # 数据目录 - 必须备份 (OpenCode 原生管理)
-OCD_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+OCD_DATA_HOME="${OCD_DATA_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/opencode${_OCD_SUFFIX}}"
 
 # 状态目录 - 可重建
-OCD_STATE_HOME="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+OCD_STATE_HOME="${OCD_STATE_HOME:-${XDG_STATE_HOME:-$HOME/.local/state}/opencode${_OCD_SUFFIX}}"
 
 # 缓存目录 - 可删除
 OCD_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}/opencode"
