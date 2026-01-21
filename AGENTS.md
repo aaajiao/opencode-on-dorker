@@ -12,6 +12,42 @@ Guidelines for AI agents working on this repository.
 
 **v5 Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup.
 
+## Directory Structure (CRITICAL)
+
+This repo uses **git worktree** for development:
+
+| Path | Purpose | Docker Mount | Image |
+|------|---------|--------------|-------|
+| `~/opencode/` | Production | `/workspace` | `opencode-bun` |
+| `~/opencode/dev/` | Development (worktree) | `/workspace/dev` | `opencode-bun-dev` |
+
+**Key points**:
+- When working in `/workspace/dev`, you're editing the **dev branch**
+- Production (`~/opencode/`) and dev (`~/opencode/dev/`) are **separate git worktrees**
+- Changes in dev need `git push` → then pull in production to sync
+- Each has its own `versions.lock` - keep them in sync manually
+
+**Config isolation**:
+| Environment | Global Config | State |
+|-------------|---------------|-------|
+| Production (`ocd`) | `~/.config/opencode/` | `~/.local/state/opencode/` |
+| Development (`devocd`) | `~/.config/opencode-dev/` | `~/.local/state/opencode-dev/` |
+
+**Typical dev workflow**:
+```bash
+# 1. Start dev container
+devocd
+
+# 2. Make changes in /workspace/dev
+# 3. Test with: bash -n, shellcheck, bats
+
+# 4. Exit container, commit & push
+git add -A && git commit -m "feat: ..." && git push
+
+# 5. In production ~/opencode/, pull changes
+cd ~/opencode && git pull
+```
+
 ## WHERE TO LOOK
 
 | Task | Location | Notes |
@@ -159,16 +195,43 @@ Playwright MCP requires special flags for Docker:
 
 ## CLI Reference
 
+### Basic Usage
+
 ```bash
 ocd                      # Auto-detect workspace, auto port
 ocd -p 5000              # Custom port
 ocd --here               # Mount only current directory
 ocd -r                   # Rebuild image + clear cache
-ocd init                 # Initialize project config
-ocd config               # Show config status
 ocd --clean              # Reset global config (with backup)
-devocd                   # Dev mode (isolated from production)
 ```
+
+### Subcommands
+
+```bash
+ocd init                 # Initialize project config (.opencode/, .claude/, AGENTS.md)
+ocd config               # Show config paths and status
+ocd config edit          # Open global config in editor
+ocd scan                 # Scan and register git projects in workspace
+ocd touch <project>      # Update project timestamp for WebUI visibility
+```
+
+### Development Mode
+
+```bash
+devocd                   # Run from ~/opencode/dev/, uses opencode-bun-dev image
+devocd -r                # Rebuild dev image
+```
+
+### Additional Flags
+
+| Flag | Description |
+|------|-------------|
+| `-v` | Show version |
+| `-h` | Show help |
+| `--https` | Enable HTTPS via Tailscale Serve |
+| `--awake` | Prevent Mac sleep (caffeinate) |
+| `--merge-up` | Merge transcripts to parent project |
+| `--quotio` | Enable Quotio proxy |
 
 ## Common Pitfalls
 
