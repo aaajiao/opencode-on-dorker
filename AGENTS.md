@@ -67,15 +67,15 @@ cd ~/opencode && git pull
 
 | Module | Lines | Key Functions | Purpose |
 |--------|-------|---------------|---------|
-| `lib/config.sh` | 430 | `ocd_ensure_global_config`, `ocd_update_port`, `ocd_init_project` | v5 config management |
-| `lib/scan.sh` | 336 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
-| `bin/ocd` | 329 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
-| `lib/core.sh` | 159 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |
-| `lib/docker.sh` | 149 | `ocd_build_image`, `ocd_run_container` | Docker operations |
+| `lib/config.sh` | 498 | `ocd_ensure_global_config`, `ocd_update_port`, `ocd_init_project` | v5 config management |
+| `lib/scan.sh` | 335 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
+| `bin/ocd` | 339 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
+| `lib/core.sh` | 161 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |
+| `lib/docker.sh` | 153 | `ocd_build_image`, `ocd_run_container` | Docker operations |
 | `lib/workspace.sh` | 127 | `ocd_find_workspace_root`, `ocd_find_project_dir` | Workspace detection |
-| `lib/watcher.sh` | 92 | `ocd_start_watcher`, `ocd_handle_*` | IPC file monitoring |
+| `lib/watcher.sh` | 146 | `ocd_start_watcher`, `ocd_handle_*` | IPC file monitoring |
 | `lib/migrate.sh` | 88 | `ocd_check_migration` | v4→v5 migration |
-| `lib/port.sh` | 69 | `ocd_find_free_port` | Port allocation with locking |
+| `lib/port.sh` | 68 | `ocd_find_free_port` | Port allocation with locking |
 
 ## Build & Test Commands
 
@@ -83,11 +83,11 @@ cd ~/opencode && git pull
 # Docker
 docker build -t opencode-bun .              # Build image
 docker build --no-cache -t opencode-bun .   # Full rebuild
-ocd -r                                      # Rebuild + clear cache
+ocd -r                                       # Rebuild + clear cache
 
 # Shell validation
-bash -n bin/ocd lib/*.sh                    # Syntax check
-shellcheck -S warning bin/ocd lib/*.sh      # Lint (CI standard)
+bash -n bin/ocd lib/*.sh                     # Syntax check
+shellcheck -S warning bin/ocd lib/*.sh       # Lint (CI standard)
 
 # Run ALL tests
 bats tests/bats/*.bats
@@ -112,10 +112,14 @@ docker run -it --rm --network host opencode-bun bash
 ├── bin/ocd, devocd            # Entry scripts
 ├── lib/*.sh                   # Core modules (config, docker, port, etc.)
 ├── templates/global/          # Config templates (opencode.json.tmpl)
-├── tests/bats/*.bats          # Unit tests
-├── Dockerfile
+├── templates/project/         # Project init templates (.opencode/, .claude/)
+├── tests/bats/*.bats          # Unit tests (BATS framework)
+├── scripts/*.sh               # Migration & utility scripts
+├── server/                    # Remote/server deployment configs
+├── docs/                      # Architecture documentation
+├── Dockerfile                 # 15-step build with Chinese comments
 ├── .env                       # API keys (KEY=VALUE only!)
-├── versions.lock              # Dependency versions
+├── versions.lock              # Dependency versions (centralized)
 └── models.conf                # Optional model overrides
 
 # Runtime (Mac host)
@@ -259,7 +263,7 @@ devocd                         # Test with dev code
 CI runs on every PR with these checks:
 - **Syntax Check**: `bash -n` on all shell scripts
 - **ShellCheck**: Lint with `-S warning`
-- **Unit Tests**: `bats tests/bats/*.bats`
+- **Unit Tests**: `bats tests/bats/*.bats` (runs on macOS)
 - **Docker Build**: Full image build + verification
 
 All checks must pass before merging.
@@ -271,8 +275,8 @@ After completing the following operations, **MUST** run `notify "title" "result"
 | Trigger | Example |
 |---------|---------|
 | Subagent task returns | `notify "Oracle Analysis Done" "Architecture suggestions ready"` |
-| `git push` completes | `notify "Git Push Done ✅" "3 commits → origin/main"` |
-| Long-running command (>30s) completes | `notify "Build Done ✅" "Docker image built successfully"` |
+| `git push` completes | `notify "Git Push Done" "3 commits → origin/main"` |
+| Long-running command (>30s) completes | `notify "Build Done" "Docker image built successfully"` |
 | User explicitly says "remind me when done" | Notify as requested |
 
 **No notification needed**: Normal file read/write, simple Q&A, quick command execution.
