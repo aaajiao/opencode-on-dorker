@@ -1,12 +1,48 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+
   "agents": {
-    "Sisyphus": { "model": "opencode/claude-opus-4-5" },
+    "sisyphus": { "model": "opencode/claude-opus-4-5" },
     "oracle": { "model": "opencode/gpt-5.2" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/grok-code" },
-    "frontend-ui-ux-engineer": { "model": "opencode/gemini-3-pro" },
-    "document-writer": { "model": "opencode/gemini-3-flash" },
-    "multimodal-looker": { "model": "opencode/gemini-3-flash" }
-  }
+    "multimodal-looker": { "model": "opencode/gemini-3-flash" },
+    "prometheus": { "model": "opencode/claude-opus-4-5" },
+    "metis": { "model": "opencode/claude-opus-4-5" },
+    "momus": { "model": "opencode/gpt-5.2" },
+    "atlas": { "model": "opencode/claude-sonnet-4-5" },
+    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" }
+  },
+
+  "tmux": {
+    "enabled": false,
+    "layout": "main-vertical",
+    "main_pane_size": 60
+  },
+
+  "ralph_loop": {
+    "enabled": false,
+    "default_max_iterations": 100
+  },
+
+  "sisyphus": {
+    "tasks": {
+      "enabled": false
+    },
+    "swarm": {
+      "enabled": false
+    }
+  },
+
+  "experimental": {
+    "dynamic_context_pruning": {
+      "enabled": false
+    }
+  },
+
+  "browser_automation_engine": {
+    "provider": "playwright"
+  },
+
+  "auto_update": true
 }

@@ -132,6 +132,23 @@ ocd_ensure_global_config() {
 }
 
 # =========================================
+# 确保 oh-my-opencode provider cache 存在
+# =========================================
+ocd_ensure_provider_cache() {
+  local cache_file="$OCD_OMO_CACHE_HOME/connected-providers.json"
+  
+  [[ -f "$cache_file" ]] && return 0
+  
+  mkdir -p "$OCD_OMO_CACHE_HOME"
+  
+  local timestamp
+  timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  
+  printf '{"connected":[],"updatedAt":"%s"}\n' "$timestamp" > "$cache_file"
+  ocd_debug "已创建 provider cache: $cache_file"
+}
+
+# =========================================
 # 更新配置端口（每次启动）
 # =========================================
 ocd_update_port() {
@@ -219,14 +236,19 @@ ocd_update_omo_agents() {
   # 构建 jq 更新命令
   local jq_cmd=". "
 
-  # 条件更新 agents
-  [[ -n "$PLANNER_MODEL" ]] && jq_cmd+="| .agents.\"Sisyphus\".model = \"$PLANNER_MODEL\" "
+  # v3.x agent keys are lowercase
+  # Core agents
+  [[ -n "$SISYPHUS_MODEL" ]] && jq_cmd+="| .agents.sisyphus.model = \"$SISYPHUS_MODEL\" "
   [[ -n "$ORACLE_MODEL" ]] && jq_cmd+="| .agents.oracle.model = \"$ORACLE_MODEL\" "
   [[ -n "$LIBRARIAN_MODEL" ]] && jq_cmd+="| .agents.librarian.model = \"$LIBRARIAN_MODEL\" "
   [[ -n "$EXPLORE_MODEL" ]] && jq_cmd+="| .agents.explore.model = \"$EXPLORE_MODEL\" "
-  [[ -n "$DOCUMENT_WRITER_MODEL" ]] && jq_cmd+="| .agents.\"document-writer\".model = \"$DOCUMENT_WRITER_MODEL\" "
-  [[ -n "$FRONTEND_MODEL" ]] && jq_cmd+="| .agents.\"frontend-ui-ux-engineer\".model = \"$FRONTEND_MODEL\" "
   [[ -n "$MULTIMODAL_MODEL" ]] && jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
+  # v3.x new agents
+  [[ -n "$PROMETHEUS_MODEL" ]] && jq_cmd+="| .agents.prometheus.model = \"$PROMETHEUS_MODEL\" "
+  [[ -n "$METIS_MODEL" ]] && jq_cmd+="| .agents.metis.model = \"$METIS_MODEL\" "
+  [[ -n "$MOMUS_MODEL" ]] && jq_cmd+="| .agents.momus.model = \"$MOMUS_MODEL\" "
+  [[ -n "$ATLAS_MODEL" ]] && jq_cmd+="| .agents.atlas.model = \"$ATLAS_MODEL\" "
+  [[ -n "$SISYPHUS_JUNIOR_MODEL" ]] && jq_cmd+="| .agents.\"sisyphus-junior\".model = \"$SISYPHUS_JUNIOR_MODEL\" "
 
   if jq "$jq_cmd" "$config_file" > "$tmp_file" 2>/dev/null; then
     mv "$tmp_file" "$config_file"

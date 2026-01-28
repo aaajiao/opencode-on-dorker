@@ -265,6 +265,7 @@ EOF
 
   ocd_init_global
   mkdir -p "$OCD_OMO_CACHE_HOME/bin" "$OCD_CACHE_HOME/ms-playwright"
+  ocd_ensure_provider_cache
 
   ocd_load_env "$ENV_FILE"
 
