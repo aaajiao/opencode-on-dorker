@@ -252,7 +252,7 @@ EOF
 
   # v5: Check migration from v4
   if type ocd_check_migration &>/dev/null; then
-    ocd_check_migration
+    ocd_check_migration "$CURRENT_DIR"
   fi
   
   # v5: Check Claude global storage migration

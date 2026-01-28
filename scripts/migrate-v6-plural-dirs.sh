@@ -19,6 +19,7 @@ source "$OCD_ROOT/lib/core.sh" 2>/dev/null || {
 GLOBAL_CONFIG="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
 BACKUP_DIR=".backup-singular-v5"
 MARKER_FILE="$GLOBAL_CONFIG/.plural-dirs-migrated"
+PROJECT_DIR="${1:-$(pwd)}"
 
 # 需要迁移的目录映射 (单数 → 复数)
 # 用普通数组兼容 macOS 自带的 bash 3.2
@@ -40,10 +41,10 @@ check_migration_needed() {
     fi
   done
   
-  if [[ -d ".opencode" ]]; then
+  if [[ -d "$PROJECT_DIR/.opencode" ]]; then
     for i in "${!SINGULAR_DIRS[@]}"; do
       local singular="${SINGULAR_DIRS[$i]}"
-      if [[ -d ".opencode/$singular" ]]; then
+      if [[ -d "$PROJECT_DIR/.opencode/$singular" ]]; then
         needs_migration=1
         break
       fi
@@ -135,11 +136,11 @@ migrate_global_config() {
 # 迁移项目配置
 # =========================================
 migrate_project_config() {
-  [[ ! -d ".opencode" ]] && return 0
+  [[ ! -d "$PROJECT_DIR/.opencode" ]] && return 0
   
   ocd_log ""
   ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ocd_log "  迁移项目配置: $(pwd)/.opencode"
+  ocd_log "  迁移项目配置: $PROJECT_DIR/.opencode"
   ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   
   local migrated=0
@@ -148,8 +149,8 @@ migrate_project_config() {
   for i in "${!SINGULAR_DIRS[@]}"; do
     local singular="${SINGULAR_DIRS[$i]}"
     local plural="${PLURAL_DIRS[$i]}"
-    if [[ -d ".opencode/$singular" ]]; then
-      migrate_directory ".opencode" "$singular" "$plural"
+    if [[ -d "$PROJECT_DIR/.opencode/$singular" ]]; then
+      migrate_directory "$PROJECT_DIR/.opencode" "$singular" "$plural"
       migrated=1
     fi
   done
@@ -207,8 +208,8 @@ main() {
   ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   ocd_log ""
   ocd_success "备份位置: $GLOBAL_CONFIG/$BACKUP_DIR/"
-  if [[ -d ".opencode/$BACKUP_DIR" ]]; then
-    ocd_success "备份位置: .opencode/$BACKUP_DIR/"
+  if [[ -d "$PROJECT_DIR/.opencode/$BACKUP_DIR" ]]; then
+    ocd_success "备份位置: $PROJECT_DIR/.opencode/$BACKUP_DIR/"
   fi
   ocd_log ""
   ocd_info "如有问题，可从备份目录恢复"

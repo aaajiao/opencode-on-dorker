@@ -29,15 +29,31 @@ ocd_check_migration() {
   fi
   
   # v6 迁移：单数目录 → 复数目录
-  if [[ -f "$config_dir/.ocd-v6-migrated" ]]; then
+  local project_dir="${1:-}"
+  
+  if [[ -f "$config_dir/.ocd-v6-migrated" ]] && [[ -z "$project_dir" ]]; then
     return 0
   fi
   
-  # 检测是否存在旧的单数目录
+  # 检测是否存在旧的单数目录（全局 或 项目级）
+  local needs_v6_migration=0
   if [[ -d "$config_dir/skill" ]] || \
      [[ -d "$config_dir/agent" ]] || \
      [[ -d "$config_dir/command" ]] || \
      [[ -d "$config_dir/plugin" ]]; then
+    needs_v6_migration=1
+  fi
+  
+  if [[ -n "$project_dir" ]] && [[ -d "$project_dir/.opencode" ]]; then
+    if [[ -d "$project_dir/.opencode/skill" ]] || \
+       [[ -d "$project_dir/.opencode/agent" ]] || \
+       [[ -d "$project_dir/.opencode/command" ]] || \
+       [[ -d "$project_dir/.opencode/plugin" ]]; then
+      needs_v6_migration=1
+    fi
+  fi
+  
+  if [[ "$needs_v6_migration" -eq 1 ]]; then
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "  ⚠️  检测到 v5 单数目录需要迁移"
@@ -52,7 +68,7 @@ ocd_check_migration() {
     read -r -p "  是否立即迁移？[Y/n] " answer
     if [[ ! "$answer" =~ ^[Nn]$ ]]; then
       echo ""
-      "$ocd_root/scripts/migrate-v6-plural-dirs.sh"
+      "$ocd_root/scripts/migrate-v6-plural-dirs.sh" "$project_dir"
       if [[ $? -eq 0 ]]; then
         touch "$config_dir/.ocd-v6-migrated"
       fi
