@@ -43,9 +43,13 @@ migrate_directory() {
   # 创建备份目录
   mkdir -p "$base_dir/$BACKUP_DIR"
   
-  # 备份单数目录
+  # 备份单数目录（排除 socket/lock 等特殊文件）
   ocd_info "备份 $singular_path → $backup_path"
-  cp -r "$singular_path" "$backup_path"
+  if command -v rsync &>/dev/null; then
+    rsync -a --exclude='Singleton*' "$singular_path/" "$backup_path/"
+  else
+    cp -r "$singular_path" "$backup_path" 2>/dev/null || true
+  fi
   
   # 处理冲突：如果复数目录已存在，合并内容
   if [[ -d "$plural_path" ]]; then
