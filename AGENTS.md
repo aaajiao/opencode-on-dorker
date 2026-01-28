@@ -116,7 +116,7 @@ docker run -it --rm --network host opencode-bun bash
 ├── tests/bats/*.bats          # Unit tests (BATS framework)
 ├── scripts/*.sh               # Migration & utility scripts
 ├── server/                    # Remote/server deployment configs
-├── docs/                      # Architecture documentation
+├── docs/                      # Documentation (see below)
 ├── Dockerfile                 # 15-step build with Chinese comments
 ├── .env                       # API keys (KEY=VALUE only!)
 ├── versions.lock              # Dependency versions (centralized)
@@ -127,6 +127,26 @@ docker run -it --rm --network host opencode-bun bash
 ~/.local/share/opencode/       # Sessions, auth
 ~/.local/state/opencode/ipc/   # Per-port IPC files
 ```
+
+## Documentation Structure
+
+| Task | Location | Notes |
+|------|----------|-------|
+| Understand installation | `docs/GETTING_STARTED.md` | Dependencies, env vars, first build |
+| Find CLI options | `docs/CLI_REFERENCE.md` | All flags, subcommands, examples |
+| Understand config system | `docs/CONFIGURATION.md` | Directory structure, lifecycle |
+| Debug Mac/Docker mapping | `docs/ARCHITECTURE.md` | Mount points, IPC mechanism |
+| Extend OCD (developer) | `docs/OPENCODE_CONFIG_GUIDE.md` | Modules, extension points |
+| Upgrade between versions | `docs/MIGRATION.md` | v4→v5→v6 migration steps |
+| Understand skill system | `docs/SKILL_*.md` | oh-my-opencode skills |
+| Quick user overview | `README.md` (中文) | Keep concise (~100 lines) |
+| English documentation | `docs/README_EN.md` | Sync with README.md |
+
+**When updating docs:**
+- New CLI option → `CLI_REFERENCE.md` + `README.md` (if major)
+- New config/directory → `CONFIGURATION.md` + `ARCHITECTURE.md`
+- Breaking change → `MIGRATION.md` + version bump in README/AGENTS.md
+- Always sync: `README.md` ↔ `docs/README_EN.md`
 
 ## Code Style Guidelines
 

@@ -1,4 +1,4 @@
-# OCD 开发者指南 (v5.0)
+# OCD 开发者指南 (v6.0)
 
 本文档面向想要扩展或定制 OCD (OpenCode Docker) 的**开发者**。
 
@@ -6,9 +6,9 @@
 
 ## 1. 架构概述
 
-### 1.1 v5 设计原则
+### 1.1 v6 设计原则
 
-OCD v5.0 是 OpenCode 的**薄 Docker 包装器**，遵循以下原则：
+OCD v6.0 是 OpenCode 的**薄 Docker 包装器**，遵循以下原则：
 
 | 原则 | 说明 |
 |------|------|
@@ -16,6 +16,7 @@ OCD v5.0 是 OpenCode 的**薄 Docker 包装器**，遵循以下原则：
 | **最小化干预** | 每次启动只更新端口，其他配置不动 |
 | **模板驱动** | 从 `templates/` 生成配置，支持变量替换 |
 | **遵循原生设计** | 完全遵循 OpenCode + oh-my-opencode 的目录结构 |
+| **复数目录名** | 使用 `skills/`、`agents/`、`commands/`、`plugins/` (oh-my-opencode v3.1.4+) |
 
 ### 1.2 模块化设计
 
@@ -25,11 +26,11 @@ OCD v5.0 是 OpenCode 的**薄 Docker 包装器**，遵循以下原则：
 | Port | `lib/port.sh` | 端口分配、原子锁机制 |
 | Workspace | `lib/workspace.sh` | 工作区检测、白名单验证 |
 | Watcher | `lib/watcher.sh` | IPC 文件监控（剪贴板/通知/URL） |
-| Config | `lib/config.sh` | **v5 配置管理**（模板、端口更新、重置） |
+| Config | `lib/config.sh` | **v6 配置管理**（模板、端口更新、重置） |
 | Docker | `lib/docker.sh` | Docker 镜像构建与容器运行 |
-| Migrate | `lib/migrate.sh` | v4→v5 自动迁移 |
+| Migrate | `lib/migrate.sh` | v4→v5→v6 自动迁移 |
 
-### 1.3 v5 入口流程
+### 1.3 v6 入口流程
 
 ```
 bin/ocd
@@ -38,9 +39,10 @@ bin/ocd
    ├─ 解析参数 / 子命令 (init, config)
    ├─ 工作区检测
    ├─ 端口分配（原子锁）
-   ├─ v5 配置流程：
+   ├─ v6 配置流程：
    │   ├─ 检测是否首次运行
    │   ├─ 首次：从模板创建配置 + 显示欢迎信息
+   │   ├─ 检测 v6 迁移：singular → plural 目录名
    │   └─ 非首次：只更新端口号
    ├─ 应用 models.conf（如存在）
    ├─ 启动 Watcher（按端口隔离）
@@ -70,10 +72,12 @@ bin/ocd
 ├── bin/
 │   ├── ocd                            # 主程序
 │   └── devocd                         # 开发模式
+├── scripts/
+│   └── migrate-v6-plural-dirs.sh      # v6 迁移脚本
 └── lib/
     ├── core.sh
-    ├── config.sh                      # v5 配置管理
-    ├── migrate.sh                     # v4→v5 迁移
+    ├── config.sh                      # v6 配置管理
+    ├── migrate.sh                     # v4→v5→v6 迁移
     └── ...
 ```
 
@@ -126,7 +130,7 @@ bin/ocd
 
 ---
 
-## 3. v5 配置系统
+## 3. v6 配置系统
 
 ### 3.1 配置生命周期
 
@@ -341,7 +345,20 @@ devocd       # 启动
 
 ---
 
-## 9. v4 → v5 迁移
+## 9. 迁移指南
+
+### 9.1 v5 → v6 迁移
+
+v6 使用复数目录名 (`skills/`, `agents/`, `commands/`, `plugins/`)。
+
+首次启动时会检测并提示运行迁移脚本：
+
+```bash
+bash scripts/migrate-v6-plural-dirs.sh --dry-run  # 预览
+bash scripts/migrate-v6-plural-dirs.sh            # 执行
+```
+
+### 9.2 v4 → v5 迁移
 
 v5 首次运行时自动检测 v4 配置并迁移：
 
@@ -351,9 +368,8 @@ v5 首次运行时自动检测 v4 配置并迁移：
 
 手动迁移：
 ```bash
-# 备份旧配置
 mv ~/.config/opencode ~/.config/opencode-v4-backup
-
-# 重新启动（会创建新配置）
 ocd
 ```
+
+详细迁移指南：[MIGRATION.md](./MIGRATION.md)

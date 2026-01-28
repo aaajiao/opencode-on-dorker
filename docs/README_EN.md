@@ -1,0 +1,107 @@
+# OCD - OpenCode Docker
+
+[![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)](../CHANGELOG.md)
+
+Run [OpenCode](https://opencode.ai) AI programming assistant in macOS + OrbStack environment, with [oh-my-opencode](https://github.com/1msoft/oh-my-opencode) plugin integration.
+
+## Features
+
+- One-command container launch (`ocd`)
+- Multi-window support (auto port allocation + lock mechanism)
+- macOS integration (desktop notifications, clipboard bridge, auto-open links)
+- oh-my-opencode multi-agent collaboration
+- MCP servers (Playwright, Exa, Context7)
+- Persistent configuration (user-owned, OCD won't overwrite)
+
+## Quick Start
+
+### 1. Install Dependencies
+
+```bash
+brew install jq fswatch terminal-notifier
+```
+
+### 2. Clone and Configure
+
+```bash
+git clone https://github.com/aaajiao/opencode-on-dorker.git ~/opencode
+cd ~/opencode
+cp env.example .env
+nano .env  # Fill in API keys
+```
+
+### 3. Add to PATH
+
+```bash
+echo 'export PATH="$HOME/opencode/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### 4. First Build
+
+```bash
+ocd -r
+```
+
+Detailed installation: [GETTING_STARTED.md](./GETTING_STARTED.md)
+
+## Usage
+
+```bash
+ocd                  # Launch in project directory (auto-detect workspace)
+ocd -p 5000          # Specify port
+ocd --here           # Mount current directory only
+ocd -r               # Rebuild image
+ocd init             # Initialize project config
+ocd config           # View config status
+```
+
+Full CLI reference: [CLI_REFERENCE.md](./CLI_REFERENCE.md)
+
+## Environment Variables
+
+`.env` format (pure KEY=VALUE, no quotes, no comments):
+
+```bash
+OPENAI_API_KEY=sk-proj-xxxx
+ANTHROPIC_API_KEY=sk-ant-xxxx
+GITHUB_TOKEN=ghp_xxxx
+EXA_API_KEY=your-exa-api-key
+```
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Getting Started](./GETTING_STARTED.md) | Detailed installation |
+| [CLI Reference](./CLI_REFERENCE.md) | Complete command reference |
+| [Configuration](./CONFIGURATION.md) | Directory structure, config lifecycle |
+| [Migration Guide](./MIGRATION.md) | v4→v5→v6 upgrade |
+| [Architecture](./ARCHITECTURE.md) | Mac/Docker mapping |
+| [Developer Guide](./OPENCODE_CONFIG_GUIDE.md) | Extension and customization |
+
+## oh-my-opencode Agents
+
+| Agent | Purpose |
+|-------|---------|
+| **Sisyphus** | Main orchestrator |
+| **oracle** | Architecture design, debugging |
+| **librarian** | Documentation research |
+| **explore** | Quick search |
+
+Common commands:
+```
+ultrawork / ulw    # Maximum performance mode
+@oracle            # Call debugging expert
+@librarian         # Find documentation
+```
+
+## Requirements
+
+- macOS
+- [OrbStack](https://orbstack.dev/) (recommended) or Docker Desktop
+- jq, fswatch, terminal-notifier
+
+## License
+
+MIT
