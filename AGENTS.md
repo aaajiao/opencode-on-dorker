@@ -4,13 +4,13 @@ Guidelines for AI agents working on this repository.
 
 ## Project Overview
 
-**OCD (OpenCode Docker)** v5.0: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
+**OCD (OpenCode Docker)** v6.0: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
 
 **Tech Stack**: Docker, Shell (bash/zsh), JSON configuration
 
 **CRITICAL**: This repo IS `~/opencode` on Mac. `/workspace/bin/ocd` = `~/opencode/bin/ocd`.
 
-**v5 Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup.
+**v6 Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup. Directory names use **plural forms** (skills/, agents/, commands/, plugins/) for oh-my-opencode v3.1.4+ compatibility.
 
 ## Directory Structure (CRITICAL)
 
@@ -67,14 +67,14 @@ cd ~/opencode && git pull
 
 | Module | Lines | Key Functions | Purpose |
 |--------|-------|---------------|---------|
-| `lib/config.sh` | 520 | `ocd_ensure_global_config`, `ocd_ensure_provider_cache`, `ocd_update_port`, `ocd_init_project` | v5 config management |
+| `lib/config.sh` | 520 | `ocd_ensure_global_config`, `ocd_ensure_provider_cache`, `ocd_update_port`, `ocd_init_project` | v6 config management |
 | `lib/scan.sh` | 335 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
 | `bin/ocd` | 339 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
 | `lib/core.sh` | 161 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |
 | `lib/docker.sh` | 153 | `ocd_build_image`, `ocd_run_container` | Docker operations |
 | `lib/workspace.sh` | 127 | `ocd_find_workspace_root`, `ocd_find_project_dir` | Workspace detection |
 | `lib/watcher.sh` | 146 | `ocd_start_watcher`, `ocd_handle_*` | IPC file monitoring |
-| `lib/migrate.sh` | 88 | `ocd_check_migration` | v4→v5 migration |
+| `lib/migrate.sh` | 127 | `ocd_check_migration`, `ocd_check_v6_migration` | v4→v5→v6 migration |
 | `lib/port.sh` | 68 | `ocd_find_free_port` | Port allocation with locking |
 
 ## Build & Test Commands

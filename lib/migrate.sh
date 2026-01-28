@@ -27,6 +27,45 @@ ocd_check_migration() {
     echo "     请手动迁移后删除 mcp.json"
     echo ""
   fi
+  
+  # v6 迁移：单数目录 → 复数目录
+  if [[ -f "$config_dir/.ocd-v6-migrated" ]]; then
+    return 0
+  fi
+  
+  # 检测是否存在旧的单数目录
+  if [[ -d "$config_dir/skill" ]] || \
+     [[ -d "$config_dir/agent" ]] || \
+     [[ -d "$config_dir/command" ]] || \
+     [[ -d "$config_dir/plugin" ]]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "  ⚠️  检测到 v5 单数目录需要迁移"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "  v6 将目录名改为复数形式（与 Claude 保持一致）："
+    echo "    skill/   → skills/"
+    echo "    agent/   → agents/"
+    echo "    command/ → commands/"
+    echo "    plugin/  → plugins/"
+    echo ""
+    read -r -p "  是否立即迁移？[Y/n] " answer
+    if [[ ! "$answer" =~ ^[Nn]$ ]]; then
+      echo ""
+      "$ocd_root/scripts/migrate-v6-plural-dirs.sh"
+      if [[ $? -eq 0 ]]; then
+        touch "$config_dir/.ocd-v6-migrated"
+      fi
+    else
+      echo ""
+      echo "  跳过迁移。下次启动时会再次提示。"
+      echo "  手动运行: $ocd_root/scripts/migrate-v6-plural-dirs.sh"
+      echo ""
+    fi
+  else
+    # 新安装，直接标记为已迁移
+    touch "$config_dir/.ocd-v6-migrated"
+  fi
 }
 
 ocd_check_claude_migration() {

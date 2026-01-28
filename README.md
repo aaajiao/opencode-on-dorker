@@ -289,10 +289,10 @@ git worktree remove dev
 │   │   ├── opencode.json.tmpl             # .tmpl = 变量替换 ({{VAR}} → versions.lock)
 │   │   ├── oh-my-opencode.json            # 直接复制
 │   │   └── opencode/                      # 全局扩展（首次运行时复制到 ~/.config/opencode/）
-│   │       ├── agent/
+│   │       ├── agents/
 │   │       │   └── github.md              # @github agent
-│   │       ├── command/
-│   │       └── skill/
+│   │       ├── commands/
+│   │       └── skills/
 │   │           └── remind/SKILL.md        # 通知 skill
 │   └── project/                           # 项目模板（ocd init 时参考）
 │       ├── AGENTS.md.example              # .example = 用户参考，手动复制
@@ -300,10 +300,10 @@ git worktree remove dev
 │       ├── .mcp.json.example.claude       # Claude Code MCP 配置示例
 │       ├── .opencode/
 │       │   ├── oh-my-opencode.json.example
-│       │   ├── agent/
-│       │   ├── command/
-│       │   ├── skill/
-│       │   └── plugin/
+│       │   ├── agents/
+│       │   ├── commands/
+│       │   ├── skills/
+│       │   └── plugins/
 │       └── .claude/
 │           ├── settings.json.example
 │           ├── agents/
@@ -325,9 +325,9 @@ git worktree remove dev
 ~/.config/opencode/                    # 全局配置（用户所有）
 ├── opencode.json                      # 主配置文件
 ├── oh-my-opencode.json                # 插件配置
-├── skill/                             # 全局技能
-├── command/                           # 全局命令
-└── agent/                             # 全局 Agent
+├── skills/                            # 全局技能
+├── commands/                          # 全局命令
+└── agents/                            # 全局 Agent
 
 ~/.local/share/opencode/               # 数据目录（需备份）
 ├── storage/                           # 会话数据
@@ -345,10 +345,10 @@ git worktree remove dev
 ├── .mcp.json.example.claude           # Claude MCP 配置参考
 ├── .opencode/
 │   ├── oh-my-opencode.json.example    # 按需复制为 oh-my-opencode.json
-│   ├── agent/
-│   ├── command/
-│   ├── skill/
-│   └── plugin/
+│   ├── agents/
+│   ├── commands/
+│   ├── skills/
+│   └── plugins/
 └── .claude/
     ├── settings.json.example          # 按需复制为 settings.json
     ├── agents/

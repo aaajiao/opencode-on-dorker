@@ -39,7 +39,7 @@ The `opencode-skills` plugin (archived Dec 23, 2025) used:
 
 **Migration to native:**
 - Plugin functionality graduated to OpenCode core (PR #5930, #6000)
-- Directory changed: `.opencode/skills/` → `skill/`
+- Directory changed: `.opencode/skills/` → `skills/`
 - Tool changed: `skills_my_skill` → single `skill` tool
 - Loading changed: Eager → Lazy
 
@@ -52,9 +52,9 @@ The `opencode-skills` plugin (archived Dec 23, 2025) used:
 OpenCode searches these locations (lowest to highest priority):
 
 ```
-1. ~/.config/opencode/skill/<name>/SKILL.md          # Global (XDG)
+1. ~/.config/opencode/skills/<name>/SKILL.md         # Global (XDG)
 2. ~/.claude/skills/<name>/SKILL.md                  # Global (Claude-compatible)
-3. .opencode/skill/<name>/SKILL.md                   # Project-local
+3. .opencode/skills/<name>/SKILL.md                  # Project-local
 4. .claude/skills/<name>/SKILL.md                    # Project-local (Claude-compatible)
 ```
 
@@ -391,12 +391,12 @@ tools:
 ### 7.2 Skill Organization
 
 ```
-~/.config/opencode/skill/          # Global skills (all projects)
+~/.config/opencode/skills/         # Global skills (all projects)
 ├── code-review/
 ├── documentation/
 └── deployment/
 
-<project>/.opencode/skill/         # Project-specific skills
+<project>/.opencode/skills/        # Project-specific skills
 ├── project-standards/
 ├── internal-tools/
 └── custom-workflows/

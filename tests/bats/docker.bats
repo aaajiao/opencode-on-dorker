@@ -18,7 +18,7 @@ setup() {
   export HOME="$TEST_DIR/home"
 
   mkdir -p "$HOME"
-  mkdir -p "$OCD_CONFIG_HOME"/{skill,command,agent}
+  mkdir -p "$OCD_CONFIG_HOME"/{skills,commands,agents}
 
   source "$OCD_ROOT/lib/core.sh"
   source "$OCD_ROOT/lib/workspace.sh"

@@ -10,9 +10,9 @@
 
 ### 2. Discovery Locations (Priority)
 ```
-1. ~/.config/opencode/skill/<name>/SKILL.md          # Global (XDG)
+1. ~/.config/opencode/skills/<name>/SKILL.md         # Global (XDG)
 2. ~/.claude/skills/<name>/SKILL.md                  # Global (Claude)
-3. .opencode/skill/<name>/SKILL.md                   # Project-local
+3. .opencode/skills/<name>/SKILL.md                  # Project-local
 4. .claude/skills/<name>/SKILL.md                    # Project-local (Claude)
 ```
 - All locations merged (not exclusive)

@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [6.0.0] - 2026-01-28
+
+### Breaking Changes
+
+- **目录命名标准化**: 全局配置目录从单数改为复数形式
+  - `~/.config/opencode/skill/` → `~/.config/opencode/skills/`
+  - `~/.config/opencode/agent/` → `~/.config/opencode/agents/`
+  - `~/.config/opencode/command/` → `~/.config/opencode/commands/`
+  - `~/.config/opencode/plugin/` → `~/.config/opencode/plugins/`
+  - 符合 OpenCode 官方标准和 oh-my-opencode v3.1.4+ 要求
+
+### Migration from v5.x
+
+OCD v6.0.0 自动迁移目录命名。首次运行时：
+
+1. 检测旧的单数目录 (`skill/`, `agent/`, `command/`, `plugin/`)
+2. 创建备份到 `~/.config/opencode/.backup-singular-v5/`
+3. 迁移到复数目录 (`skills/`, `agents/`, `commands/`, `plugins/`)
+
+**手动迁移**（如需要）：
+```bash
+cd ~/.config/opencode
+mv skill skills 2>/dev/null
+mv agent agents 2>/dev/null
+mv command commands 2>/dev/null
+mv plugin plugins 2>/dev/null
+```
+
+**迁移脚本**：
+```bash
+bash ~/opencode/scripts/migrate-v6-plural-dirs.sh
+```
+
+### Changed
+
+- **模板目录结构**: `templates/global/opencode/` 目录名称更新为复数形式
+- **配置生成**: `lib/config.sh` 使用复数目录名称
+- **迁移逻辑**: 新增 v6 迁移检测和自动迁移
+
 ## [5.0.0] - 2026-01-11
 
 ### Added

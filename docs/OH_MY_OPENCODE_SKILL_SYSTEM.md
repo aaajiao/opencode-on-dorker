@@ -45,9 +45,9 @@ Your instructions in Markdown format.
 **Discovery locations (priority order):**
 
 ```
-1. ~/.config/opencode/skill/<name>/SKILL.md          # Global (XDG)
+1. ~/.config/opencode/skills/<name>/SKILL.md         # Global (XDG)
 2. ~/.claude/skills/<name>/SKILL.md                  # Global (Claude)
-3. .opencode/skill/<name>/SKILL.md                   # Project-local
+3. .opencode/skills/<name>/SKILL.md                  # Project-local
 4. .claude/skills/<name>/SKILL.md                    # Project-local (Claude)
 ```
 
@@ -55,7 +55,7 @@ Your instructions in Markdown format.
 ```
 /workspace/dev/
 ├── global/claude/skills/remind/SKILL.md             # ✅ Exists
-├── .opencode/skill/                                 # Empty
+├── .opencode/skills/                                # Empty
 └── .claude/skills/                                  # Empty
 ```
 
@@ -396,10 +396,10 @@ Task Completed
 ```
 1. OpenCode starts
 2. Scans all discovery locations:
-   - ~/.config/opencode/skill/*/SKILL.md
-   - ~/.claude/skills/*/SKILL.md
-   - .opencode/skill/*/SKILL.md
-   - .claude/skills/*/SKILL.md
+- ~/.config/opencode/skills/*/SKILL.md
+- ~/.claude/skills/*/SKILL.md
+- .opencode/skills/*/SKILL.md
+- .claude/skills/*/SKILL.md
 3. Validates each SKILL.md:
    - File exists (case-sensitive)
    - YAML frontmatter valid
@@ -439,10 +439,10 @@ OpenCode validates:
 
 ```
 1. Create directory
-   mkdir ~/.config/opencode/skill/my-skill
+   mkdir ~/.config/opencode/skills/my-skill
 
 2. Create SKILL.md
-   cat > ~/.config/opencode/skill/my-skill/SKILL.md << 'EOF'
+   cat > ~/.config/opencode/skills/my-skill/SKILL.md << 'EOF'
    ---
    name: my-skill
    description: What this skill does
@@ -470,7 +470,7 @@ OpenCode validates:
 
 ```
 1. Edit SKILL.md
-   nano ~/.config/opencode/skill/my-skill/SKILL.md
+   nano ~/.config/opencode/skills/my-skill/SKILL.md
 
 2. Restart OpenCode
    (No hot reload - must restart)
@@ -482,7 +482,7 @@ OpenCode validates:
 
 ```
 1. Remove directory
-   rm -rf ~/.config/opencode/skill/my-skill
+   rm -rf ~/.config/opencode/skills/my-skill
 
 2. Restart OpenCode
    (Skill no longer available)
@@ -519,7 +519,7 @@ OpenCode validates:
 ### Global Skills (Reusable)
 
 ```
-~/.config/opencode/skill/
+~/.config/opencode/skills/
 ├── code-review/
 │   ├── SKILL.md
 │   └── references/
@@ -539,7 +539,7 @@ OpenCode validates:
 ### Project-Local Skills (Specific)
 
 ```
-<project>/.opencode/skill/
+<project>/.opencode/skills/
 ├── project-standards/
 │   ├── SKILL.md
 │   └── references/
