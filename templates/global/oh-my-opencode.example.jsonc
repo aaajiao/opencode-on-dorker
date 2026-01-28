@@ -1,0 +1,115 @@
+// oh-my-opencode 配置示例（带注释说明）
+// 实际使用时请复制为 oh-my-opencode.json 并删除注释
+// 配置位置: ~/.config/opencode/oh-my-opencode.json
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+
+  // ============================================================
+  // Agent 模型配置
+  // 可用模型: opencode/claude-opus-4-5, opencode/claude-sonnet-4-5,
+  //          opencode/claude-haiku-4-5, opencode/gpt-5.2,
+  //          opencode/gemini-3-flash, opencode/grok-code
+  // ============================================================
+  "agents": {
+    "sisyphus": { "model": "opencode/claude-opus-4-5" },       // 主编排器（贵）
+    "oracle": { "model": "opencode/gpt-5.2" },                 // 架构顾问（贵）
+    "librarian": { "model": "opencode/claude-haiku-4-5" },     // 外部研究（便宜）
+    "explore": { "model": "opencode/grok-code" },              // 代码导航（免费）
+    "multimodal-looker": { "model": "opencode/gemini-3-flash" }, // 视觉分析（便宜）
+    "prometheus": { "model": "opencode/claude-opus-4-5" },     // 战略规划（贵）
+    "metis": { "model": "opencode/claude-opus-4-5" },          // 预规划分析（贵）
+    "momus": { "model": "opencode/gpt-5.2" },                  // 计划审查（贵）
+    "atlas": { "model": "opencode/claude-sonnet-4-5" },        // 高级编排（贵）
+    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" } // 任务执行（便宜）
+  },
+
+  // ============================================================
+  // 浏览器自动化引擎
+  // 可选值:
+  //   - "playwright": 默认，使用 Playwright MCP，无需额外安装
+  //   - "agent-browser": 替代方案，可连接已有 Chrome
+  //                      需安装: bun add -g agent-browser && agent-browser install
+  // ============================================================
+  "browser_automation_engine": {
+    "provider": "playwright"
+  },
+
+  // ============================================================
+  // Tmux 集成
+  // 可视化多 Agent 执行，每个 subagent 在独立 tmux pane 中运行
+  // 要求: 必须在 tmux 会话内运行，且 OpenCode 使用 --port 模式
+  // 布局: main-vertical, main-horizontal, tiled, even-horizontal, even-vertical
+  // ============================================================
+  "tmux": {
+    "enabled": false,
+    "layout": "main-vertical",
+    "main_pane_min_width": 120,
+    "agent_pane_min_width": 40
+  },
+
+  // ============================================================
+  // Ralph Loop（自主开发循环）
+  // Agent 持续工作直到任务完成，自动检测完成状态
+  // 使用: /ralph-loop "任务描述"
+  // 取消: /cancel-ralph
+  // ============================================================
+  "ralph_loop": {
+    "enabled": false,
+    "default_max_iterations": 100
+  },
+
+  // ============================================================
+  // Sisyphus 高级功能
+  // ============================================================
+  "sisyphus": {
+    // Tasks: 结构化任务管理，支持依赖关系和持久化
+    // 存储: .sisyphus/tasks/{listId}/{taskId}.json
+    "tasks": {
+      "enabled": false,
+      "storage_path": ".sisyphus/tasks",
+      "claude_code_compat": false
+    },
+    // Swarm: 多 Agent 协调系统（Wave 1 基础架构）
+    // 存储: .sisyphus/teams/{teamName}/inboxes/{agentName}.json
+    "swarm": {
+      "enabled": false,
+      "storage_path": ".sisyphus/teams",
+      "ui_mode": "both"            // toast, tmux, or both
+    }
+  },
+
+  // ============================================================
+  // 实验性功能
+  // ============================================================
+  "experimental": {
+    // 动态上下文裁剪: 自动移除冗余/过时的工具调用，防止 token 膨胀
+    // 策略:
+    //   - deduplication: 移除重复调用
+    //   - supersede_writes: 文件被重新读取后裁剪之前的写入
+    //   - purge_errors: N 轮后移除报错的工具输入
+    // 注意: turn_protection 保护最近 N 轮调用，禁用可能丢失上下文
+    "dynamic_context_pruning": {
+      "enabled": false,
+      "notification": "detailed",
+      "turn_protection": { "enabled": true, "turns": 3 },
+      "protected_tools": ["task", "todowrite", "todoread", "lsp_rename"],
+      "strategies": {
+        "deduplication": { "enabled": true },
+        "supersede_writes": { "enabled": true, "aggressive": false },
+        "purge_errors": { "enabled": true, "turns": 5 }
+      }
+    }
+  },
+
+  // ============================================================
+  // 禁用特定组件（按需取消注释）
+  // ============================================================
+  // "disabled_mcps": ["websearch", "context7", "grep_app"],
+  // "disabled_agents": ["metis", "momus"],
+  // "disabled_skills": ["playwright", "frontend-ui-ux", "git-master"],
+
+  // ============================================================
+  // 自动更新
+  // ============================================================
+  "auto_update": true
+}

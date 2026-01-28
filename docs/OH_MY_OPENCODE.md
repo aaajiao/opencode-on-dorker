@@ -428,6 +428,113 @@ oh-my-opencode 共有 **10 个 Agent**，分为四类：
 
 ---
 
+## 内置 MCPs
+
+oh-my-opencode 内置 3 个远程 MCP 服务，自动启用：
+
+| MCP | 用途 | 认证 |
+|-----|------|------|
+| **websearch** (Exa AI) | 实时网页搜索，获取最新信息 | `EXA_API_KEY` |
+| **context7** | 查询库/框架的官方文档和代码示例 | `CONTEXT7_API_KEY` |
+| **grep_app** | 在 GitHub 上搜索真实代码模式 | 无需认证 |
+
+### 禁用 MCP
+
+如需禁用特定 MCP，在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "disabled_mcps": ["websearch", "grep_app"]
+}
+```
+
+---
+
+## 内置 Skills
+
+oh-my-opencode 提供 4 个内置 Skill，无需额外配置即可使用。
+
+### Skills 一览
+
+| Skill | 用途 | 加载命令 |
+|-------|------|----------|
+| **playwright** | 浏览器自动化（截图、表单、爬虫） | `/playwright` |
+| **frontend-ui-ux** | UI/UX 设计视角开发，无设计稿也能做出精美界面 | `/frontend-ui-ux` |
+| **git-master** | Git 操作专家（atomic commit、rebase、history 搜索） | `/git-master` |
+| **dev-browser** | 持久化页面状态的浏览器自动化，可连接已有 Chrome | `/dev-browser` |
+
+### Skill 详解
+
+#### playwright
+
+**浏览器自动化**，基于 Playwright MCP。
+
+- 截图、表单填写、点击交互
+- 无头浏览器模式
+- 适合自动化测试和网页爬取
+
+```bash
+# 加载后可用的工具
+browser_navigate, browser_click, browser_fill_form,
+browser_screenshot, browser_snapshot, browser_evaluate...
+```
+
+#### frontend-ui-ux
+
+**设计师视角的前端开发**，即使没有设计稿也能创建精美 UI。
+
+核心理念：
+- 承诺大胆的美学方向（极简、复古、奢华等）
+- 避免通用字体（Inter、Roboto、Arial）
+- 色彩要有张力，布局要打破常规
+- 动效要精心编排，不是随处点缀
+
+适用场景：
+- 从零开始的 UI 开发
+- 需要视觉冲击力的项目
+- 设计师资源不足时
+
+#### git-master
+
+**Git 操作专家**，三合一：
+
+| 模式 | 触发词 | 能力 |
+|------|--------|------|
+| **COMMIT** | "commit"、"提交" | 原子提交、风格检测、多提交拆分 |
+| **REBASE** | "rebase"、"squash" | 交互式 rebase、冲突解决、历史清理 |
+| **HISTORY** | "谁写的"、"什么时候加的" | git blame、bisect、pickaxe 搜索 |
+
+**核心规则**：
+- 3+ 文件 → 必须 2+ commits
+- 自动检测项目 commit 风格（semantic/plain/short）
+- 测试文件必须和实现同一个 commit
+
+#### dev-browser
+
+**持久化浏览器自动化**，可连接用户已有的 Chrome。
+
+与 playwright 的区别：
+- 可复用已登录状态
+- 页面状态跨脚本执行保持
+- 支持 Extension 模式连接已有浏览器
+
+适用场景：
+- 需要登录态的自动化操作
+- 多步骤交互工作流
+- 调试网页应用
+
+### 禁用 Skill
+
+如需禁用特定 skill，在 `oh-my-opencode.json` 中配置：
+
+```json
+{
+  "disabled_skills": ["playwright", "frontend-ui-ux"]
+}
+```
+
+---
+
 ## ultrawork 模式
 
 `ultrawork`（缩写 `ulw`）自动启用所有高级功能。
@@ -621,9 +728,240 @@ SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-5
     "momus": { "model": "opencode/gpt-5.2" },
     "atlas": { "model": "opencode/claude-sonnet-4-5" },
     "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" }
+  },
+  "browser_automation_engine": {
+    "provider": "playwright"
   }
 }
 ```
+
+### 浏览器自动化引擎
+
+oh-my-opencode 支持两种浏览器自动化引擎：
+
+| Provider | 说明 | 安装 |
+|----------|------|------|
+| `playwright` | 默认，使用 Playwright MCP | 无需额外安装 |
+| `agent-browser` | 替代方案，支持连接已有浏览器 | 需安装 `bun add -g agent-browser && agent-browser install` |
+
+**切换方法**：编辑 `~/.config/opencode/oh-my-opencode.json`
+
+```json
+"browser_automation_engine": {
+  "provider": "agent-browser"
+}
+```
+
+**两者区别**：
+
+| 特性 | playwright | agent-browser |
+|------|------------|---------------|
+| 启动方式 | 新建无头浏览器 | 可连接已有 Chrome |
+| 登录态 | 每次重新登录 | 可复用已登录状态 |
+| 适用场景 | 自动化测试、爬虫 | 需要登录态的操作 |
+| 配套 Skill | `/playwright` | `/dev-browser` |
+
+> 完整配置选项参见 `~/opencode/templates/global/oh-my-opencode.example.jsonc`
+
+### 高级功能
+
+#### Tmux 集成
+
+可视化多 Agent 执行，每个 subagent 在独立 tmux pane 中运行，实时显示输出。
+
+| 属性 | 说明 |
+|------|------|
+| 状态 | ✅ 稳定 |
+| 默认 | 禁用 |
+| 要求 | 必须在 tmux 会话内运行，且 OpenCode 使用 `--port` 模式 |
+
+**配置**：
+
+```json
+{
+  "tmux": {
+    "enabled": true,
+    "layout": "main-vertical",
+    "main_pane_min_width": 120,
+    "agent_pane_min_width": 40
+  }
+}
+```
+
+**布局选项**：`main-vertical`、`main-horizontal`、`tiled`、`even-horizontal`、`even-vertical`
+
+**适用场景**：
+- 需要可视化监控多个并行 Agent
+- 调试复杂的 Agent 协作流程
+- 想看 subagent 实时输出
+
+---
+
+#### Ralph Loop
+
+自主开发循环，Agent 持续工作直到任务完成，自动检测完成状态。
+
+| 属性 | 说明 |
+|------|------|
+| 状态 | ✅ 稳定 |
+| 默认 | 禁用 (opt-in) |
+| 完成信号 | Agent 输出 `<promise>DONE</promise>` |
+
+**配置**：
+
+```json
+{
+  "ralph_loop": {
+    "enabled": true,
+    "default_max_iterations": 100
+  }
+}
+```
+
+**使用**：
+
+```bash
+/ralph-loop "构建一个带认证的 REST API"
+/ralph-loop "重构支付模块" --max-iterations=50
+/cancel-ralph   # 取消当前循环
+```
+
+**退出条件**：
+- Agent 发出完成信号
+- 达到最大迭代次数
+- 用户执行 `/cancel-ralph`
+
+**适用场景**：
+- 复杂多步骤任务
+- 需要保证完成的工作
+- 想要无人值守执行
+
+---
+
+#### Sisyphus Tasks
+
+结构化任务管理，支持依赖关系、状态跟踪和持久化存储。
+
+| 属性 | 说明 |
+|------|------|
+| 状态 | ✅ 稳定 |
+| 默认 | 禁用 |
+| 存储 | `.sisyphus/tasks/{listId}/{taskId}.json` |
+
+**配置**：
+
+```json
+{
+  "sisyphus": {
+    "tasks": {
+      "enabled": true,
+      "storage_path": ".sisyphus/tasks",
+      "claude_code_compat": false
+    }
+  }
+}
+```
+
+**任务属性**：
+- `id`、`subject`、`description`、`owner`
+- `status`: pending | in_progress | completed
+- `blocks[]`、`blockedBy[]`（依赖追踪）
+- `metadata`（自定义数据）
+
+**适用场景**：
+- 需要结构化任务跟踪
+- 管理任务依赖关系
+- 跨会话持久化状态
+
+---
+
+#### Sisyphus Swarm
+
+多 Agent 协调系统，基于 mailbox 协议的 Agent 间通信。
+
+| 属性 | 说明 |
+|------|------|
+| 状态 | 🔧 Wave 1（基础架构） |
+| 默认 | 禁用 |
+| 存储 | `.sisyphus/teams/{teamName}/inboxes/{agentName}.json` |
+
+**配置**：
+
+```json
+{
+  "sisyphus": {
+    "swarm": {
+      "enabled": true,
+      "storage_path": ".sisyphus/teams",
+      "ui_mode": "both"
+    }
+  }
+}
+```
+
+**消息类型**（14 种）：
+- `permission_request/response`
+- `task_assignment/completed`
+- `join_request/approved`
+- `plan_approval_request/response`
+- 等...
+
+**注意**：此功能仍在早期阶段，API 可能变化。
+
+---
+
+#### 动态上下文裁剪（实验性）
+
+自动移除冗余/过时的工具调用，防止长会话中 token 膨胀。
+
+| 属性 | 说明 |
+|------|------|
+| 状态 | 🧪 实验性 |
+| 默认 | 禁用 |
+| 策略 | 去重、写入替代、错误清除 |
+
+**配置**：
+
+```json
+{
+  "experimental": {
+    "dynamic_context_pruning": {
+      "enabled": true,
+      "notification": "detailed",
+      "turn_protection": { "enabled": true, "turns": 3 },
+      "protected_tools": ["task", "todowrite", "todoread", "lsp_rename"],
+      "strategies": {
+        "deduplication": { "enabled": true },
+        "supersede_writes": { "enabled": true, "aggressive": false },
+        "purge_errors": { "enabled": true, "turns": 5 }
+      }
+    }
+  }
+}
+```
+
+**策略说明**：
+- **deduplication**: 移除重复的工具调用
+- **supersede_writes**: 文件被重新读取后，裁剪之前的写入输入
+- **purge_errors**: N 轮后移除报错的工具输入
+
+**注意**：`turn_protection` 保护最近 N 轮的调用不被裁剪，禁用可能丢失当前工作上下文。
+
+---
+
+#### 禁用特定组件
+
+按需禁用 MCP、Agent 或 Skill：
+
+```json
+{
+  "disabled_mcps": ["websearch", "context7", "grep_app"],
+  "disabled_agents": ["metis", "momus"],
+  "disabled_skills": ["playwright", "frontend-ui-ux", "git-master"]
+}
+```
+
+---
 
 ### 可用模型
 

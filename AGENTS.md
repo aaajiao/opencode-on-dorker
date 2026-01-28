@@ -138,7 +138,7 @@ docker run -it --rm --network host opencode-bun bash
 | Debug Mac/Docker mapping | `docs/ARCHITECTURE.md` | Mount points, IPC mechanism |
 | Extend OCD (developer) | `docs/OPENCODE_CONFIG_GUIDE.md` | Modules, extension points |
 | Upgrade between versions | `docs/MIGRATION.md` | v4→v5→v6 migration steps |
-| Understand skill system | `docs/SKILL_*.md` | oh-my-opencode skills |
+| oh-my-opencode Agent system | `docs/OH_MY_OPENCODE.md` | Agents, Skills, MCPs, advanced features |
 | Quick user overview | `README.md` (中文) | Keep concise (~100 lines) |
 | English documentation | `docs/README_EN.md` | Sync with README.md |
 
@@ -146,6 +146,7 @@ docker run -it --rm --network host opencode-bun bash
 - New CLI option → `CLI_REFERENCE.md` + `README.md` (if major)
 - New config/directory → `CONFIGURATION.md` + `ARCHITECTURE.md`
 - Breaking change → `MIGRATION.md` + version bump in README/AGENTS.md
+- oh-my-opencode features → `OH_MY_OPENCODE.md`
 - Always sync: `README.md` ↔ `docs/README_EN.md`
 
 ## Code Style Guidelines
