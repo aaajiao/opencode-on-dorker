@@ -67,7 +67,7 @@ cd ~/opencode && git pull
 
 | Module | Lines | Key Functions | Purpose |
 |--------|-------|---------------|---------|
-| `lib/config.sh` | 498 | `ocd_ensure_global_config`, `ocd_update_port`, `ocd_init_project` | v5 config management |
+| `lib/config.sh` | 520 | `ocd_ensure_global_config`, `ocd_ensure_provider_cache`, `ocd_update_port`, `ocd_init_project` | v5 config management |
 | `lib/scan.sh` | 335 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
 | `bin/ocd` | 339 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
 | `lib/core.sh` | 161 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |

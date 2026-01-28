@@ -219,3 +219,42 @@ teardown() {
 
   [ "$status" -eq 0 ]
 }
+
+# =========================================
+# ocd_ensure_provider_cache tests
+# =========================================
+
+@test "ocd_ensure_provider_cache creates cache file" {
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/oh-my-opencode"
+  mkdir -p "$OCD_OMO_CACHE_HOME"
+
+  ocd_ensure_provider_cache
+
+  [ -f "$OCD_OMO_CACHE_HOME/connected-providers.json" ]
+
+  run jq -e '.connected' "$OCD_OMO_CACHE_HOME/connected-providers.json"
+  [ "$status" -eq 0 ]
+
+  run jq -e '.updatedAt' "$OCD_OMO_CACHE_HOME/connected-providers.json"
+  [ "$status" -eq 0 ]
+}
+
+@test "ocd_ensure_provider_cache is idempotent" {
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/oh-my-opencode"
+  mkdir -p "$OCD_OMO_CACHE_HOME"
+  echo '{"connected":["existing"],"updatedAt":"keep"}' > "$OCD_OMO_CACHE_HOME/connected-providers.json"
+
+  ocd_ensure_provider_cache
+
+  result=$(jq -r '.connected[0]' "$OCD_OMO_CACHE_HOME/connected-providers.json")
+  [ "$result" = "existing" ]
+}
+
+@test "ocd_ensure_provider_cache creates directory if missing" {
+  export OCD_OMO_CACHE_HOME="$TEST_DIR/nonexistent/oh-my-opencode"
+
+  ocd_ensure_provider_cache
+
+  [ -d "$OCD_OMO_CACHE_HOME" ]
+  [ -f "$OCD_OMO_CACHE_HOME/connected-providers.json" ]
+}

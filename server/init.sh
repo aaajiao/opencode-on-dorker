@@ -37,6 +37,11 @@ mkdir -p ~/.cache/ms-playwright
 mkdir -p ~/.cache/oh-my-opencode
 mkdir -p ~/projects
 
+PROVIDER_CACHE="$HOME/.cache/oh-my-opencode/connected-providers.json"
+if [[ ! -f "$PROVIDER_CACHE" ]]; then
+  printf '{"connected":[],"updatedAt":"%s"}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$PROVIDER_CACHE"
+fi
+
 echo -e "   ${GREEN}✓${NC} 目录创建完成"
 
 # =========================================
