@@ -80,22 +80,19 @@ EXA_API_KEY=your-exa-api-key
 | [迁移指南](./docs/MIGRATION.md) | v4→v5→v6 升级 |
 | [架构说明](./docs/ARCHITECTURE.md) | Mac/Docker 映射关系 |
 | [开发者指南](./docs/OPENCODE_CONFIG_GUIDE.md) | 扩展和定制 |
+| [Agent 指南](./docs/OH_MY_OPENCODE.md) | oh-my-opencode 多 Agent 协作 |
 
 ## oh-my-opencode Agent
 
-| Agent | 用途 |
-|-------|------|
-| **Sisyphus** | 主编排器 |
-| **oracle** | 架构设计、调试 |
-| **librarian** | 文档研究 |
-| **explore** | 快速搜索 |
+| 场景 | Agent | 示例 |
+|------|-------|------|
+| 复杂任务 | Sisyphus (默认) | 直接输入任务 |
+| 架构/调试 | `@oracle` | `@oracle 分析这个死锁` |
+| 查文档 | `@librarian` | `@librarian React 18 并发特性` |
+| 找代码 | `@explore` | `@explore 用户认证在哪` |
+| 大型重构 | `ulw:` | `ulw: 重构认证模块` |
 
-常用命令：
-```
-ultrawork / ulw    # 最大性能模式
-@oracle            # 调用调试专家
-@librarian         # 查找文档
-```
+完整指南：[docs/OH_MY_OPENCODE.md](./docs/OH_MY_OPENCODE.md)
 
 ## 依赖要求
 

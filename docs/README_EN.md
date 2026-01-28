@@ -79,22 +79,19 @@ EXA_API_KEY=your-exa-api-key
 | [Migration Guide](./MIGRATION.md) | v4→v5→v6 upgrade |
 | [Architecture](./ARCHITECTURE.md) | Mac/Docker mapping |
 | [Developer Guide](./OPENCODE_CONFIG_GUIDE.md) | Extension and customization |
+| [Agent Guide](./OH_MY_OPENCODE.md) | oh-my-opencode multi-agent collaboration |
 
 ## oh-my-opencode Agents
 
-| Agent | Purpose |
-|-------|---------|
-| **Sisyphus** | Main orchestrator |
-| **oracle** | Architecture design, debugging |
-| **librarian** | Documentation research |
-| **explore** | Quick search |
+| Scenario | Agent | Example |
+|----------|-------|---------|
+| Complex tasks | Sisyphus (default) | Just type the task |
+| Architecture/Debug | `@oracle` | `@oracle analyze this deadlock` |
+| Find docs | `@librarian` | `@librarian React 18 concurrency` |
+| Find code | `@explore` | `@explore where is user auth` |
+| Large refactor | `ulw:` | `ulw: refactor auth module` |
 
-Common commands:
-```
-ultrawork / ulw    # Maximum performance mode
-@oracle            # Call debugging expert
-@librarian         # Find documentation
-```
+Full guide: [docs/OH_MY_OPENCODE.md](./OH_MY_OPENCODE.md)
 
 ## Requirements
 
