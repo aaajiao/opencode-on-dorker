@@ -116,22 +116,22 @@ teardown() {
 # ocd_update_omo_agents tests
 # =========================================
 
-@test "ocd_update_omo_agents updates Sisyphus model" {
+@test "ocd_update_omo_agents updates sisyphus model" {
   local config_file="$TEST_DIR/omo.json"
-  echo '{"agents":{"Sisyphus":{"model":"old-model"}}}' > "$config_file"
+  echo '{"agents":{"sisyphus":{"model":"old-model"}}}' > "$config_file"
 
-  export PLANNER_MODEL="new-planner-model"
+  export SISYPHUS_MODEL="new-sisyphus-model"
   ocd_update_omo_agents "$config_file"
 
-  result=$(jq -r '.agents.Sisyphus.model' "$config_file")
-  [ "$result" = "new-planner-model" ]
+  result=$(jq -r '.agents.sisyphus.model' "$config_file")
+  [ "$result" = "new-sisyphus-model" ]
 }
 
 @test "ocd_update_omo_agents adds oracle agent when ORACLE_MODEL is set" {
   local config_file="$TEST_DIR/omo.json"
-  echo '{"agents":{"Sisyphus":{"model":"planner"}}}' > "$config_file"
+  echo '{"agents":{"sisyphus":{"model":"planner"}}}' > "$config_file"
 
-  export PLANNER_MODEL="planner"
+  export SISYPHUS_MODEL="planner"
   export ORACLE_MODEL="openai/gpt-5.2"
   ocd_update_omo_agents "$config_file"
 
