@@ -27,34 +27,6 @@ SINGULAR_DIRS=("skill" "agent" "command" "plugin")
 PLURAL_DIRS=("skills" "agents" "commands" "plugins")
 
 # =========================================
-# 检查是否需要迁移
-# =========================================
-check_migration_needed() {
-  local needs_migration=0
-  local i
-  
-  for i in "${!SINGULAR_DIRS[@]}"; do
-    local singular="${SINGULAR_DIRS[$i]}"
-    if [[ -d "$GLOBAL_CONFIG/$singular" ]]; then
-      needs_migration=1
-      break
-    fi
-  done
-  
-  if [[ -d "$PROJECT_DIR/.opencode" ]]; then
-    for i in "${!SINGULAR_DIRS[@]}"; do
-      local singular="${SINGULAR_DIRS[$i]}"
-      if [[ -d "$PROJECT_DIR/.opencode/$singular" ]]; then
-        needs_migration=1
-        break
-      fi
-    done
-  fi
-  
-  return $((1 - needs_migration))
-}
-
-# =========================================
 # 迁移单个目录
 # =========================================
 migrate_directory() {
@@ -163,57 +135,65 @@ migrate_project_config() {
 # =========================================
 # 主函数
 # =========================================
+check_global_needs_migration() {
+  local i
+  for i in "${!SINGULAR_DIRS[@]}"; do
+    local singular="${SINGULAR_DIRS[$i]}"
+    if [[ -d "$GLOBAL_CONFIG/$singular" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+check_project_needs_migration() {
+  [[ ! -d "$PROJECT_DIR/.opencode" ]] && return 1
+  local i
+  for i in "${!SINGULAR_DIRS[@]}"; do
+    local singular="${SINGULAR_DIRS[$i]}"
+    if [[ -d "$PROJECT_DIR/.opencode/$singular" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 main() {
-  ocd_log ""
-  ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ocd_log "  OCD v6 迁移：单数 → 复数目录"
-  ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ocd_log ""
-  ocd_info "从 oh-my-opencode v3.1.4+ 开始，目录名称改为复数形式："
-  ocd_info "  skill/   → skills/"
-  ocd_info "  agent/   → agents/"
-  ocd_info "  command/ → commands/"
-  ocd_info "  plugin/  → plugins/"
-  ocd_log ""
+  local did_migrate=0
   
-  # 检查是否已迁移
-  if [[ -f "$MARKER_FILE" ]]; then
-    ocd_success "已完成迁移（标记文件存在）"
-    ocd_info "如需重新迁移，删除: $MARKER_FILE"
-    exit 0
-  fi
-  
-  # 检查是否需要迁移
-  if ! check_migration_needed; then
-    ocd_success "无需迁移（未发现单数目录）"
+  # 全局迁移（只做一次，用标记文件）
+  if [[ ! -f "$MARKER_FILE" ]] && check_global_needs_migration; then
+    ocd_log ""
+    ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ocd_log "  OCD v6 迁移：单数 → 复数目录"
+    ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    migrate_global_config
     mkdir -p "$GLOBAL_CONFIG"
     touch "$MARKER_FILE"
-    exit 0
+    did_migrate=1
   fi
   
-  # 迁移全局配置
-  migrate_global_config
+  # 项目迁移（每次都检查，因为可能是新项目）
+  if check_project_needs_migration; then
+    ocd_log ""
+    ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ocd_log "  OCD v6 迁移：项目目录"
+    ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    migrate_project_config
+    did_migrate=1
+  fi
   
-  # 迁移项目配置
-  migrate_project_config
+  if [[ "$did_migrate" -eq 1 ]]; then
+    ocd_log ""
+    ocd_success "迁移完成"
+    [[ -d "$GLOBAL_CONFIG/$BACKUP_DIR" ]] && ocd_info "全局备份: $GLOBAL_CONFIG/$BACKUP_DIR/"
+    [[ -d "$PROJECT_DIR/.opencode/$BACKUP_DIR" ]] && ocd_info "项目备份: $PROJECT_DIR/.opencode/$BACKUP_DIR/"
+    ocd_log ""
+  fi
   
-  # 创建标记文件
+  # 确保全局标记存在
   mkdir -p "$GLOBAL_CONFIG"
   touch "$MARKER_FILE"
-  
-  # 完成报告
-  ocd_log ""
-  ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ocd_log "  ✅ 迁移完成"
-  ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  ocd_log ""
-  ocd_success "备份位置: $GLOBAL_CONFIG/$BACKUP_DIR/"
-  if [[ -d "$PROJECT_DIR/.opencode/$BACKUP_DIR" ]]; then
-    ocd_success "备份位置: $PROJECT_DIR/.opencode/$BACKUP_DIR/"
-  fi
-  ocd_log ""
-  ocd_info "如有问题，可从备份目录恢复"
-  ocd_log ""
 }
 
 main "$@"

@@ -30,18 +30,18 @@ ocd_check_migration() {
   
   # v6 迁移：单数目录 → 复数目录
   local project_dir="${1:-}"
+  local global_migrated="${config_dir}/.ocd-v6-migrated"
   
-  if [[ -f "$config_dir/.ocd-v6-migrated" ]] && [[ -z "$project_dir" ]]; then
-    return 0
-  fi
+  local needs_global=0
+  local needs_project=0
   
-  # 检测是否存在旧的单数目录（全局 或 项目级）
-  local needs_v6_migration=0
-  if [[ -d "$config_dir/skill" ]] || \
-     [[ -d "$config_dir/agent" ]] || \
-     [[ -d "$config_dir/command" ]] || \
-     [[ -d "$config_dir/plugin" ]]; then
-    needs_v6_migration=1
+  if [[ ! -f "$global_migrated" ]]; then
+    if [[ -d "$config_dir/skill" ]] || \
+       [[ -d "$config_dir/agent" ]] || \
+       [[ -d "$config_dir/command" ]] || \
+       [[ -d "$config_dir/plugin" ]]; then
+      needs_global=1
+    fi
   fi
   
   if [[ -n "$project_dir" ]] && [[ -d "$project_dir/.opencode" ]]; then
@@ -49,17 +49,20 @@ ocd_check_migration() {
        [[ -d "$project_dir/.opencode/agent" ]] || \
        [[ -d "$project_dir/.opencode/command" ]] || \
        [[ -d "$project_dir/.opencode/plugin" ]]; then
-      needs_v6_migration=1
+      needs_project=1
     fi
   fi
   
-  if [[ "$needs_v6_migration" -eq 1 ]]; then
+  if [[ "$needs_global" -eq 1 ]] || [[ "$needs_project" -eq 1 ]]; then
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  ⚠️  检测到 v5 单数目录需要迁移"
+    echo "  ⚠️  检测到单数目录需要迁移"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "  v6 将目录名改为复数形式（与 Claude 保持一致）："
+    [[ "$needs_global" -eq 1 ]] && echo "  全局: $config_dir"
+    [[ "$needs_project" -eq 1 ]] && echo "  项目: $project_dir/.opencode"
+    echo ""
+    echo "  v6 将目录名改为复数形式："
     echo "    skill/   → skills/"
     echo "    agent/   → agents/"
     echo "    command/ → commands/"
@@ -69,18 +72,14 @@ ocd_check_migration() {
     if [[ ! "$answer" =~ ^[Nn]$ ]]; then
       echo ""
       "$ocd_root/scripts/migrate-v6-plural-dirs.sh" "$project_dir"
-      if [[ $? -eq 0 ]]; then
-        touch "$config_dir/.ocd-v6-migrated"
-      fi
     else
       echo ""
       echo "  跳过迁移。下次启动时会再次提示。"
-      echo "  手动运行: $ocd_root/scripts/migrate-v6-plural-dirs.sh"
+      echo "  手动运行: $ocd_root/scripts/migrate-v6-plural-dirs.sh $project_dir"
       echo ""
     fi
-  else
-    # 新安装，直接标记为已迁移
-    touch "$config_dir/.ocd-v6-migrated"
+  elif [[ ! -f "$global_migrated" ]]; then
+    touch "$global_migrated"
   fi
 }
 
