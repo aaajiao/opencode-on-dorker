@@ -68,7 +68,7 @@ ocd_ensure_global_config() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
   local ocd_root="${OCD_ROOT:-$HOME/opencode}"
   
-  mkdir -p "$config_dir"/{agent,command,skill,themes}
+  mkdir -p "$config_dir"/{agents,commands,skills,themes}
   
   if [[ ! -f "$config_dir/opencode.json" ]]; then
     if [[ -f "$ocd_root/templates/global/opencode.json.tmpl" ]]; then
@@ -87,15 +87,15 @@ ocd_ensure_global_config() {
     fi
   fi
   
-  # 复制全局 agent/skill/command 模板（首次创建，不覆盖已有文件）
+  # 复制全局 agents/skills/commands 模板（首次创建，不覆盖已有文件）
   local template_opencode="$ocd_root/templates/global/opencode"
   if [[ -d "$template_opencode" ]]; then
     local src dest
     # 复制 agent
-    if [[ -d "$template_opencode/agent" ]]; then
-      for src in "$template_opencode/agent"/*.md; do
+    if [[ -d "$template_opencode/agents" ]]; then
+      for src in "$template_opencode/agents"/*.md; do
         [[ -f "$src" ]] || continue
-        dest="$config_dir/agent/$(basename "$src")"
+        dest="$config_dir/agents/$(basename "$src")"
         if [[ ! -f "$dest" ]]; then
           cp "$src" "$dest"
           ocd_info "已创建 $dest"
@@ -103,23 +103,23 @@ ocd_ensure_global_config() {
       done
     fi
     # 复制 skill（支持子目录）
-    if [[ -d "$template_opencode/skill" ]]; then
+    if [[ -d "$template_opencode/skills" ]]; then
       local skill_dir
-      for skill_dir in "$template_opencode/skill"/*/; do
+      for skill_dir in "$template_opencode/skills"/*/; do
         [[ -d "$skill_dir" ]] || continue
         local skill_name
         skill_name=$(basename "$skill_dir")
-        if [[ ! -d "$config_dir/skill/$skill_name" ]]; then
-          cp -r "$skill_dir" "$config_dir/skill/"
-          ocd_info "已创建 $config_dir/skill/$skill_name"
+        if [[ ! -d "$config_dir/skills/$skill_name" ]]; then
+          cp -r "$skill_dir" "$config_dir/skills/"
+          ocd_info "已创建 $config_dir/skills/$skill_name"
         fi
       done
     fi
     # 复制 command
-    if [[ -d "$template_opencode/command" ]]; then
-      for src in "$template_opencode/command"/*.md; do
+    if [[ -d "$template_opencode/commands" ]]; then
+      for src in "$template_opencode/commands"/*.md; do
         [[ -f "$src" ]] || continue
-        dest="$config_dir/command/$(basename "$src")"
+        dest="$config_dir/commands/$(basename "$src")"
         if [[ ! -f "$dest" ]]; then
           cp "$src" "$dest"
           ocd_info "已创建 $dest"
@@ -322,7 +322,7 @@ ocd_init_project() {
   
   if [[ "$mode" != "--minimal" ]]; then
     # 创建目录结构
-    mkdir -p "$project_dir/.opencode"/{agent,command,skill,plugin}
+    mkdir -p "$project_dir/.opencode"/{agents,commands,skills,plugins}
     mkdir -p "$project_dir/.claude"/{commands,skills,agents,rules}
     # 创建 .example 参考文件（总是更新，作为最新模板参考）
     # OpenCode 配置参考
@@ -485,7 +485,7 @@ ocd_edit_config() {
 # =========================================
 ocd_init_global() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
-  mkdir -p "$config_dir"/{skill,command,agent}
+  mkdir -p "$config_dir"/{skills,commands,agents}
   return 0
 }
 

@@ -92,9 +92,9 @@ bin/ocd
 ~/.config/opencode/                    # 配置 (用户所有)
 ├── opencode.json                      # 主配置文件
 ├── oh-my-opencode.json                # 插件配置
-├── skill/                             # 全局 Skills
-├── command/                           # 全局 Commands
-└── agent/                             # 全局 Agents
+├── skills/                            # 全局 Skills
+├── commands/                          # 全局 Commands
+└── agents/                            # 全局 Agents
 
 ~/.local/share/opencode/               # 数据 (OpenCode 原生管理)
 ├── storage/                           # 会话数据 (按 git SHA)
@@ -114,9 +114,9 @@ bin/ocd
 
 <project>/.opencode/                   # 项目级配置 (ocd init 创建)
 ├── oh-my-opencode.json
-├── agent/
-├── command/
-└── skill/
+├── agents/
+├── commands/
+└── skills/
 
 <project>/.claude/                     # 项目级对话
 ├── settings.json
@@ -187,7 +187,7 @@ ocd init
 
 创建内容：
 - `.opencode/oh-my-opencode.json.example`
-- `.opencode/agent/`, `.opencode/command/`, `.opencode/skill/`
+- `.opencode/agents/`, `.opencode/commands/`, `.opencode/skills/`
 - `.claude/settings.json.example`
 - `.claude/agents/`, `.claude/commands/`, `.claude/skills/`
 - `AGENTS.md.example`
@@ -244,8 +244,8 @@ echo "$WATCHER_PID" > "${IPC_DIR}/.watcher.pid"
 ### 6.1 Agent
 
 **路径**：
-- 全局：`~/.config/opencode/agent/*.md`
-- 项目：`<project>/.opencode/agent/*.md`
+- 全局：`~/.config/opencode/agents/*.md`
+- 项目：`<project>/.opencode/agents/*.md`
 
 **格式**：
 ```markdown
@@ -263,7 +263,7 @@ tools:
 
 ### 6.2 Skill
 
-**路径**：`~/.config/opencode/skill/<name>/SKILL.md`
+**路径**：`~/.config/opencode/skills/<name>/SKILL.md`
 
 **目录结构**：
 ```
@@ -276,7 +276,7 @@ tools:
 
 ### 6.3 Command
 
-**路径**：`~/.config/opencode/command/*.md`
+**路径**：`~/.config/opencode/commands/*.md`
 
 **格式**：
 ```markdown

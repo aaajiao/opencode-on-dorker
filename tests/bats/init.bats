@@ -30,9 +30,9 @@ teardown() {
 @test "ocd_init_global creates OpenCode native directories" {
   ocd_init_global
 
-  [ -d "$OCD_CONFIG_HOME/skill" ]
-  [ -d "$OCD_CONFIG_HOME/command" ]
-  [ -d "$OCD_CONFIG_HOME/agent" ]
+  [ -d "$OCD_CONFIG_HOME/skills" ]
+  [ -d "$OCD_CONFIG_HOME/commands" ]
+  [ -d "$OCD_CONFIG_HOME/agents" ]
 }
 
 @test "ocd_init_global returns 0 (set -e compatible)" {
@@ -49,9 +49,9 @@ teardown() {
   ocd_init_global
   ocd_init_global
 
-  [ -d "$OCD_CONFIG_HOME/skill" ]
-  [ -d "$OCD_CONFIG_HOME/command" ]
-  [ -d "$OCD_CONFIG_HOME/agent" ]
+  [ -d "$OCD_CONFIG_HOME/skills" ]
+  [ -d "$OCD_CONFIG_HOME/commands" ]
+  [ -d "$OCD_CONFIG_HOME/agents" ]
 }
 
 # =========================================
@@ -82,10 +82,10 @@ teardown() {
 
   ocd_init_project "full"
 
-  [ -d "$project/.opencode/agent" ]
-  [ -d "$project/.opencode/command" ]
-  [ -d "$project/.opencode/skill" ]
-  [ -d "$project/.opencode/plugin" ]
+  [ -d "$project/.opencode/agents" ]
+  [ -d "$project/.opencode/commands" ]
+  [ -d "$project/.opencode/skills" ]
+  [ -d "$project/.opencode/plugins" ]
 }
 
 @test "ocd_init_project creates .claude directory structure" {

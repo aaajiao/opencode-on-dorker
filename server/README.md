@@ -85,7 +85,7 @@ http://100.64.1.23:4096
 │   │   ├── status.sh                   # 状态检测脚本
 │   │   ├── tailscale.md                # Tailscale 详细配置指南
 │   │   └── README.md
-│   ├── global/                         # 全局 skill/command/agent
+│   ├── global/                         # 全局 skills/commands/agents
 │   ├── Dockerfile
 │   ├── opencode.sh                     # 本地模式
 │   └── .env                            # API Keys

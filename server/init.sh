@@ -120,7 +120,7 @@ fi
 echo "📁 初始化全局配置..."
 
 GLOBAL_DIR="$HOME/opencode/global"
-mkdir -p "$GLOBAL_DIR/opencode"/{skill,command,agent}
+mkdir -p "$GLOBAL_DIR/opencode"/{skills,commands,agents}
 mkdir -p "$GLOBAL_DIR/claude"/{skills,commands,agents,rules}
 
 # 创建默认配置文件

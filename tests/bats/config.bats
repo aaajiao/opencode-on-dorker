@@ -53,9 +53,9 @@ teardown() {
 @test "ocd_ensure_global_config creates config directories" {
   ocd_ensure_global_config
 
-  [ -d "$OCD_CONFIG_HOME/agent" ]
-  [ -d "$OCD_CONFIG_HOME/command" ]
-  [ -d "$OCD_CONFIG_HOME/skill" ]
+  [ -d "$OCD_CONFIG_HOME/agents" ]
+  [ -d "$OCD_CONFIG_HOME/commands" ]
+  [ -d "$OCD_CONFIG_HOME/skills" ]
   [ -d "$OCD_CONFIG_HOME/themes" ]
 }
 

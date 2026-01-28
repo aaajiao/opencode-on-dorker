@@ -41,9 +41,9 @@ OCD (OpenCode Docker) 文件结构与 Mac/Docker 映射关系。
 ~/.config/opencode/                # 全局配置 (用户所有)
 ├── opencode.json                  # 主配置文件
 ├── oh-my-opencode.json            # 插件配置
-├── skill/                         # 全局 Skills
-├── command/                       # 全局 Commands
-└── agent/                         # 全局 Agents
+├── skills/                        # 全局 Skills
+├── commands/                      # 全局 Commands
+└── agents/                        # 全局 Agents
 
 ~/.local/share/opencode/           # 数据存储
 ├── auth.json                      # OAuth 令牌

@@ -10,9 +10,9 @@ templates/
 │   ├── opencode.json.tmpl  # .tmpl = {{VAR}} substitution
 │   ├── oh-my-opencode.json # Direct copy (no processing)
 │   └── opencode/           # Global extensions
-│       ├── agent/github.md # @github agent
-│       ├── command/        # Global commands
-│       └── skill/remind/   # Notification skill
+│       ├── agents/github.md # @github agent
+│       ├── commands/        # Global commands
+│       └── skills/remind/   # Notification skill
 └── project/                # Reference for ocd init
     ├── AGENTS.md.example   # .example = user reference
     ├── opencode.json.example
@@ -81,10 +81,10 @@ Main OpenCode configuration. Variables used:
 ### oh-my-opencode.json
 Plugin configuration with agent models. Copied directly (no variables).
 
-### opencode/agent/github.md
+### opencode/agents/github.md
 Global `@github` agent for Git workflow automation.
 
-### opencode/skill/remind/SKILL.md
+### opencode/skills/remind/SKILL.md
 Notification skill for macOS desktop notifications.
 
 ## Project Templates (templates/project/)
@@ -100,10 +100,10 @@ Used by `ocd init` command. All are `.example` files for user reference.
 ├── .mcp.json.example.claude
 ├── .opencode/
 │   ├── oh-my-opencode.json.example
-│   ├── agent/
-│   ├── command/
-│   ├── skill/
-│   └── plugin/
+│   ├── agents/
+│   ├── commands/
+│   ├── skills/
+│   └── plugins/
 └── .claude/
     ├── settings.json.example
     ├── agents/
@@ -131,13 +131,13 @@ Used by `ocd init` command. All are `.example` files for user reference.
 
 ## Adding a Global Agent
 
-1. Create `templates/global/opencode/agent/myagent.md`
-2. Agent will be copied to `~/.config/opencode/agent/` on next `ocd --clean`
+1. Create `templates/global/opencode/agents/myagent.md`
+2. Agent will be copied to `~/.config/opencode/agents/` on next `ocd --clean`
 
 ## Adding a Global Skill
 
-1. Create `templates/global/opencode/skill/myskill/SKILL.md`
-2. Skill will be copied to `~/.config/opencode/skill/` on next `ocd --clean`
+1. Create `templates/global/opencode/skills/myskill/SKILL.md`
+2. Skill will be copied to `~/.config/opencode/skills/` on next `ocd --clean`
 
 ## Anti-Patterns
 
