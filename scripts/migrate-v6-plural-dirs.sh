@@ -21,30 +21,28 @@ BACKUP_DIR=".backup-singular-v5"
 MARKER_FILE="$GLOBAL_CONFIG/.plural-dirs-migrated"
 
 # 需要迁移的目录映射 (单数 → 复数)
-declare -A DIR_MAP=(
-  ["skill"]="skills"
-  ["agent"]="agents"
-  ["command"]="commands"
-  ["plugin"]="plugins"
-)
+# 用普通数组兼容 macOS 自带的 bash 3.2
+SINGULAR_DIRS=("skill" "agent" "command" "plugin")
+PLURAL_DIRS=("skills" "agents" "commands" "plugins")
 
 # =========================================
 # 检查是否需要迁移
 # =========================================
 check_migration_needed() {
   local needs_migration=0
+  local i
   
-  # 检查全局配置
-  for singular in "${!DIR_MAP[@]}"; do
+  for i in "${!SINGULAR_DIRS[@]}"; do
+    local singular="${SINGULAR_DIRS[$i]}"
     if [[ -d "$GLOBAL_CONFIG/$singular" ]]; then
       needs_migration=1
       break
     fi
   done
   
-  # 检查当前项目配置
   if [[ -d ".opencode" ]]; then
-    for singular in "${!DIR_MAP[@]}"; do
+    for i in "${!SINGULAR_DIRS[@]}"; do
+      local singular="${SINGULAR_DIRS[$i]}"
       if [[ -d ".opencode/$singular" ]]; then
         needs_migration=1
         break
@@ -117,9 +115,11 @@ migrate_global_config() {
   ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   
   local migrated=0
+  local i
   
-  for singular in "${!DIR_MAP[@]}"; do
-    local plural="${DIR_MAP[$singular]}"
+  for i in "${!SINGULAR_DIRS[@]}"; do
+    local singular="${SINGULAR_DIRS[$i]}"
+    local plural="${PLURAL_DIRS[$i]}"
     if [[ -d "$GLOBAL_CONFIG/$singular" ]]; then
       migrate_directory "$GLOBAL_CONFIG" "$singular" "$plural"
       migrated=1
@@ -143,9 +143,11 @@ migrate_project_config() {
   ocd_log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   
   local migrated=0
+  local i
   
-  for singular in "${!DIR_MAP[@]}"; do
-    local plural="${DIR_MAP[$singular]}"
+  for i in "${!SINGULAR_DIRS[@]}"; do
+    local singular="${SINGULAR_DIRS[$i]}"
+    local plural="${PLURAL_DIRS[$i]}"
     if [[ -d ".opencode/$singular" ]]; then
       migrate_directory ".opencode" "$singular" "$plural"
       migrated=1
