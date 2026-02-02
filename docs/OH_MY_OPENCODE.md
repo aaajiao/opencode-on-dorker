@@ -11,6 +11,7 @@ oh-my-opencode v3.x 多 Agent 协作系统完整说明。
 | 场景 | 推荐 Agent | 成本 | 命令示例 |
 |------|-----------|------|----------|
 | 复杂任务、不确定怎么做 | Sisyphus (默认) | 贵 | 直接输入任务 |
+| 自主深度开发（给目标不给步骤） | Hephaestus | 贵 | `@hephaestus 实现用户权限系统` |
 | 架构设计、技术决策 | Oracle | 贵 | `@oracle 评估是否迁移到 GraphQL` |
 | 调试连续失败 2+ 次 | Oracle | 贵 | `@oracle 分析这个死锁的根因` |
 | 查外部文档、找示例 | Librarian | 便宜 | `@librarian React 18 并发特性用法` |
@@ -23,13 +24,14 @@ oh-my-opencode v3.x 多 Agent 协作系统完整说明。
 
 ## 所有 Agent 一览
 
-oh-my-opencode 共有 **10 个 Agent**，分为四类：
+oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 类别 | Agent | 默认模型 | 成本 | 核心职责 |
 |------|-------|---------|------|----------|
 | **编排器** | Sisyphus | Claude Opus 4.5 | 贵 | 主入口，任务分解与委派 |
-| | Atlas | Claude Opus 4.5 | 贵 | Todo 列表编排，多任务协调 |
+| | Atlas | Claude Sonnet 4.5 | 贵 | Todo 列表编排，多任务协调 |
 | | Sisyphus-Junior | Claude Sonnet 4.5 | 便宜 | 专注执行，不委派 |
+| **深度工作** | Hephaestus | GPT-5.2 Codex Medium | 贵 | 自主深度开发，目标导向 |
 | **顾问** | Oracle | GPT-5.2 Codex | 贵 | 架构设计、调试诊断 |
 | | Prometheus | Claude Opus 4.5 | 贵 | 战略规划（访谈模式） |
 | | Metis | Claude Opus 4.5 | 贵 | 预规划分析，发现歧义 |
@@ -77,6 +79,54 @@ oh-my-opencode 共有 **10 个 Agent**，分为四类：
 | 执行具体任务 | Sisyphus-Junior | 专注执行 |
 
 **使用方式**：直接输入任务，无需 `@` 调用。
+
+---
+
+### Hephaestus - 自主深度工作者
+
+**v3.2.0 新增**。给目标，不给步骤，自主完成端到端开发。
+
+| 属性 | 值 |
+|------|------|
+| 模型 | `opencode/gpt-5.2-codex-medium` |
+| 温度 | 0.1 |
+| 成本 | 贵 |
+| 灵感来源 | [AmpCode deep mode](https://ampcode.com) |
+
+**命名来源**：希腊神话中的锻造之神，为众神打造武器的神匠。
+
+**关键特性**：
+- **目标导向**：给他目标，不是菜谱。他自己决定步骤。
+- **先探索后行动**：写代码前先并发启动 2-5 个 explore/librarian agent。
+- **端到端完成**：任务不做完不停手，包含验证证据。
+- **模式匹配**：搜索现有代码库，匹配项目风格——不写 AI 味代码。
+- **精准手艺**：像铁匠一样精确、最小化、刚刚好。
+
+**与 Sisyphus 的区别**：
+
+| 特性 | Sisyphus | Hephaestus |
+|------|----------|------------|
+| 工作模式 | 分解任务并委派 | 自己干到底 |
+| 适合场景 | 需要多 Agent 协作 | 单一复杂目标 |
+| 探索深度 | 按需探索 | 强制深度探索 |
+| 完成标准 | 可中途交接 | 必须端到端验证 |
+
+**何时使用**：
+- 明确的功能目标，但实现路径不确定
+- 需要深度研究后才能动手的任务
+- 希望 AI 完全自主、不想微观管理
+
+**何时不用**：
+- 需要多 Agent 并行协作（用 Sisyphus）
+- 简单明确的修改（用 Sisyphus-Junior）
+- 只需咨询不需实现（用 Oracle）
+
+**使用示例**：
+```bash
+@hephaestus 实现一个带 JWT 认证的用户系统
+@hephaestus 给项目添加完整的 CI/CD 流水线
+@hephaestus 重构支付模块，保持 API 兼容
+```
 
 ---
 
@@ -416,6 +466,7 @@ oh-my-opencode 共有 **10 个 Agent**，分为四类：
 | Agent | 禁止的工具 | 允许的工具 | 说明 |
 |-------|-----------|-----------|------|
 | **Sisyphus** | 无 | 全部 | 主编排器，完全访问 |
+| **Hephaestus** | 无 | 全部 | 自主深度工作，完全访问 |
 | **Atlas** | 无 | 全部 | 编排器，完全访问 |
 | **Prometheus** | write(代码), edit, task, delegate_task | read, markdown 操作, 研究工具 | 只规划，不实现 |
 | **Metis** | 除 read 外全部 | 只有 read | 只分析 |
@@ -702,6 +753,7 @@ MAIN_MODEL=opencode/claude-opus-4-5
 
 # Agent 模型 (oh-my-opencode.json)
 SISYPHUS_MODEL=opencode/claude-opus-4-5
+HEPHAESTUS_MODEL=opencode/gpt-5.2-codex-medium
 ORACLE_MODEL=opencode/gpt-5.2-codex
 LIBRARIAN_MODEL=opencode/claude-haiku-4-5
 EXPLORE_MODEL=opencode/claude-haiku-4-5
@@ -719,6 +771,7 @@ SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-5
 {
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-5" },
+    "hephaestus": { "model": "opencode/gpt-5.2-codex-medium" },
     "oracle": { "model": "opencode/gpt-5.2-codex" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/grok-code" },

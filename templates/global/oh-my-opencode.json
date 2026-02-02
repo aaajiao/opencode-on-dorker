@@ -3,6 +3,7 @@
 
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-5" },
+    "hephaestus": { "model": "opencode/gpt-5.2-codex-medium" },
     "oracle": { "model": "opencode/gpt-5.2" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/grok-code" },
