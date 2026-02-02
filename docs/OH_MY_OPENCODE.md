@@ -31,7 +31,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 | **编排器** | Sisyphus | Claude Opus 4.5 | 贵 | 主入口，任务分解与委派 |
 | | Atlas | Claude Sonnet 4.5 | 贵 | Todo 列表编排，多任务协调 |
 | | Sisyphus-Junior | Claude Sonnet 4.5 | 便宜 | 专注执行，不委派 |
-| **深度工作** | Hephaestus | GPT-5.2 Codex Medium | 贵 | 自主深度开发，目标导向 |
+| **深度工作** | Hephaestus | GPT-5.2 Codex | 贵 | 自主深度开发，目标导向 |
 | **顾问** | Oracle | GPT-5.2 Codex | 贵 | 架构设计、调试诊断 |
 | | Prometheus | Claude Opus 4.5 | 贵 | 战略规划（访谈模式） |
 | | Metis | Claude Opus 4.5 | 贵 | 预规划分析，发现歧义 |
@@ -88,7 +88,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/gpt-5.2-codex-medium` |
+| 模型 | `opencode/gpt-5.2-codex` |
 | 温度 | 0.1 |
 | 成本 | 贵 |
 | 灵感来源 | [AmpCode deep mode](https://ampcode.com) |
@@ -753,7 +753,7 @@ MAIN_MODEL=opencode/claude-opus-4-5
 
 # Agent 模型 (oh-my-opencode.json)
 SISYPHUS_MODEL=opencode/claude-opus-4-5
-HEPHAESTUS_MODEL=opencode/gpt-5.2-codex-medium
+HEPHAESTUS_MODEL=opencode/gpt-5.2-codex
 ORACLE_MODEL=opencode/gpt-5.2-codex
 LIBRARIAN_MODEL=opencode/claude-haiku-4-5
 EXPLORE_MODEL=opencode/claude-haiku-4-5
@@ -771,7 +771,7 @@ SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-5
 {
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-5" },
-    "hephaestus": { "model": "opencode/gpt-5.2-codex-medium" },
+    "hephaestus": { "model": "opencode/gpt-5.2-codex" },
     "oracle": { "model": "opencode/gpt-5.2-codex" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/grok-code" },
