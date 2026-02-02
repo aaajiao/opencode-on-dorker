@@ -244,6 +244,7 @@ ocd_update_omo_agents() {
   [[ -n "$EXPLORE_MODEL" ]] && jq_cmd+="| .agents.explore.model = \"$EXPLORE_MODEL\" "
   [[ -n "$MULTIMODAL_MODEL" ]] && jq_cmd+="| .agents.\"multimodal-looker\".model = \"$MULTIMODAL_MODEL\" "
   # v3.x new agents
+  [[ -n "$HEPHAESTUS_MODEL" ]] && jq_cmd+="| .agents.hephaestus.model = \"$HEPHAESTUS_MODEL\" "
   [[ -n "$PROMETHEUS_MODEL" ]] && jq_cmd+="| .agents.prometheus.model = \"$PROMETHEUS_MODEL\" "
   [[ -n "$METIS_MODEL" ]] && jq_cmd+="| .agents.metis.model = \"$METIS_MODEL\" "
   [[ -n "$MOMUS_MODEL" ]] && jq_cmd+="| .agents.momus.model = \"$MOMUS_MODEL\" "
