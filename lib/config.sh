@@ -263,6 +263,7 @@ ocd_update_omo_agents() {
 # =========================================
 ocd_reset_global_config() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
+  local cache_dir="${OCD_CACHE_HOME:-$HOME/.cache/opencode}"
   local backup_dir
   backup_dir="$config_dir/.backup-$(date +%Y%m%d-%H%M%S)"
   
@@ -277,6 +278,12 @@ ocd_reset_global_config() {
   # 删除迁移标记（如果有）
   rm -f "$config_dir/.ocd-v5-migrated"
   rm -f "$config_dir/.ocd-v5-init"
+  
+  # 清理 bun 缓存（强制重新安装插件）
+  if [[ -d "$cache_dir/node_modules" || -f "$cache_dir/bun.lock" ]]; then
+    rm -rf "$cache_dir/node_modules" "$cache_dir/bun.lock"
+    ocd_info "已清理插件缓存"
+  fi
   
   # 重新创建
   ocd_ensure_global_config
@@ -501,15 +508,14 @@ ocd_show_welcome_if_first_run() {
   
   echo ""
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  🎉 欢迎使用 OCD v5"
+  echo "  🎉 欢迎使用 OCD v6"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   echo "  配置文件位置："
   echo "    $config_dir/opencode.json"
   echo "    $config_dir/oh-my-opencode.json"
   echo ""
-  echo "  从 v5 开始，这些配置由你管理。"
-  echo "  OCD 只会在每次启动时更新端口。"
+  echo "  这些配置由你管理，OCD 只会在启动时更新端口。"
   echo ""
   echo "  快速切换模型：创建 ~/opencode/models.conf"
   echo "  初始化项目：ocd init"

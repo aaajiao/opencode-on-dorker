@@ -8,10 +8,10 @@ ocd_check_migration() {
   if [[ -f "$config_dir/opencode.json" ]] && \
      [[ ! -f "$config_dir/.ocd-v5-migrated" ]]; then
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "  🔄 OCD v5 配置说明"
+    echo "  🔄 OCD 配置说明"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "  从 v5 开始，配置文件由你管理，OCD 只更新端口。"
+    echo "  配置文件由你管理，OCD 只更新端口。"
     echo ""
     echo "  你的配置文件已保留："
     echo "    - $config_dir/opencode.json"

@@ -15,5 +15,6 @@ export OCD_ROOT="$OCD_DEV_ROOT"
 export OCD_ROOT_PRESET=1
 export OCD_DEV_MODE=1
 export OCD_CONFIG_HOME="${OCD_DEV_CONFIG:-$HOME/.config/opencode-dev}"
+export OCD_CACHE_HOME="${OCD_DEV_CACHE:-$HOME/.cache/opencode-dev}"
 
 exec "$OCD_DEV_ROOT/bin/ocd" "$@"
