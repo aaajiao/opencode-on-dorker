@@ -8,6 +8,7 @@
 ```
 
 [![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](../CHANGELOG.md)
+[![中文](https://img.shields.io/badge/lang-中文-red.svg)](../README.md)
 
 Run [OpenCode](https://opencode.ai) AI programming assistant in macOS + OrbStack environment, with [oh-my-opencode](https://github.com/1msoft/oh-my-opencode) plugin integration.
 
