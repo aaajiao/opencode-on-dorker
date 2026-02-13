@@ -128,16 +128,7 @@ EOF
 }
 
 # =========================================
-# ocd_auto_migrate 函数测试
-# =========================================
-
-@test "ocd_auto_migrate does nothing without migrate script" {
-  run ocd_auto_migrate
-  [ "$status" -eq 0 ]
-}
-
-# =========================================
-# XDG 路径变量测试 (v4.0)
+# XDG 路径变量测试
 # =========================================
 
 @test "OCD_IPC_HOME is correctly derived from STATE_HOME" {

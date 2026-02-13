@@ -162,18 +162,16 @@ teardown() {
   [ -f "$backup_dir/opencode.json" ]
 }
 
-@test "ocd_reset_global_config removes migration markers" {
+@test "ocd_reset_global_config removes init marker" {
   mkdir -p "$OCD_CONFIG_HOME"
-  touch "$OCD_CONFIG_HOME/.ocd-v5-migrated"
-  touch "$OCD_CONFIG_HOME/.ocd-v5-init"
+  touch "$OCD_CONFIG_HOME/.ocd-init"
 
   mkdir -p "$OCD_ROOT/templates/global"
   echo '{}' > "$OCD_ROOT/templates/global/opencode.json.tmpl"
 
   ocd_reset_global_config
 
-  [ ! -f "$OCD_CONFIG_HOME/.ocd-v5-migrated" ]
-  [ ! -f "$OCD_CONFIG_HOME/.ocd-v5-init" ]
+  [ ! -f "$OCD_CONFIG_HOME/.ocd-init" ]
 }
 
 # =========================================
@@ -204,16 +202,16 @@ teardown() {
 
 @test "ocd_show_welcome_if_first_run creates marker file" {
   mkdir -p "$OCD_CONFIG_HOME"
-  rm -f "$OCD_CONFIG_HOME/.ocd-v5-init"
+  rm -f "$OCD_CONFIG_HOME/.ocd-init"
 
   run ocd_show_welcome_if_first_run
 
-  [ -f "$OCD_CONFIG_HOME/.ocd-v5-init" ]
+  [ -f "$OCD_CONFIG_HOME/.ocd-init" ]
 }
 
 @test "ocd_show_welcome_if_first_run skips if marker exists" {
   mkdir -p "$OCD_CONFIG_HOME"
-  touch "$OCD_CONFIG_HOME/.ocd-v5-init"
+  touch "$OCD_CONFIG_HOME/.ocd-init"
 
   run ocd_show_welcome_if_first_run
 

@@ -1,6 +1,6 @@
 # lib/ - Shell Modules
 
-Core shell library for OCD. 8 modules, ~1,913 lines total.
+Core shell library for OCD. 7 modules.
 
 *For code style and anti-patterns, see root [AGENTS.md](../AGENTS.md#code-style-guidelines).*
 
@@ -11,11 +11,10 @@ Core shell library for OCD. 8 modules, ~1,913 lines total.
 | `core.sh` | 161 | - | Base utilities, XDG paths, logging |
 | `port.sh` | 68 | core | Port allocation with file locking |
 | `workspace.sh` | 127 | core | Git repo detection, path resolution |
-| `config.sh` | 498 | core, workspace | v5 config lifecycle, templates |
+| `config.sh` | ~510 | core, workspace | Config lifecycle, templates |
 | `docker.sh` | 153 | core, config | Image build, container run |
 | `scan.sh` | 335 | core, workspace | Project discovery, registration |
 | `watcher.sh` | 146 | core | IPC file monitoring (fswatch) |
-| `migrate.sh` | 88 | core, config | v4→v5 migration |
 
 ## Load Order (in bin/ocd)
 
@@ -26,7 +25,6 @@ source "$OCD_ROOT/lib/workspace.sh"
 source "$OCD_ROOT/lib/watcher.sh"
 source "$OCD_ROOT/lib/config.sh"
 source "$OCD_ROOT/lib/docker.sh"
-[[ -f "$OCD_ROOT/lib/migrate.sh" ]] && source "$OCD_ROOT/lib/migrate.sh"
 ```
 
 ## Key Functions by Module
@@ -92,12 +90,6 @@ source "$OCD_ROOT/lib/docker.sh"
 | Function | Purpose |
 |----------|---------|
 | `ocd_find_free_port` | Find available port with atomic locking |
-
-### migrate.sh (v4→v5)
-| Function | Purpose |
-|----------|---------|
-| `ocd_check_migration` | Detect v4 config, backup + migrate |
-| `ocd_check_claude_migration` | Migrate Claude global storage |
 
 ## XDG Directories (from core.sh)
 

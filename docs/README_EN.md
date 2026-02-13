@@ -1,6 +1,6 @@
 # OCD - OpenCode Docker
 
-[![Version](https://img.shields.io/badge/version-6.0.0-blue.svg)](../CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](../CHANGELOG.md)
 
 Run [OpenCode](https://opencode.ai) AI programming assistant in macOS + OrbStack environment, with [oh-my-opencode](https://github.com/1msoft/oh-my-opencode) plugin integration.
 

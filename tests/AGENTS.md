@@ -15,7 +15,6 @@ BATS (Bash Automated Testing System) unit tests for all OCD modules.
 | `workspace.bats` | `lib/workspace.sh` | 8 | Git detection, path resolution |
 | `workspace_extended.bats` | `lib/workspace.sh` | 15+ | Mount security, edge cases |
 | `watcher.bats` | `lib/watcher.sh` | 15+ | IPC, notifications, clipboard |
-| `migrate.bats` | `lib/migrate.sh` | 5+ | v4→v5 migration |
 | `sete.bats` | Multiple | 20+ | `set -e` compatibility |
 
 ## Running Tests

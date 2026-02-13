@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
-# lib/config.sh - v5 配置管理模块
-# 
-# v5 设计原则：
-# - 配置文件首次创建后由用户管理，OCD 不再覆盖
-# - 每次启动只更新端口
-# - 可选：models.conf 覆盖模型设置
+# lib/config.sh - 配置管理模块
 
 # =========================================
 # 模型配置变量
@@ -275,9 +270,7 @@ ocd_reset_global_config() {
     ocd_info "已备份配置到 $backup_dir"
   fi
   
-  # 删除迁移标记（如果有）
-  rm -f "$config_dir/.ocd-v5-migrated"
-  rm -f "$config_dir/.ocd-v5-init"
+  rm -f "$config_dir/.ocd-init"
   
   # 清理 bun 缓存（强制重新安装插件）
   if [[ -d "$cache_dir/node_modules" || -f "$cache_dir/bun.lock" ]]; then
@@ -293,8 +286,6 @@ ocd_reset_global_config() {
 # =========================================
 # 初始化项目配置 (ocd init)
 # =========================================
-# v5.1: 创建 .example 参考文件，让项目继承全局配置
-# 用户需要项目级覆盖时，复制 .example 为实际配置文件
 ocd_init_project() {
   local mode="${1:-}"
   local project_dir="$PWD"
@@ -489,7 +480,7 @@ ocd_edit_config() {
 }
 
 # =========================================
-# 初始化全局目录（兼容旧版调用）
+# 初始化全局目录
 # =========================================
 ocd_init_global() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
@@ -502,25 +493,25 @@ ocd_init_global() {
 # =========================================
 ocd_show_welcome_if_first_run() {
   local config_dir="${OCD_CONFIG_HOME:-$HOME/.config/opencode}"
-  local marker="$config_dir/.ocd-v5-init"
+  local marker="$config_dir/.ocd-init"
   
   [[ -f "$marker" ]] && return 0
   
   echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "  🎉 欢迎使用 OCD v6"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "  ██████╗  ██████╗██████╗"
+  echo " ██╔═══██╗██╔════╝██╔══██╗"
+  echo " ██║   ██║██║     ██║  ██║"
+  echo " ██║   ██║██║     ██║  ██║"
+  echo " ╚██████╔╝╚██████╗██████╔╝"
+  echo "  ╚═════╝  ╚═════╝╚═════╝"
   echo ""
-  echo "  配置文件位置："
+  echo "  配置文件："
   echo "    $config_dir/opencode.json"
   echo "    $config_dir/oh-my-opencode.json"
   echo ""
-  echo "  这些配置由你管理，OCD 只会在启动时更新端口。"
-  echo ""
-  echo "  快速切换模型：创建 ~/opencode/models.conf"
+  echo "  配置由你管理，OCD 只在启动时更新端口。"
+  echo "  快速切换模型：~/opencode/models.conf"
   echo "  初始化项目：ocd init"
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo ""
   
   touch "$marker"

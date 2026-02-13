@@ -4,7 +4,7 @@ Guidelines for AI agents working on this repository.
 
 ## Project Overview
 
-**OCD (OpenCode Docker)** v6.0: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
+**OCD (OpenCode Docker)** v0.7: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
 
 **Tech Stack**: Docker, Shell (bash/zsh), JSON configuration
 
@@ -74,7 +74,7 @@ cd ~/opencode && git pull
 | `lib/docker.sh` | 153 | `ocd_build_image`, `ocd_run_container` | Docker operations |
 | `lib/workspace.sh` | 127 | `ocd_find_workspace_root`, `ocd_find_project_dir` | Workspace detection |
 | `lib/watcher.sh` | 146 | `ocd_start_watcher`, `ocd_handle_*` | IPC file monitoring |
-| `lib/migrate.sh` | 127 | `ocd_check_migration`, `ocd_check_v6_migration` | v4→v5→v6 migration |
+
 | `lib/port.sh` | 68 | `ocd_find_free_port` | Port allocation with locking |
 
 ## Build & Test Commands

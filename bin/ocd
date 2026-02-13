@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# bin/ocd - OCD v5 主入口
+# bin/ocd - OCD 主入口
 
 set -euo pipefail
 
@@ -56,7 +56,6 @@ source "$OCD_ROOT/lib/workspace.sh"
 source "$OCD_ROOT/lib/watcher.sh"
 source "$OCD_ROOT/lib/config.sh"
 source "$OCD_ROOT/lib/docker.sh"
-[[ -f "$OCD_ROOT/lib/migrate.sh" ]] && source "$OCD_ROOT/lib/migrate.sh"
 
 if [[ "${OCD_DEV_MODE:-0}" -eq 1 ]]; then
   IMAGE_NAME="opencode-bun-dev"
@@ -247,20 +246,7 @@ EOF
 
   ocd_check_dependencies
 
-  # v5: Ensure global config exists (first-time creation only)
   ocd_ensure_global_config
-
-  # v5: Check migration from v4
-  if type ocd_check_migration &>/dev/null; then
-    ocd_check_migration "$CURRENT_DIR"
-  fi
-  
-  # v5: Check Claude global storage migration
-  if type ocd_check_claude_migration &>/dev/null; then
-    ocd_check_claude_migration
-  fi
-
-  # v5: Show welcome on first run
   ocd_show_welcome_if_first_run
 
   ocd_init_global
@@ -269,12 +255,11 @@ EOF
 
   ocd_load_env "$ENV_FILE"
 
-  # v5: Only update port (config already exists)
   local CONFIG_FILE="${OCD_CONFIG_HOME}/opencode.json"
 
   ocd_update_port "$CONFIG_FILE" "$PORT"
 
-  # v5: Apply models.conf if exists (optional override)
+  # 可选：models.conf 模型覆盖
   if [[ -f "$OCD_ROOT/models.conf" ]]; then
     ocd_apply_models_conf
   fi

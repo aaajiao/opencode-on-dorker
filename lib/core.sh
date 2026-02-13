@@ -5,7 +5,7 @@
 OCD_ROOT="${OCD_ROOT:-$HOME/opencode}"
 
 # =========================================
-# XDG 标准路径定义 (v4.0 - 无 instance 概念)
+# XDG 标准路径定义
 # =========================================
 # Dev 模式后缀 (devocd 或 ocd --dev)
 _OCD_SUFFIX=""
@@ -39,24 +39,6 @@ OCD_IPC_HOME="$OCD_STATE_HOME/ipc"
 ocd_ipc_dir() {
   local port="${1:-4096}"
   echo "$OCD_IPC_HOME/$port"
-}
-
-# =========================================
-# 自动迁移 v3.x → v4.0
-# =========================================
-ocd_auto_migrate() {
-  local migrate_script="$OCD_ROOT/scripts/migrate-v4.sh"
-  [[ ! -f "$migrate_script" ]] && return 0
-
-  # 检测 v3.x instance 结构
-  local v3_instances="$OCD_CONFIG_HOME/instances"
-
-  if [[ -d "$v3_instances" ]]; then
-    # source 迁移脚本并执行自动迁移
-    # shellcheck disable=SC1090
-    source "$migrate_script"
-    auto_migrate
-  fi
 }
 
 # =========================================
