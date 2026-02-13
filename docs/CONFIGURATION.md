@@ -122,8 +122,8 @@ MAIN_MODEL=anthropic/claude-opus-4-5
 
 # Agent 模型 (oh-my-opencode.json)
 PLANNER_MODEL=anthropic/claude-opus-4-5
-ORACLE_MODEL=openai/gpt-5.2
-DOCUMENT_WRITER_MODEL=quotio/gemini-3-pro-preview
+ORACLE_MODEL=opencode/gpt-5.2-codex
+DOCUMENT_WRITER_MODEL=opencode/gemini-3-pro
 ```
 
 > 修改后需运行 `ocd --clean` 重新生成配置。

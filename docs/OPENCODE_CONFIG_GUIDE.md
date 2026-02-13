@@ -77,6 +77,7 @@ bin/ocd
 └── lib/
     ├── core.sh
     ├── config.sh                      # v6 配置管理
+    ├── scan.sh
     ├── migrate.sh                     # v4→v5→v6 迁移
     └── ...
 ```
@@ -171,7 +172,7 @@ bin/ocd
 # ~/opencode/models.conf
 MAIN_MODEL=anthropic/claude-opus-4-5
 PLANNER_MODEL=anthropic/claude-opus-4-5
-ORACLE_MODEL=openai/gpt-5.2
+ORACLE_MODEL=opencode/gpt-5.2-codex
 ```
 
 修改后需运行 `ocd --clean` 重新生成配置。

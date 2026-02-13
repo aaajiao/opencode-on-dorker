@@ -10,7 +10,7 @@ Run [OpenCode](https://opencode.ai) AI programming assistant in macOS + OrbStack
 - Multi-window support (auto port allocation + lock mechanism)
 - macOS integration (desktop notifications, clipboard bridge, auto-open links)
 - oh-my-opencode multi-agent collaboration
-- MCP servers (Playwright, Exa, Context7)
+- MCP servers (Playwright, Exa, etc.)
 - Persistent configuration (user-owned, OCD won't overwrite)
 
 ## Quick Start
