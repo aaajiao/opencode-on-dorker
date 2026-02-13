@@ -11,7 +11,7 @@
 - 多窗口支持（自动端口分配 + 锁机制防冲突）
 - macOS 集成（桌面通知、剪贴板桥接、链接自动打开）
 - oh-my-opencode 多 Agent 协作
-- MCP 服务器（Playwright, Exa 等）
+- MCP 服务器（Playwright 等）
 - 配置持久化（用户所有，OCD 不覆盖）
 
 ## 快速开始

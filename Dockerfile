@@ -145,38 +145,7 @@ MSG="${2:-}"\n\
 ' > /usr/local/bin/notify-send && chmod +x /usr/local/bin/notify-send
 
 # -------------------------------------------------------
-# 第十二步：Exa 健康检查脚本 - 检测内置 Exa 是否可用
-# -------------------------------------------------------
-RUN echo '#!/bin/bash\n\
-# 检测 oh-my-opencode 内置 Exa 是否可用\n\
-# 通过直接调用 Exa API 测试\n\
-\n\
-EXA_API_KEY="${EXA_API_KEY:-}"\n\
-\n\
-if [[ -z "$EXA_API_KEY" ]]; then\n\
-    echo "no_key"\n\
-    exit 0\n\
-fi\n\
-\n\
-# 测试 Exa API 是否可用（简单的搜索请求）\n\
-RESPONSE=$(curl -s -w "\\n%{http_code}" --max-time 5 \\\n\
-    -X POST "https://api.exa.ai/search" \\\n\
-    -H "Content-Type: application/json" \\\n\
-    -H "x-api-key: $EXA_API_KEY" \\\n\
-    -d '"'"'{"query":"test","numResults":1}'"'"' 2>/dev/null)\n\
-\n\
-HTTP_CODE=$(echo "$RESPONSE" | tail -n1)\n\
-\n\
-if [[ "$HTTP_CODE" == "200" ]]; then\n\
-    echo "ok"\n\
-else\n\
-    echo "failed"\n\
-fi\n\
-' > /usr/local/bin/check-exa && \
-    chmod +x /usr/local/bin/check-exa
-
-# -------------------------------------------------------
-# 第十三步：预创建 .claude 挂载点目录
+# 第十二步：预创建 .claude 挂载点目录
 # 支持父目录只读挂载后的子目录覆盖挂载
 # -------------------------------------------------------
 RUN mkdir -p /root/.claude/todos \
@@ -187,7 +156,7 @@ RUN mkdir -p /root/.claude/todos \
              /root/.claude/rules
 
 # -------------------------------------------------------
-# 第十四步：收尾配置
+# 第十三步：收尾配置
 # -------------------------------------------------------
 WORKDIR /workspace
 
@@ -197,14 +166,14 @@ RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
 
 # -------------------------------------------------------
-# 第十五步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、Exa 检测、浏览器修复
+# 第十四步：Entrypoint 脚本 - 处理环境变量、GitHub 认证、浏览器修复
 # -------------------------------------------------------
 RUN echo '#!/bin/bash\n\
 \n\
 # 调试函数\n\
 ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2 || true; }\n\
 \n\
-env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_)=" >> /root/.bashrc\n\
+env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_API_KEY)=" >> /root/.bashrc\n\
 \n\
 # 确保缓存目录存在\n\
 ocd_debug "检查容器内目录状态..."\n\
@@ -237,23 +206,6 @@ if [[ -n "$GITHUB_TOKEN" ]]; then\n\
         echo "✅ GitHub 已认证 (使用 GITHUB_TOKEN)"\n\
     else\n\
         echo "⚠️  GITHUB_TOKEN 无效，请检查 token"\n\
-    fi\n\
-fi\n\
-\n\
-CONFIG_FILE="/root/.config/opencode/opencode.json"\n\
-if [[ -f "$CONFIG_FILE" ]]; then\n\
-    EXA_STATUS=$(check-exa)\n\
-    if [[ "$EXA_STATUS" == "ok" ]]; then\n\
-        echo "✅ Exa API 可用，使用内置 Exa"\n\
-    elif [[ "$EXA_STATUS" == "no_key" ]]; then\n\
-        echo "ℹ️  未配置 EXA_API_KEY，Exa 功能不可用"\n\
-    else\n\
-        echo "⚠️  内置 Exa 不可用，启用 fallback MCP"\n\
-        if command -v jq &>/dev/null; then\n\
-            jq '"'"'.mcp.exa.enabled = true'"'"' "$CONFIG_FILE" > /tmp/opencode.json && mv /tmp/opencode.json "$CONFIG_FILE"\n\
-        else\n\
-            sed -i '"'"'s/"exa":[[:space:]]*{[^}]*"enabled":[[:space:]]*false/"exa": {"enabled": true/'"'"' "$CONFIG_FILE" 2>/dev/null || true\n\
-        fi\n\
     fi\n\
 fi\n\
 \n\

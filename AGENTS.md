@@ -205,7 +205,7 @@ All dependency versions are centralized in `versions.lock`. Template variables u
 
 Key variables:
 - `OPENCODE_AI_VERSION`, `OH_MY_OPENCODE_VERSION`
-- `PLAYWRIGHT_MCP_VERSION`, `EXA_MCP_VERSION`
+- `PLAYWRIGHT_MCP_VERSION`
 - `BUN_VERSION`, `PIP_*` versions
 
 ## MCP Configuration
