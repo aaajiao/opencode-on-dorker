@@ -1,4 +1,11 @@
-# OCD - OpenCode Docker
+```
+  ██████╗  ██████╗██████╗
+ ██╔═══██╗██╔════╝██╔══██╗
+ ██║   ██║██║     ██║  ██║
+ ██║   ██║██║     ██║  ██║
+ ╚██████╔╝╚██████╗██████╔╝
+  ╚═════╝  ╚═════╝╚═════╝
+```
 
 [![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](./CHANGELOG.md)
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](./docs/README_EN.md)
