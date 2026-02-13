@@ -1,6 +1,6 @@
 # templates/ - Configuration Templates
 
-Template system for OCD v5. First-run config generation + project initialization.
+Template system for OCD. First-run config generation + project initialization.
 
 ## Directory Structure
 
@@ -66,7 +66,7 @@ OH_MY_OPENCODE_VERSION=2.14.0
 
 ### Reset (`ocd --clean`)
 
-1. Backs up to `~/.config/opencode/backup-v5-TIMESTAMP/`
+1. Backs up to `~/.config/opencode/backup-TIMESTAMP/`
 2. Deletes current config
 3. Regenerates from templates (fresh start)
 

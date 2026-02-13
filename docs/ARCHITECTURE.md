@@ -17,8 +17,7 @@ OCD (OpenCode Docker) 文件结构与 Mac/Docker 映射关系。
 │   ├── docker.sh                  # Docker 构建与运行
 │   ├── port.sh                    # 端口分配、原子锁
 │   ├── watcher.sh                 # IPC 监控 (剪贴板/通知/URL)
-│   ├── workspace.sh               # 工作区检测
-│   └── migrate.sh                 # v4→v5→v6 迁移
+│   └── workspace.sh               # 工作区检测
 ├── templates/
 │   ├── global/                    # 全局配置模板
 │   │   ├── opencode.json.tmpl     # OpenCode 主配置

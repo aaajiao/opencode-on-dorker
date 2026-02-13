@@ -84,7 +84,6 @@ EXA_API_KEY=your-exa-api-key
 | [Getting Started](./GETTING_STARTED.md) | Detailed installation |
 | [CLI Reference](./CLI_REFERENCE.md) | Complete command reference |
 | [Configuration](./CONFIGURATION.md) | Directory structure, config lifecycle |
-| [Migration Guide](./MIGRATION.md) | v4→v5→v6 upgrade |
 | [Architecture](./ARCHITECTURE.md) | Mac/Docker mapping |
 | [Developer Guide](./OPENCODE_CONFIG_GUIDE.md) | Extension and customization |
 | [Agent Guide](./OH_MY_OPENCODE.md) | oh-my-opencode multi-agent collaboration |

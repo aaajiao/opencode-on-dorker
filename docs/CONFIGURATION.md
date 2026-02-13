@@ -1,6 +1,6 @@
 # OCD 配置详解
 
-OCD v6.0 配置架构和目录结构说明。
+OCD 配置架构和目录结构说明。
 
 ---
 
@@ -11,7 +11,7 @@ OCD v6.0 配置架构和目录结构说明。
 | **用户拥有配置** | 首次创建后由用户管理，OCD 不覆盖 |
 | **最小化干预** | 每次启动只更新端口，其他配置不动 |
 | **模板驱动** | 从 `templates/` 生成，支持变量替换 |
-| **复数目录名** | v6 使用 `skills/`、`agents/`、`commands/`、`plugins/` |
+| **复数目录名** | 使用 `skills/`、`agents/`、`commands/`、`plugins/` |
 
 ---
 
@@ -165,4 +165,4 @@ KEY=value # comment   # 不要注释
 
 - [架构说明](./ARCHITECTURE.md)
 - [开发者指南](./OPENCODE_CONFIG_GUIDE.md)
-- [迁移指南](./MIGRATION.md)
+

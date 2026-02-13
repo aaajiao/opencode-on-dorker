@@ -84,7 +84,6 @@ EXA_API_KEY=your-exa-api-key
 | [快速开始](./docs/GETTING_STARTED.md) | 详细安装配置 |
 | [CLI 参考](./docs/CLI_REFERENCE.md) | 命令行完整参考 |
 | [配置详解](./docs/CONFIGURATION.md) | 目录结构、配置生命周期 |
-| [迁移指南](./docs/MIGRATION.md) | v4→v5→v6 升级 |
 | [架构说明](./docs/ARCHITECTURE.md) | Mac/Docker 映射关系 |
 | [开发者指南](./docs/OPENCODE_CONFIG_GUIDE.md) | 扩展和定制 |
 | [Agent 指南](./docs/OH_MY_OPENCODE.md) | oh-my-opencode 多 Agent 协作 |

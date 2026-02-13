@@ -10,7 +10,7 @@ Guidelines for AI agents working on this repository.
 
 **CRITICAL**: This repo IS `~/opencode` on Mac. `/workspace/bin/ocd` = `~/opencode/bin/ocd`.
 
-**v6 Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup. Directory names use **plural forms** (skills/, agents/, commands/, plugins/) for oh-my-opencode v3.1.4+ compatibility.
+**Philosophy**: Config files created once from templates, then user-owned. OCD only updates port on startup. Directory names use **plural forms** (skills/, agents/, commands/, plugins/).
 
 ## Directory Structure (CRITICAL)
 
@@ -67,7 +67,7 @@ cd ~/opencode && git pull
 
 | Module | Lines | Key Functions | Purpose |
 |--------|-------|---------------|---------|
-| `lib/config.sh` | 520 | `ocd_ensure_global_config`, `ocd_ensure_provider_cache`, `ocd_update_port`, `ocd_init_project` | v6 config management |
+| `lib/config.sh` | 520 | `ocd_ensure_global_config`, `ocd_ensure_provider_cache`, `ocd_update_port`, `ocd_init_project` | Config management |
 | `lib/scan.sh` | 335 | `ocd_scan`, `ocd_register_project`, `ocd_touch` | Project scanning |
 | `bin/ocd` | 339 | `main`, `_ocd_cleanup` | Entry point, arg parsing |
 | `lib/core.sh` | 161 | `ocd_load_env`, `ocd_sanitize_name`, `ocd_version` | Core utilities |
@@ -137,7 +137,6 @@ docker run -it --rm --network host opencode-bun bash
 | Understand config system | `docs/CONFIGURATION.md` | Directory structure, lifecycle |
 | Debug Mac/Docker mapping | `docs/ARCHITECTURE.md` | Mount points, IPC mechanism |
 | Extend OCD (developer) | `docs/OPENCODE_CONFIG_GUIDE.md` | Modules, extension points |
-| Upgrade between versions | `docs/MIGRATION.md` | v4→v5→v6 migration steps |
 | oh-my-opencode Agent system | `docs/OH_MY_OPENCODE.md` | Agents, Skills, MCPs, advanced features |
 | Quick user overview | `README.md` (中文) | Keep concise (~100 lines) |
 | English documentation | `docs/README_EN.md` | Sync with README.md |
@@ -145,7 +144,7 @@ docker run -it --rm --network host opencode-bun bash
 **When updating docs:**
 - New CLI option → `CLI_REFERENCE.md` + `README.md` (if major)
 - New config/directory → `CONFIGURATION.md` + `ARCHITECTURE.md`
-- Breaking change → `MIGRATION.md` + version bump in README/AGENTS.md
+- Breaking change → `CHANGELOG.md` + version bump in README/AGENTS.md
 - oh-my-opencode features → `OH_MY_OPENCODE.md`
 - Always sync: `README.md` ↔ `docs/README_EN.md`
 

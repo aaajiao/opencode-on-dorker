@@ -40,7 +40,7 @@ source "$OCD_ROOT/lib/docker.sh"
 | `ocd_version` | Read VERSION file |
 | `ocd_check_dependencies` | Verify jq, fswatch installed |
 
-### config.sh (largest - v5 config lifecycle)
+### config.sh (largest - config lifecycle)
 | Function | Purpose |
 |----------|---------|
 | `ocd_ensure_global_config` | Create from template (first run) or skip |
