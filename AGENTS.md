@@ -208,7 +208,7 @@ Key variables:
 
 ## Playwright Browser Automation
 
-Playwright CLI (`playwright-cli`) is installed globally in the Docker image via `@playwright/mcp`.
+Playwright CLI (`playwright-cli`) is installed globally in the Docker image via `@playwright/cli`.
 Browser automation uses oh-my-opencode's built-in `playwright` and `dev-browser` skills (CLI mode, token-efficient).
 
 ## CLI Reference

@@ -10,7 +10,7 @@ ARG PIP_BEAUTIFULSOUP4=4.12.3
 ARG PIP_PILLOW=11.1.0
 ARG PIP_NOTEBOOKLM_PY=0.1.4
 ARG OPENCODE_AI_VERSION=1.1.4
-ARG PLAYWRIGHT_CLI_VERSION=0.0.68
+ARG PLAYWRIGHT_CLI_VERSION=0.1.1
 
 FROM oven/bun:${BUN_VERSION}
 
@@ -37,9 +37,9 @@ ARG PLAYWRIGHT_CLI_VERSION
 # 第三步：安装 Playwright 浏览器 + CLI (ARM64 兼容)
 # -------------------------------------------------------
 # 全局安装 playwright 确保浏览器下载到持久化路径 /root/.cache/ms-playwright/
-# @playwright/mcp 提供 playwright-cli 命令行工具（token 高效的浏览器自动化）
+# @playwright/cli 提供 playwright-cli 命令行工具（token 高效的浏览器自动化）
 # 同时创建 /opt/google/chrome/chrome symlink 供 playwright-cli 使用
-RUN npm install -g playwright @playwright/mcp@${PLAYWRIGHT_CLI_VERSION} && \
+RUN npm install -g playwright @playwright/cli@${PLAYWRIGHT_CLI_VERSION} && \
     npx playwright install --with-deps chromium && \
     CHROME_BIN=$(find /root/.cache/ms-playwright/chromium-* -name "chrome" -type f -executable 2>/dev/null | head -1) && \
     if [ -n "$CHROME_BIN" ]; then \
