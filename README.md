@@ -7,7 +7,7 @@
   ╚═════╝  ╚═════╝╚═════╝
 ```
 
-[![Version](https://img.shields.io/badge/version-0.7.0-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.1-blue.svg)](./CHANGELOG.md)
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](./docs/README_EN.md)
 
 在 macOS + OrbStack 环境下运行 [OpenCode](https://opencode.ai) AI 编程助手，集成 [oh-my-opencode](https://github.com/1msoft/oh-my-opencode) 插件。

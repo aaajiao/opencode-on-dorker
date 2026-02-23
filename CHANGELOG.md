@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.1] - 2026-02-23
+
+### Changed
+
+- **依赖升级**: OpenCode 1.2.5→1.2.10, oh-my-opencode 3.6.0→3.8.3
+- **模型更新**: Atlas/Sisyphus-Junior 升级到 claude-sonnet-4-6, Oracle 切换到 gpt-5.2-codex
+- **Playwright CLI 模式**: 从 MCP server 切换到 CLI+SKILL 模式（token 节省 4-10x）
+- 新增可用模型: claude-sonnet-4-6, gemini-3.1, minimax-m2.1, big-pickle
+
+### Removed
+
+- **Quotio**: 移除全部 Quotio 相关配置（--quotio flag、env vars、docs）
+- **Playwright MCP**: 移除 opencode.json 中的 MCP server 配置，改用 @playwright/cli
+
+---
+
 ## [0.7.0] - 2026-02-13
 
 全新版本。不兼容 v1.x ~ v6.x，不提供迁移路径。

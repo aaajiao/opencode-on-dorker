@@ -77,7 +77,7 @@ ocd -r
 ```bash
 # 检查版本
 ocd -v
-# → OCD 0.7.0
+# → OCD 0.7.1
 
 # 查看配置状态
 ocd config

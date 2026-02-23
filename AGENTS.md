@@ -4,7 +4,7 @@ Guidelines for AI agents working on this repository.
 
 ## Project Overview
 
-**OCD (OpenCode Docker)** v0.7: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
+**OCD (OpenCode Docker)** v0.7.1: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
 
 **Tech Stack**: Docker, Shell (bash/zsh), JSON configuration
 
