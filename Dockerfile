@@ -173,7 +173,7 @@ RUN echo '#!/bin/bash\n\
 # 调试函数\n\
 ocd_debug() { [[ "$OCD_DEBUG" == "1" ]] && echo "[debug] $*" >&2 || true; }\n\
 \n\
-env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|QUOTIO_|EXA_API_KEY)=" >> /root/.bashrc\n\
+env | grep -E "^(GITHUB_TOKEN|ANTHROPIC_API_KEY|OPENAI_API_KEY|EXA_API_KEY)=" >> /root/.bashrc\n\
 \n\
 # 确保缓存目录存在\n\
 ocd_debug "检查容器内目录状态..."\n\

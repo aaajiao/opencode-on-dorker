@@ -83,9 +83,4 @@
 #   - openai/gpt-5.2
 #   - google/gemini-3-pro-preview
 #   - google/gemini-3-flash
-#
-# Quotio (需要 --quotio 启动):
-#   - quotio/gemini-claude-opus-4-5-thinking
-#   - quotio/gemini-claude-sonnet-4-5
-#   - quotio/gemini-3-pro-preview
-#   - quotio/gpt-5.2
+

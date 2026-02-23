@@ -4,15 +4,15 @@
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-6" },
     "hephaestus": { "model": "opencode/gpt-5.2-codex" },
-    "oracle": { "model": "opencode/gpt-5.2" },
+    "oracle": { "model": "opencode/gpt-5.2-codex" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/grok-code" },
     "multimodal-looker": { "model": "opencode/gemini-3-flash" },
     "prometheus": { "model": "opencode/claude-opus-4-6" },
     "metis": { "model": "opencode/claude-opus-4-6" },
     "momus": { "model": "opencode/gpt-5.2" },
-    "atlas": { "model": "opencode/claude-sonnet-4-5" },
-    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" }
+    "atlas": { "model": "opencode/claude-sonnet-4-6" },
+    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }
   },
 
   "tmux": {

@@ -51,7 +51,6 @@ EXA_API_KEY=your-exa-api-key
 | `GITHUB_TOKEN` | GitHub Token | 是 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥 | 否 |
 | `EXA_API_KEY` | Exa AI 密钥 | 否 |
-| `QUOTIO_API_KEY` | Quotio 密钥 | 否 |
 
 ### 3. 添加到 PATH
 

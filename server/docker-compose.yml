@@ -50,10 +50,6 @@ services:
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - EXA_API_KEY=${EXA_API_KEY:-}
 
-      # Quotio（可选）
-      - QUOTIO_API_KEY=${QUOTIO_API_KEY:-}
-      - QUOTIO_BASE_URL=${QUOTIO_BASE_URL:-}
-
     # ===== 挂载卷 =====
     volumes:
       # ----- 工作区目录（多项目模式） -----

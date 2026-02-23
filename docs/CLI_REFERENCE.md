@@ -25,7 +25,6 @@ ocd [选项] [子命令]
 | `--https` | 通过 Tailscale Serve 启用 HTTPS |
 | `--awake` | 防止 Mac 进入休眠 (caffeinate) |
 | `--merge-up` | 合并 transcripts 到父项目 |
-| `--quotio` | 启用 Quotio 代理 |
 
 ---
 

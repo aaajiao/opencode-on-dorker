@@ -255,7 +255,6 @@ devocd -r                # Rebuild dev image
 | `--https` | Enable HTTPS via Tailscale Serve |
 | `--awake` | Prevent Mac sleep (caffeinate) |
 | `--merge-up` | Merge transcripts to parent project |
-| `--quotio` | Enable Quotio proxy |
 
 ## Common Pitfalls
 

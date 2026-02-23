@@ -144,7 +144,6 @@ main() {
 
   local REBUILD=0 CLEAN_CONFIG=0
   local CUSTOM_PORT=""
-  local USE_QUOTIO=0
   local USE_HERE=0 USE_HTTPS=0 USE_AWAKE=0
 
   trap '_ocd_cleanup' INT TERM HUP
@@ -153,7 +152,6 @@ main() {
     case "$1" in
       -v|--version) echo "OCD v$(ocd_version)"; return 0 ;;
       -r) REBUILD=1; shift ;;
-      --quotio) USE_QUOTIO=1; shift ;;
       --https) USE_HTTPS=1; shift ;;
       --awake) USE_AWAKE=1; shift ;;
       --debug) OCD_DEBUG=1; export OCD_DEBUG; shift ;;
@@ -184,7 +182,6 @@ Options:
   --clean           Reset global config (backup and regenerate)
   --https           Enable HTTPS via Tailscale Serve
   --awake           Prevent Mac from sleeping
-  --quotio          Enable Quotio provider
   --debug           Enable debug output
   --dev             Use development version (from dev/ directory)
   --dev-root PATH   Specify development directory
@@ -306,7 +303,6 @@ EOF
   TAILSCALE_IP=$(ocd_get_tailscale_ip || echo "")
   [[ -n "$TS_HOSTNAME" && "$USE_HTTPS" -eq 1 ]] && echo "   └─ 🔒 HTTPS: https://${TS_HOSTNAME}"
   [[ -z "$TS_HOSTNAME" && -n "$TAILSCALE_IP" ]] && echo "   └─ 📱 远程: http://${TAILSCALE_IP}:${PORT}"
-  [[ "$USE_QUOTIO" -eq 1 ]] && echo "   └─ Quotio 已启用"
   [[ -n "$START_DIR" ]] && echo "   └─ 项目: ${START_DIR%%/*}"
   [[ "$USE_AWAKE" -eq 1 ]] && echo "   └─ ☕ 防休眠已启用"
   echo ""
