@@ -204,18 +204,12 @@ All dependency versions are centralized in `versions.lock`. Template variables u
 
 Key variables:
 - `OPENCODE_AI_VERSION`, `OH_MY_OPENCODE_VERSION`
-- `PLAYWRIGHT_MCP_VERSION`
 - `BUN_VERSION`, `PIP_*` versions
 
-## MCP Configuration
+## Playwright Browser Automation
 
-Playwright MCP requires special flags for Docker:
-```json
-"command": ["npx", "@playwright/mcp@{{PLAYWRIGHT_MCP_VERSION}}", "--headless", "--isolated", "--no-sandbox"]
-```
-- `--headless`: No GUI
-- `--isolated`: Memory-only profile (no disk locks)
-- `--no-sandbox`: Required for root user in Docker
+Playwright CLI (`playwright-cli`) is installed globally in the Docker image via `@playwright/mcp`.
+Browser automation uses oh-my-opencode's built-in `playwright` and `dev-browser` skills (CLI mode, token-efficient).
 
 ## CLI Reference
 

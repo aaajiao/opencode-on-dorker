@@ -75,7 +75,7 @@ OH_MY_OPENCODE_VERSION=2.14.0
 ### opencode.json.tmpl
 Main OpenCode configuration. Variables used:
 - `{{OH_MY_OPENCODE_VERSION}}` - oh-my-opencode plugin version
-- `{{PLAYWRIGHT_MCP_VERSION}}` - Playwright MCP server version
+- `{{OPENCODE_ANTIGRAVITY_AUTH_VERSION}}` - Antigravity auth plugin version
 
 ### oh-my-opencode.json
 Plugin configuration with agent models. Copied directly (no variables).

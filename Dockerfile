@@ -10,6 +10,7 @@ ARG PIP_BEAUTIFULSOUP4=4.12.3
 ARG PIP_PILLOW=11.1.0
 ARG PIP_NOTEBOOKLM_PY=0.1.4
 ARG OPENCODE_AI_VERSION=1.1.4
+ARG PLAYWRIGHT_CLI_VERSION=0.0.68
 
 FROM oven/bun:${BUN_VERSION}
 
@@ -32,11 +33,13 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y nodejs
 
 # -------------------------------------------------------
-# 第三步：安装 Playwright 浏览器依赖 (ARM64 兼容)
+ARG PLAYWRIGHT_CLI_VERSION
+# 第三步：安装 Playwright 浏览器 + CLI (ARM64 兼容)
 # -------------------------------------------------------
 # 全局安装 playwright 确保浏览器下载到持久化路径 /root/.cache/ms-playwright/
-# 同时创建 /opt/google/chrome/chrome symlink 供 @playwright/mcp 使用
-RUN npm install -g playwright && \
+# @playwright/mcp 提供 playwright-cli 命令行工具（token 高效的浏览器自动化）
+# 同时创建 /opt/google/chrome/chrome symlink 供 playwright-cli 使用
+RUN npm install -g playwright @playwright/mcp@${PLAYWRIGHT_CLI_VERSION} && \
     npx playwright install --with-deps chromium && \
     CHROME_BIN=$(find /root/.cache/ms-playwright/chromium-* -name "chrome" -type f -executable 2>/dev/null | head -1) && \
     if [ -n "$CHROME_BIN" ]; then \
@@ -185,7 +188,7 @@ mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null\n\
 chmod 755 /root/.cache/oh-my-opencode /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
 ocd_debug "目录状态: $(ls -la /root/.cache/oh-my-opencode/ 2>&1)"\n\
 \n\
-# Playwright MCP: verify/fix Chrome symlink and clean stale locks\n\
+# Playwright CLI: verify/fix Chrome symlink and clean stale locks\n\
 rm -rf /root/.cache/ms-playwright/mcp-chrome 2>/dev/null\n\
 if [ -d "/root/.cache/ms-playwright" ]; then\n\
     CHROME_PATH=$(find /root/.cache/ms-playwright/chromium-* -name "chrome" -type f -executable 2>/dev/null | head -1)\n\
