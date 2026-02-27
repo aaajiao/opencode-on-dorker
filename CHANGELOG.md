@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.2] - 2026-02-27
+
+### Changed
+
+- **依赖升级**: OpenCode 1.2.10→1.2.15, oh-my-opencode 3.8.3→3.9.0, Bun 1.3.9→1.3.10
+- **模型升级**: Hephaestus/Oracle 从 gpt-5.2-codex 升级到 gpt-5.3-codex
+- **可用模型列表刷新**: 按 Zen 最新端点重写，新增 gpt-5.3-codex、gemini-3.1-pro、minimax-m2.5、glm-5、kimi-k2.5、qwen3-coder 等
+
+---
+
 ## [0.7.1] - 2026-02-23
 
 ### Changed
