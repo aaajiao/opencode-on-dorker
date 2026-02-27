@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.3] - 2026-02-27
+
+### Changed
+
+- **README 语言切换**: 主 README 改为英文（GitHub 首页），中文移至 `docs/README_CN.md`
+- **Agent 表格更新**: 新增 Hephaestus、Prometheus 等 v3.x agents
+
+---
+
 ## [0.7.2] - 2026-02-27
 
 ### Changed
