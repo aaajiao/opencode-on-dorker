@@ -8,104 +8,107 @@
 ```
 
 [![Version](https://img.shields.io/badge/version-0.7.2-blue.svg)](./CHANGELOG.md)
-[![English](https://img.shields.io/badge/lang-English-blue.svg)](./docs/README_EN.md)
+[![中文](https://img.shields.io/badge/lang-中文-red.svg)](./docs/README_CN.md)
 
-在 macOS + OrbStack 环境下运行 [OpenCode](https://opencode.ai) AI 编程助手，集成 [oh-my-opencode](https://github.com/1msoft/oh-my-opencode) 插件。
+Run [OpenCode](https://opencode.ai) AI coding agent in a macOS + OrbStack Docker environment, powered by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) multi-agent orchestration.
 
-## 功能特性
+## Features
 
-- 一键启动 OpenCode 容器 (`ocd` 命令)
-- 多窗口支持（自动端口分配 + 锁机制防冲突）
-- macOS 集成（桌面通知、剪贴板桥接、链接自动打开）
-- oh-my-opencode 多 Agent 协作
-- MCP 服务器（Playwright 等）
-- 配置持久化（用户所有，OCD 不覆盖）
+- One-command launch (`ocd`) with auto workspace detection
+- Multi-window support (auto port allocation + lock mechanism)
+- macOS integration (desktop notifications, clipboard bridge, auto-open links)
+- Multi-agent collaboration via oh-my-opencode (Sisyphus, Oracle, Hephaestus, etc.)
+- MCP servers & Playwright browser automation
+- Persistent user-owned configuration (OCD never overwrites)
 
-## 快速开始
+## Quick Start
 
-### 1. 安装依赖
+### 1. Install Dependencies
 
 ```bash
 brew install jq fswatch terminal-notifier
 ```
 
-### 2. 克隆并配置
+### 2. Clone and Configure
 
 ```bash
 git clone https://github.com/aaajiao/opencode-on-dorker.git ~/opencode
 cd ~/opencode
 cp env.example .env
-nano .env  # 填写 API keys
+nano .env  # Fill in your API keys
 ```
 
-### 3. 添加到 PATH
+### 3. Add to PATH
 
 ```bash
 echo 'export PATH="$HOME/opencode/bin:$PATH"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-### 4. 首次构建
+### 4. First Build
 
 ```bash
 ocd -r
 ```
 
-详细安装说明：[docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)
+Detailed setup: [docs/GETTING_STARTED.md](./docs/GETTING_STARTED.md)
 
-## 使用方法
+## Usage
 
 ```bash
-ocd                  # 在项目目录启动（自动检测工作区）
-ocd -p 5000          # 指定端口
-ocd --here           # 只挂载当前目录
-ocd -r               # 重建镜像
-ocd init             # 初始化项目配置
-ocd config           # 查看配置状态
+ocd                  # Launch in project dir (auto-detect workspace)
+ocd -p 5000          # Custom port
+ocd --here           # Mount current directory only
+ocd -r               # Rebuild image
+ocd init             # Initialize project config
+ocd config           # View config status
+ocd scan             # Scan and register git projects
 ```
 
-完整命令参考：[docs/CLI_REFERENCE.md](./docs/CLI_REFERENCE.md)
+Full reference: [docs/CLI_REFERENCE.md](./docs/CLI_REFERENCE.md)
 
-## 环境变量
+## Environment Variables
 
-`.env` 格式（纯 KEY=VALUE，无引号无注释）：
+`.env` format (pure KEY=VALUE — no quotes, no comments):
 
-```bash
+```
 OPENAI_API_KEY=sk-proj-xxxx
 ANTHROPIC_API_KEY=sk-ant-xxxx
 GITHUB_TOKEN=ghp_xxxx
 EXA_API_KEY=your-exa-api-key
 ```
 
-## 文档
+## oh-my-opencode Agents
 
-| 文档 | 说明 |
-|------|------|
-| [快速开始](./docs/GETTING_STARTED.md) | 详细安装配置 |
-| [CLI 参考](./docs/CLI_REFERENCE.md) | 命令行完整参考 |
-| [配置详解](./docs/CONFIGURATION.md) | 目录结构、配置生命周期 |
-| [架构说明](./docs/ARCHITECTURE.md) | Mac/Docker 映射关系 |
-| [开发者指南](./docs/OPENCODE_CONFIG_GUIDE.md) | 扩展和定制 |
-| [Agent 指南](./docs/OH_MY_OPENCODE.md) | oh-my-opencode 多 Agent 协作 |
+| Scenario | Agent | Example |
+|----------|-------|---------|
+| Complex tasks | Sisyphus (default) | Just type the task |
+| Deep autonomous work | Hephaestus | `deep:` prefix or delegated |
+| Architecture / Debug | `@oracle` | `@oracle analyze this deadlock` |
+| Find docs & examples | `@librarian` | `@librarian React 18 concurrency` |
+| Codebase search | `@explore` | `@explore where is user auth` |
+| Task planning | `@prometheus` | `@prometheus plan auth refactor` |
+| Large refactor | `ulw:` | `ulw: refactor auth module` |
 
-## oh-my-opencode Agent
+Full guide: [docs/OH_MY_OPENCODE.md](./docs/OH_MY_OPENCODE.md)
 
-| 场景 | Agent | 示例 |
-|------|-------|------|
-| 复杂任务 | Sisyphus (默认) | 直接输入任务 |
-| 架构/调试 | `@oracle` | `@oracle 分析这个死锁` |
-| 查文档 | `@librarian` | `@librarian React 18 并发特性` |
-| 找代码 | `@explore` | `@explore 用户认证在哪` |
-| 大型重构 | `ulw:` | `ulw: 重构认证模块` |
+## Documentation
 
-完整指南：[docs/OH_MY_OPENCODE.md](./docs/OH_MY_OPENCODE.md)
+| Document | Description |
+|----------|-------------|
+| [Getting Started](./docs/GETTING_STARTED.md) | Installation & first build |
+| [CLI Reference](./docs/CLI_REFERENCE.md) | All flags, subcommands, examples |
+| [Configuration](./docs/CONFIGURATION.md) | Directory structure, config lifecycle |
+| [Architecture](./docs/ARCHITECTURE.md) | Mac/Docker mapping, IPC |
+| [Developer Guide](./docs/OPENCODE_CONFIG_GUIDE.md) | Extension & customization |
+| [Agent Guide](./docs/OH_MY_OPENCODE.md) | oh-my-opencode multi-agent system |
 
-## 依赖要求
+## Requirements
 
 - macOS
-- [OrbStack](https://orbstack.dev/)（推荐）或 Docker Desktop
+- [OrbStack](https://orbstack.dev/) (recommended) or Docker Desktop
 - jq, fswatch, terminal-notifier
 
-## 许可证
+## License
 
 MIT
