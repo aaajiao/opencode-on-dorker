@@ -118,12 +118,12 @@ cp models.conf.example ~/opencode/models.conf
 # ~/opencode/models.conf
 
 # 主模型 (opencode.json)
-MAIN_MODEL=anthropic/claude-opus-4-5
+MAIN_MODEL=opencode/claude-opus-4-6
 
 # Agent 模型 (oh-my-opencode.json)
-PLANNER_MODEL=anthropic/claude-opus-4-5
-ORACLE_MODEL=opencode/gpt-5.2-codex
-DOCUMENT_WRITER_MODEL=opencode/gemini-3-pro
+SISYPHUS_MODEL=opencode/claude-opus-4-6
+ORACLE_MODEL=opencode/gpt-5.3-codex
+EXPLORE_MODEL=opencode/claude-haiku-4-5
 ```
 
 > 修改后需运行 `ocd --clean` 重新生成配置。

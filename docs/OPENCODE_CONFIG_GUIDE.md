@@ -166,9 +166,9 @@ bin/ocd
 
 ```bash
 # ~/opencode/models.conf
-MAIN_MODEL=anthropic/claude-opus-4-5
-PLANNER_MODEL=anthropic/claude-opus-4-5
-ORACLE_MODEL=opencode/gpt-5.2-codex
+MAIN_MODEL=opencode/claude-opus-4-6
+SISYPHUS_MODEL=opencode/claude-opus-4-6
+ORACLE_MODEL=opencode/gpt-5.3-codex
 ```
 
 修改后需运行 `ocd --clean` 重新生成配置。
@@ -253,7 +253,7 @@ echo "$WATCHER_PID" > "${IPC_DIR}/.watcher.pid"
 ---
 name: my-agent
 description: 描述
-model: anthropic/claude-sonnet-4-5
+model: anthropic/claude-sonnet-4-6
 tools:
   read: true
   bash: true

@@ -181,11 +181,11 @@ OCD (OpenCode Docker) 文件结构与 Mac/Docker 映射关系。
 
 ```bash
 # 核心
-OPENCODE_AI_VERSION=1.1.60
-OH_MY_OPENCODE_VERSION=3.5.3
+OPENCODE_AI_VERSION=1.2.15
+OH_MY_OPENCODE_VERSION=3.9.0
 
 # Docker
-BUN_VERSION=1.3.8
+BUN_VERSION=1.3.10
 ```
 
 模板使用 `{{VAR_NAME}}` 语法引用版本变量。

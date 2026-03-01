@@ -28,16 +28,16 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 类别 | Agent | 默认模型 | 成本 | 核心职责 |
 |------|-------|---------|------|----------|
-| **编排器** | Sisyphus | Claude Opus 4.5 | 贵 | 主入口，任务分解与委派 |
-| | Atlas | Claude Sonnet 4.5 | 贵 | Todo 列表编排，多任务协调 |
-| | Sisyphus-Junior | Claude Sonnet 4.5 | 便宜 | 专注执行，不委派 |
-| **深度工作** | Hephaestus | GPT-5.2 Codex | 贵 | 自主深度开发，目标导向 |
-| **顾问** | Oracle | GPT-5.2 Codex | 贵 | 架构设计、调试诊断 |
-| | Prometheus | Claude Opus 4.5 | 贵 | 战略规划（访谈模式） |
-| | Metis | Claude Opus 4.5 | 贵 | 预规划分析，发现歧义 |
+| **编排器** | Sisyphus | Claude Opus 4.6 | 贵 | 主入口，任务分解与委派 |
+| | Atlas | Claude Sonnet 4.6 | 贵 | Todo 列表编排，多任务协调 |
+| | Sisyphus-Junior | Claude Sonnet 4.6 | 便宜 | 专注执行，不委派 |
+| **深度工作** | Hephaestus | GPT-5.3 Codex | 贵 | 自主深度开发，目标导向 |
+| **顾问** | Oracle | GPT-5.3 Codex | 贵 | 架构设计、调试诊断 |
+| | Prometheus | Claude Opus 4.6 | 贵 | 战略规划（访谈模式） |
+| | Metis | Claude Opus 4.6 | 贵 | 预规划分析，发现歧义 |
 | | Momus | GPT-5.2 | 贵 | 计划审查，挑刺找问题 |
 | **探索** | Librarian | Claude Haiku 4.5 | 便宜 | 外部文档、GitHub 示例 |
-| | Explore | Grok Code | 免费 | 内部代码搜索 |
+| | Explore | Claude Haiku 4.5 | 便宜 | 内部代码搜索 |
 | **工具** | Multimodal-Looker | Gemini 3 Flash | 便宜 | 图片/PDF 分析 |
 
 ---
@@ -50,7 +50,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/claude-opus-4-5` |
+| 模型 | `opencode/claude-opus-4-6` |
 | 温度 | 0.1 |
 | 思考预算 | 32,000 tokens |
 | 成本 | 贵 |
@@ -88,7 +88,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/gpt-5.2-codex` |
+| 模型 | `opencode/gpt-5.3-codex` |
 | 温度 | 0.1 |
 | 成本 | 贵 |
 | 灵感来源 | [AmpCode deep mode](https://ampcode.com) |
@@ -136,7 +136,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/gpt-5.2-codex` |
+| 模型 | `opencode/gpt-5.3-codex` |
 | 温度 | 0.1 |
 | 推理强度 | medium |
 | 成本 | 贵 |
@@ -222,13 +222,13 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 ### Explore - 代码导航员
 
-**内部搜索专家**，快速定位代码。**免费**，可大量使用。
+**内部搜索专家**，快速定位代码。**便宜**，可大量使用。
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/grok-code` |
+| 模型 | `opencode/claude-haiku-4-5` |
 | 温度 | 0.1 |
-| 成本 | **免费** |
+| 成本 | 便宜 |
 | 工具限制 | **只读**（禁止 write, edit, task, delegate_task, call_omo_agent） |
 
 **核心能力**：
@@ -315,7 +315,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/claude-opus-4-5` |
+| 模型 | `opencode/claude-opus-4-6` |
 | 温度 | 0.1 |
 | 成本 | 贵 |
 | 工具限制 | 只能写 Markdown（禁止写代码文件） |
@@ -347,7 +347,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/claude-opus-4-5` |
+| 模型 | `opencode/claude-opus-4-6` |
 | 温度 | 0.3（略高，用于创意分析） |
 | 成本 | 贵 |
 | 工具限制 | **只读**（只能分析） |
@@ -408,7 +408,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/claude-sonnet-4-5` |
+| 模型 | `opencode/claude-sonnet-4-6` |
 | 温度 | 0.1 |
 | 成本 | 贵 |
 | 工具限制 | 无（完全访问） |
@@ -431,7 +431,7 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/claude-sonnet-4-5` |
+| 模型 | `opencode/claude-sonnet-4-6` |
 | 温度 | 0.1 |
 | 最大 tokens | 64,000 |
 | 思考预算 | 32,000 tokens |
@@ -678,7 +678,7 @@ ultrawork: @oracle 设计微服务架构
 
 | 成本 | Agent | 使用策略 |
 |------|-------|----------|
-| **免费** | Explore | 大量使用，代码导航首选 |
+| **便宜** | Explore, Librarian, Multimodal-Looker, Sisyphus-Junior | 代码导航、外部研究、媒体分析、执行 |
 | **便宜** | Librarian, Multimodal-Looker, Sisyphus-Junior | 外部研究、媒体分析、执行 |
 | **贵** | Sisyphus, Atlas, Prometheus, Metis, Momus, Oracle | 只用于复杂推理、规划、编排 |
 
@@ -749,20 +749,20 @@ ulw: 开发用户仪表板
 
 ```bash
 # 主模型 (opencode.json)
-MAIN_MODEL=opencode/claude-opus-4-5
+MAIN_MODEL=opencode/claude-opus-4-6
 
 # Agent 模型 (oh-my-opencode.json)
-SISYPHUS_MODEL=opencode/claude-opus-4-5
-HEPHAESTUS_MODEL=opencode/gpt-5.2-codex
-ORACLE_MODEL=opencode/gpt-5.2-codex
+SISYPHUS_MODEL=opencode/claude-opus-4-6
+HEPHAESTUS_MODEL=opencode/gpt-5.3-codex
+ORACLE_MODEL=opencode/gpt-5.3-codex
 LIBRARIAN_MODEL=opencode/claude-haiku-4-5
 EXPLORE_MODEL=opencode/claude-haiku-4-5
 MULTIMODAL_MODEL=opencode/gemini-3-flash
-PROMETHEUS_MODEL=opencode/claude-opus-4-5
-METIS_MODEL=opencode/claude-opus-4-5
+PROMETHEUS_MODEL=opencode/claude-opus-4-6
+METIS_MODEL=opencode/claude-opus-4-6
 MOMUS_MODEL=opencode/gpt-5.2
-ATLAS_MODEL=opencode/claude-sonnet-4-5
-SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-5
+ATLAS_MODEL=opencode/claude-sonnet-4-6
+SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-6
 ```
 
 ### oh-my-opencode.json 配置
@@ -770,17 +770,17 @@ SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-5
 ```json
 {
   "agents": {
-    "sisyphus": { "model": "opencode/claude-opus-4-5" },
-    "hephaestus": { "model": "opencode/gpt-5.2-codex" },
-    "oracle": { "model": "opencode/gpt-5.2-codex" },
+    "sisyphus": { "model": "opencode/claude-opus-4-6" },
+    "hephaestus": { "model": "opencode/gpt-5.3-codex" },
+    "oracle": { "model": "opencode/gpt-5.3-codex" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
-    "explore": { "model": "opencode/grok-code" },
+    "explore": { "model": "opencode/claude-haiku-4-5" },
     "multimodal-looker": { "model": "opencode/gemini-3-flash" },
-    "prometheus": { "model": "opencode/claude-opus-4-5" },
-    "metis": { "model": "opencode/claude-opus-4-5" },
+    "prometheus": { "model": "opencode/claude-opus-4-6" },
+    "metis": { "model": "opencode/claude-opus-4-6" },
     "momus": { "model": "opencode/gpt-5.2" },
-    "atlas": { "model": "opencode/claude-sonnet-4-5" },
-    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" }
+    "atlas": { "model": "opencode/claude-sonnet-4-6" },
+    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }
   },
   "browser_automation_engine": {
     "provider": "playwright"
@@ -1019,21 +1019,36 @@ oh-my-opencode 支持两种浏览器自动化引擎：
 ### 可用模型
 
 ```bash
-# OpenCode 内置 (opencode/):
-opencode/claude-opus-4-5        # 最强，默认主模型
+# OpenCode Zen (opencode/):
+#
+#   Anthropic:
+opencode/claude-opus-4-6        # 最强，默认主模型
+opencode/claude-opus-4-5        # 上代旗舰
+opencode/claude-sonnet-4-6      # 快速，adaptive thinking
 opencode/claude-sonnet-4-5      # 快速
 opencode/claude-haiku-4-5       # 便宜
+#
+#   OpenAI:
+opencode/gpt-5.3-codex          # 最新代码推理，25% 更快
 opencode/gpt-5.2                # 推理
 opencode/gpt-5.2-codex          # 代码推理
+#
+#   Google:
+opencode/gemini-3.1-pro         # 多模态，medium reasoning
 opencode/gemini-3-pro           # 多模态
 opencode/gemini-3-flash         # 快速多模态
-opencode/grok-code              # 免费
+#
+#   其他:
+opencode/minimax-m2.5           # 快速
+opencode/big-pickle             # 免费限时
 
 # 原始 Provider:
-anthropic/claude-opus-4-5
-anthropic/claude-sonnet-4-5
+anthropic/claude-opus-4-6
+anthropic/claude-sonnet-4-6
+openai/gpt-5.3-codex
 openai/gpt-5.2
-google/gemini-3-pro-preview
+google/gemini-3.1-pro
+google/gemini-3-pro
 google/gemini-3-flash
 ```
 
