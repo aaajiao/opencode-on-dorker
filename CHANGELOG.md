@@ -9,8 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **依赖升级**: OpenCode 1.2.10 → 1.2.17, oh-my-opencode 3.8.3 → 3.10.0, Bun 1.3.9 → 1.3.10
+- **模型升级**: 模板全面切换到 `gpt-5.3-codex`（Hephaestus、Oracle、ultrabrain、deep 四处），explore 改为 `claude-haiku-4-5`
+- **新增 Categories 配置**: 模板和文档新增 8 个任务类别（visual-engineering、ultrabrain、deep、artistry、quick、unspecified-low、unspecified-high、writing）
+- **新增 git-master 配置**: 模板新增 `commit_footer`、`include_co_authored_by` 选项
+- **配置示例全面扩充**: `oh-my-opencode.example.jsonc` 从 115 行扩展到 235 行，新增 categories、skills、background_tasks、git-master、comment-checker、LSP、agent permissions、实验性功能等完整参考
+- **models.conf.example 刷新**: 全面对齐 models.conf（4-5 → 4-6 系列，5.2-codex → 5.3-codex，补全新模型列表）
 - **README 语言切换**: 主 README 改为英文（GitHub 首页），中文移至 `docs/README_CN.md`
 - **Agent 表格更新**: 新增 Hephaestus、Prometheus 等 v3.x agents
+
+### Added
+
+- **OH_MY_OPENCODE.md 新增章节**: Categories 配置、Hooks（35+ 内置 hook 一览）、Background Tasks 配置、Comment Checker 配置、Agent 权限控制、LSP 配置、实验性功能总览（aggressive_truncation、auto_resume、preemptive_compaction、truncate_all_tool_outputs）
+- **Git Master 配置文档**: 在 Skill 详解中新增配置选项说明
 
 ---
 
