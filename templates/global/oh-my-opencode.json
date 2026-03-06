@@ -3,16 +3,31 @@
 
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-6" },
-    "hephaestus": { "model": "opencode/gpt-5.2-codex" },
-    "oracle": { "model": "opencode/gpt-5.2-codex" },
+    "hephaestus": { "model": "opencode/gpt-5.3-codex" },
+    "oracle": { "model": "opencode/gpt-5.3-codex" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
-    "explore": { "model": "opencode/grok-code" },
+    "explore": { "model": "opencode/claude-haiku-4-5" },
     "multimodal-looker": { "model": "opencode/gemini-3-flash" },
     "prometheus": { "model": "opencode/claude-opus-4-6" },
     "metis": { "model": "opencode/claude-opus-4-6" },
     "momus": { "model": "opencode/gpt-5.2" },
     "atlas": { "model": "opencode/claude-sonnet-4-6" },
     "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }
+  },
+
+  "categories": {
+    "visual-engineering": { "model": "opencode/gemini-3-pro" },
+    "ultrabrain": { "model": "opencode/gpt-5.3-codex", "reasoningEffort": "xhigh" },
+    "deep": { "model": "opencode/gpt-5.3-codex", "reasoningEffort": "high" },
+    "artistry": { "model": "opencode/gemini-3-pro", "variant": "max" },
+    "quick": { "model": "opencode/claude-haiku-4-5" },
+    "unspecified-low": { "model": "opencode/claude-sonnet-4-6" },
+    "unspecified-high": { "model": "opencode/claude-opus-4-6", "variant": "max" },
+    "writing": { "model": "opencode/gemini-3-flash" }
+  },
+
+  "git-master": {
+    "include_co_authored_by": true
   },
 
   "tmux": {

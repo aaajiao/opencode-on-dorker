@@ -6,21 +6,114 @@
 
   // ============================================================
   // Agent 模型配置
-  // 可用模型: opencode/claude-opus-4-5, opencode/claude-sonnet-4-5,
-  //          opencode/claude-haiku-4-5, opencode/gpt-5.2,
-  //          opencode/gemini-3-flash, opencode/grok-code
+  // 可用模型: opencode/claude-opus-4-6, opencode/claude-sonnet-4-6,
+  //          opencode/claude-haiku-4-5, opencode/gpt-5.3-codex,
+  //          opencode/gpt-5.2-codex, opencode/gpt-5.2,
+  //          opencode/gemini-3-pro, opencode/gemini-3-flash,
+  //          opencode/grok-code
+  // 每个 agent 支持以下选项:
+  //   model: 使用的模型 ID
+  //   variant: 模型变体，如 "max"（更大上下文）
+  //   permissions: Agent 权限控制（见下方 sisyphus 示例）
   // ============================================================
   "agents": {
-    "sisyphus": { "model": "opencode/claude-opus-4-5" },       // 主编排器（贵）
-    "oracle": { "model": "opencode/gpt-5.2" },                 // 架构顾问（贵）
-    "librarian": { "model": "opencode/claude-haiku-4-5" },     // 外部研究（便宜）
-    "explore": { "model": "opencode/grok-code" },              // 代码导航（免费）
-    "multimodal-looker": { "model": "opencode/gemini-3-flash" }, // 视觉分析（便宜）
-    "prometheus": { "model": "opencode/claude-opus-4-5" },     // 战略规划（贵）
-    "metis": { "model": "opencode/claude-opus-4-5" },          // 预规划分析（贵）
-    "momus": { "model": "opencode/gpt-5.2" },                  // 计划审查（贵）
-    "atlas": { "model": "opencode/claude-sonnet-4-5" },        // 高级编排（贵）
-    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-5" } // 任务执行（便宜）
+    "sisyphus": {
+      "model": "opencode/claude-opus-4-6",
+      // Agent 权限控制。可选值: ask / allow / deny
+      // edit: 文件编辑权限; bash: 执行命令权限; webfetch: 网络请求权限
+      // doom_loop: 自主循环执行权限; external_directory: 访问外部目录权限
+      "permissions": {
+        "edit": "allow",
+        "bash": "allow",
+        "webfetch": "allow",
+        "doom_loop": "ask",
+        "external_directory": "ask"
+      }
+    },
+    "oracle": { "model": "opencode/gpt-5.2" },                     // 架构顾问（贵）
+    "librarian": { "model": "opencode/claude-haiku-4-5" },          // 外部研究（便宜）
+    "explore": { "model": "opencode/claude-haiku-4-5" },              // 代码导航（便宜）
+    "multimodal-looker": { "model": "opencode/gemini-3-flash" },    // 视觉分析（便宜）
+    "prometheus": { "model": "opencode/claude-opus-4-6" },          // 战略规划（贵）
+    "metis": { "model": "opencode/claude-opus-4-6" },               // 预规划分析（贵）
+    "momus": { "model": "opencode/gpt-5.2" },                       // 计划审查（贵）
+    "atlas": { "model": "opencode/claude-sonnet-4-6" },             // 高级编排（贵）
+    "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }    // 任务执行（便宜）
+  },
+
+  // ============================================================
+  // 任务类别模型配置
+  // 根据任务类型自动选择最适合的模型
+  // 可用选项: model, variant, temperature, top_p, maxTokens,
+  //          thinking, reasoningEffort, textVerbosity,
+  //          tools, prompt_append, is_unstable_agent
+  // ============================================================
+  "categories": {
+    // 视觉/UI 工程任务，使用多模态能力强的模型
+    "visual-engineering": { "model": "opencode/gemini-3-pro" },
+    // 超强推理任务，启用最高推理强度
+    "ultrabrain": { "model": "opencode/gpt-5.3-codex", "reasoningEffort": "xhigh" },
+    // 深度思考任务，高推理强度
+    "deep": { "model": "opencode/gpt-5.3-codex", "reasoningEffort": "high" },
+    // 创意/写作任务，使用 max 变体获取更大上下文
+    "artistry": { "model": "opencode/gemini-3-pro", "variant": "max" },
+    // 快速简单任务，使用轻量模型节省成本
+    "quick": { "model": "opencode/claude-haiku-4-5" },
+    // 一般性低复杂度任务
+    "unspecified-low": { "model": "opencode/claude-sonnet-4-6" },
+    // 一般性高复杂度任务，使用 max 变体
+    "unspecified-high": { "model": "opencode/claude-opus-4-6", "variant": "max" },
+    // 文档/文案写作任务
+    "writing": { "model": "opencode/gemini-3-flash" }
+  },
+
+  // ============================================================
+  // 自定义 Skills
+  // 内置 skills: playwright, dev-browser (官方文档称 agent-browser，
+  //             本地实现为 dev-browser), git-master, frontend-ui-ux
+  // 自定义 skill 需在对应目录创建 SKILL.md 文件:
+  //   全局: ~/.config/opencode/skills/<skill-name>/SKILL.md
+  //   项目: .opencode/skills/<skill-name>/SKILL.md
+  // ============================================================
+  "skills": {
+    "my-custom-skill": {
+      "description": "自定义 skill 描述",
+      "instructions": "当需要执行特定任务时使用此 skill..."
+    }
+  },
+
+  // ============================================================
+  // 后台任务并发控制
+  // 优先级: modelConcurrency > providerConcurrency > defaultConcurrency
+  //   defaultConcurrency: 默认最大并发任务数
+  //   staleTimeoutMs: 任务超时时间（毫秒），超时后视为过期
+  //   providerConcurrency: 同一 provider（如 Anthropic）最大并发数
+  //   modelConcurrency: 同一模型最大并发数
+  // ============================================================
+  "background_tasks": {
+    "defaultConcurrency": 5,
+    "staleTimeoutMs": 300000,
+    "providerConcurrency": 3,
+    "modelConcurrency": 2
+  },
+
+  // ============================================================
+  // Git Master skill 配置
+  //   commit_footer: 附加到 commit message 末尾的文本（如团队规范签名）
+  //   include_co_authored_by: 是否添加 Co-authored-by trailer 标记 AI 协作
+  // ============================================================
+  "git-master": {
+    "commit_footer": "",
+    "include_co_authored_by": true
+  },
+
+  // ============================================================
+  // 代码注释检查器
+  //   custom_prompt: 自定义审查提示词，使用 {{comments}} 占位符
+  //                  插入待检查的注释内容
+  // ============================================================
+  "comment-checker": {
+    "custom_prompt": "Review these comments: {{comments}}"
   },
 
   // ============================================================
@@ -29,6 +122,7 @@
   //   - "playwright": 默认，使用 Playwright MCP，无需额外安装
   //   - "agent-browser": 替代方案，可连接已有 Chrome
   //                      需安装: bun add -g agent-browser && agent-browser install
+  // 注意: 官方文档称 agent-browser，本地 oh-my-opencode 实现为 dev-browser skill
   // ============================================================
   "browser_automation_engine": {
     "provider": "playwright"
@@ -98,6 +192,32 @@
         "supersede_writes": { "enabled": true, "aggressive": false },
         "purge_errors": { "enabled": true, "turns": 5 }
       }
+    },
+    // 激进截断: 更大力度压缩上下文，可能丢失部分历史信息
+    "aggressive_truncation": false,
+    // 自动恢复: 任务中断后自动尝试恢复执行
+    "auto_resume": false,
+    // 预防性压缩: 在接近 token 上限前主动压缩上下文
+    "preemptive_compaction": false,
+    // 截断全部工具输出: 将所有工具调用结果截断以节省 token
+    "truncate_all_tool_outputs": false
+  },
+
+  // ============================================================
+  // LSP 服务器配置
+  // 可用选项:
+  //   command: 启动 LSP 服务器的命令
+  //   extensions: 关联的文件扩展名列表
+  //   priority: 优先级（数字越大优先级越高）
+  //   env: 传递给 LSP 进程的环境变量
+  //   initialization: LSP 初始化选项（initializationOptions）
+  //   disabled: 是否禁用此 LSP 服务器
+  // ============================================================
+  "lsp": {
+    "typescript": {
+      "command": "typescript-language-server --stdio",
+      "extensions": [".ts", ".tsx"],
+      "priority": 1
     }
   },
 

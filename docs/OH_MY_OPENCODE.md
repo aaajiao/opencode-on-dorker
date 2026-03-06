@@ -560,6 +560,22 @@ browser_screenshot, browser_snapshot, browser_evaluate...
 - 自动检测项目 commit 风格（semantic/plain/short）
 - 测试文件必须和实现同一个 commit
 
+**配置选项**：
+
+```json
+{
+  "git-master": {
+    "commit_footer": "Signed-off-by: Your Name <email@example.com>",
+    "include_co_authored_by": true
+  }
+}
+```
+
+| 选项 | 类型 | 说明 |
+|------|------|------|
+| `commit_footer` | string | 附加到每个 commit message 末尾的文本 |
+| `include_co_authored_by` | boolean | 是否添加 Co-authored-by trailer |
+
 #### dev-browser
 
 **持久化浏览器自动化**，可连接用户已有的 Chrome。
@@ -581,6 +597,135 @@ browser_screenshot, browser_snapshot, browser_evaluate...
 ```json
 {
   "disabled_skills": ["playwright", "frontend-ui-ux"]
+}
+```
+
+---
+
+## Categories 配置
+
+Categories 定义任务委派时使用的模型配置。当 Sisyphus 通过 `task(category=...)` 委派任务时，自动使用对应 category 的模型。
+
+### 默认 Categories
+
+| Category | 默认模型 | 说明 |
+|----------|---------|------|
+| `visual-engineering` | Gemini 3 Pro | 前端、UI/UX、设计、样式、动画 |
+| `ultrabrain` | GPT-5.2 Codex (xhigh) | 仅用于真正困难的逻辑密集型任务 |
+| `deep` | GPT-5.2 Codex (high) | 目标导向的自主问题解决，深度研究后行动 |
+| `artistry` | Gemini 3 Pro (max) | 创造性问题解决，突破常规模式 |
+| `quick` | Claude Haiku 4.5 | 简单任务：单文件修改、typo 修复 |
+| `unspecified-low` | Claude Sonnet 4.6 | 不属于其他类别的低工作量任务 |
+| `unspecified-high` | Claude Opus 4.6 (max) | 不属于其他类别的高工作量任务 |
+| `writing` | Gemini 3 Flash | 文档、技术写作 |
+
+### 自定义 Category 配置
+
+```json
+{
+  "categories": {
+    "visual-engineering": {
+      "model": "opencode/gemini-3-pro",
+      "temperature": 0.3,
+      "prompt_append": "Always use Tailwind CSS"
+    },
+    "quick": {
+      "model": "opencode/claude-haiku-4-5",
+      "maxTokens": 16000
+    }
+  }
+}
+```
+
+### 可用选项
+
+`model`、`variant`、`temperature`、`top_p`、`maxTokens`、`thinking`、`reasoningEffort`、`textVerbosity`、`tools`、`prompt_append`、`is_unstable_agent`
+
+---
+
+## Hooks
+
+Hooks 在各种生命周期节点扩展功能。oh-my-opencode 内置 35+ 个 hook，大多数开箱即用无需配置。
+
+### 内置 Hooks 一览
+
+| Hook | 用途 |
+|------|------|
+| `agent-usage-reminder` | 提醒使用专业 agent 而非直接工具 |
+| `anthropic-context-window-limit-recovery` | Anthropic 上下文窗口超限自动恢复 |
+| `anthropic-effort` | Anthropic 模型推理强度控制 |
+| `atlas` | Atlas 编排器生命周期管理 |
+| `auto-slash-command` | 自动斜杠命令检测 |
+| `auto-update-checker` | 插件自动更新检查 |
+| `background-notification` | 后台任务完成通知 |
+| `category-skill-reminder` | 提醒加载相关 skills |
+| `claude-code-hooks` | Claude Code 兼容层 |
+| `comment-checker` | 代码注释质量检查 |
+| `compaction-context-injector` | 压缩时注入关键上下文 |
+| `compaction-todo-preserver` | 压缩时保留 todo 状态 |
+| `delegate-task-retry` | 委派任务失败自动重试 |
+| `directory-agents-injector` | 目录级 agent 自动注入 |
+| `directory-readme-injector` | 目录 README 自动注入 |
+| `edit-error-recovery` | 编辑操作错误恢复 |
+| `interactive-bash-session` | 交互式 bash 会话管理 |
+| `keyword-detector` | 关键词检测和触发 |
+| `non-interactive-env` | 非交互环境适配 |
+| `prometheus-md-only` | Prometheus 仅 Markdown 输出 |
+| `question-label-truncator` | 问题标签截断 |
+| `ralph-loop` | Ralph Loop 自主循环 |
+| `rules-injector` | 规则文件自动注入 |
+| `session-recovery` | 会话恢复机制 |
+| `sisyphus-junior-notepad` | Sisyphus-Junior 笔记本 |
+| `start-work` | 工作启动流程 |
+| `stop-continuation-guard` | 停止继续机制 |
+| `subagent-question-blocker` | 阻止子 agent 向用户提问 |
+| `task-reminder` | 任务提醒 |
+| `task-resume-info` | 任务恢复信息 |
+| `tasks-todowrite-disabler` | Tasks 模式下禁用 todowrite |
+| `think-mode` | 深度思考模式 |
+| `thinking-block-validator` | 思考块验证 |
+| `unstable-agent-babysitter` | 不稳定 agent 监控 |
+| `write-existing-file-guard` | 已有文件写入保护 |
+
+大多数 hooks 自动运行，无需手动配置。
+
+---
+
+## Background Tasks 配置
+
+控制后台任务（explore、librarian 等并行任务）的并发限制。
+
+```json
+{
+  "background_tasks": {
+    "defaultConcurrency": 5,
+    "staleTimeoutMs": 300000,
+    "providerConcurrency": 3,
+    "modelConcurrency": 2
+  }
+}
+```
+
+| 选项 | 类型 | 说明 |
+|------|------|------|
+| `defaultConcurrency` | number | 默认最大并发任务数 |
+| `staleTimeoutMs` | number | 过期任务超时时间（毫秒） |
+| `providerConcurrency` | number | 每个 provider 的并发限制 |
+| `modelConcurrency` | number | 每个模型的并发限制 |
+
+**优先级**：`modelConcurrency` > `providerConcurrency` > `defaultConcurrency`
+
+---
+
+## Comment Checker 配置
+
+验证代码中的注释质量。使用 `{{comments}}` 占位符在自定义提示中插入待检查的注释。
+
+```json
+{
+  "comment-checker": {
+    "custom_prompt": "检查以下注释是否准确、有用、符合项目风格：{{comments}}"
+  }
 }
 ```
 
@@ -963,6 +1108,30 @@ oh-my-opencode 支持两种浏览器自动化引擎：
 
 ---
 
+#### 实验性功能总览
+
+| 选项 | 类型 | 说明 |
+|------|------|------|
+| `aggressive_truncation` | boolean | 积极截断输出 |
+| `auto_resume` | boolean | 自动恢复中断的任务 |
+| `preemptive_compaction` | boolean | 提前压缩上下文（在达到限制前） |
+| `truncate_all_tool_outputs` | boolean | 截断所有工具输出 |
+| `dynamic_context_pruning` | object | 动态上下文裁剪（详见下方） |
+
+```json
+{
+  "experimental": {
+    "aggressive_truncation": false,
+    "auto_resume": false,
+    "preemptive_compaction": false,
+    "truncate_all_tool_outputs": false,
+    "dynamic_context_pruning": {}
+  }
+}
+```
+
+---
+
 #### 动态上下文裁剪（实验性）
 
 自动移除冗余/过时的工具调用，防止长会话中 token 膨胀。
@@ -1015,6 +1184,63 @@ oh-my-opencode 支持两种浏览器自动化引擎：
 ```
 
 ---
+
+### Agent 权限控制
+
+可以为每个 agent 设置工具权限：
+
+```json
+{
+  "agents": {
+    "sisyphus": {
+      "model": "opencode/claude-opus-4-6",
+      "permissions": {
+        "edit": "allow",
+        "bash": "allow",
+        "webfetch": "allow",
+        "doom_loop": "ask",
+        "external_directory": "ask"
+      }
+    }
+  }
+}
+```
+
+| 权限 | 可选值 | 说明 |
+|------|--------|------|
+| `edit` | ask / allow / deny | 文件编辑能力 |
+| `bash` | ask / allow / deny | Bash 命令执行 |
+| `webfetch` | ask / allow / deny | 网络请求能力 |
+| `doom_loop` | ask / allow / deny | 无限循环覆盖 |
+| `external_directory` | ask / allow / deny | 项目外文件访问 |
+
+### LSP 配置
+
+自定义 LSP (Language Server Protocol) 服务器配置：
+
+```json
+{
+  "lsp": {
+    "typescript": {
+      "command": "typescript-language-server --stdio",
+      "extensions": [".ts", ".tsx"],
+      "priority": 1,
+      "env": {},
+      "initialization": {},
+      "disabled": false
+    }
+  }
+}
+```
+
+| 选项 | 类型 | 说明 |
+|------|------|------|
+| `command` | string | LSP 服务器启动命令 |
+| `extensions` | array | 匹配的文件扩展名 |
+| `priority` | number | 服务器优先级 |
+| `env` | object | 环境变量 |
+| `initialization` | object | 初始化选项 |
+| `disabled` | boolean | 是否禁用此 LSP |
 
 ### 可用模型
 
