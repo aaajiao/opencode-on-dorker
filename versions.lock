@@ -23,14 +23,14 @@ PLAYWRIGHT_CLI_VERSION=0.1.1
 
 # Python 依赖
 PIP_REQUESTS=2.32.5
-PIP_PANDAS=3.0.0
+PIP_PANDAS=3.0.1
 PIP_NUMPY=2.4.2
 PIP_MATPLOTLIB=3.10.8
 PIP_BEAUTIFULSOUP4=4.14.3
 PIP_PILLOW=12.1.1
 
 # NotebookLM Skill
-PIP_NOTEBOOKLM_PY=0.3.2
+PIP_NOTEBOOKLM_PY=0.3.3
 
 # ================================================
 # 运行时安装 (ocd --clean + 清缓存)
