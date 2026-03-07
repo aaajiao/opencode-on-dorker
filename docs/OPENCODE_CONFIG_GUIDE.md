@@ -168,7 +168,7 @@ bin/ocd
 # ~/opencode/models.conf
 MAIN_MODEL=opencode/claude-opus-4-6
 SISYPHUS_MODEL=opencode/claude-opus-4-6
-ORACLE_MODEL=opencode/gpt-5.3-codex
+ORACLE_MODEL=opencode/gpt-5.4
 ```
 
 修改后需运行 `ocd --clean` 重新生成配置。

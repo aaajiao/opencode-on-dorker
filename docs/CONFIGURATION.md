@@ -122,7 +122,7 @@ MAIN_MODEL=opencode/claude-opus-4-6
 
 # Agent 模型 (oh-my-opencode.json)
 SISYPHUS_MODEL=opencode/claude-opus-4-6
-ORACLE_MODEL=opencode/gpt-5.3-codex
+ORACLE_MODEL=opencode/gpt-5.4
 EXPLORE_MODEL=opencode/claude-haiku-4-5
 ```
 

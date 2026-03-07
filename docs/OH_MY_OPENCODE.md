@@ -136,9 +136,9 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/gpt-5.3-codex` |
+| 模型 | `opencode/gpt-5.4` |
 | 温度 | 0.1 |
-| 推理强度 | medium |
+| 推理强度 | high |
 | 成本 | 贵 |
 | 工具限制 | **只读**（禁止 write, edit, task, delegate_task） |
 
@@ -376,8 +376,9 @@ oh-my-opencode 共有 **11 个 Agent**，分为四类：
 
 | 属性 | 值 |
 |------|------|
-| 模型 | `opencode/gpt-5.2` |
+| 模型 | `opencode/gpt-5.4` |
 | 温度 | 0.1 |
+| 推理强度 | xhigh |
 | 成本 | 贵 |
 | 工具限制 | **只读**（只能审查） |
 
@@ -899,13 +900,13 @@ MAIN_MODEL=opencode/claude-opus-4-6
 # Agent 模型 (oh-my-opencode.json)
 SISYPHUS_MODEL=opencode/claude-opus-4-6
 HEPHAESTUS_MODEL=opencode/gpt-5.3-codex
-ORACLE_MODEL=opencode/gpt-5.3-codex
+ORACLE_MODEL=opencode/gpt-5.4
 LIBRARIAN_MODEL=opencode/claude-haiku-4-5
 EXPLORE_MODEL=opencode/claude-haiku-4-5
-MULTIMODAL_MODEL=opencode/gemini-3-flash
-PROMETHEUS_MODEL=opencode/claude-opus-4-6
-METIS_MODEL=opencode/claude-opus-4-6
-MOMUS_MODEL=opencode/gpt-5.2
+MULTIMODAL_MODEL=opencode/gpt-5.4
+PROMETHEUS_MODEL=opencode/gpt-5.4
+METIS_MODEL=opencode/gpt-5.4
+MOMUS_MODEL=opencode/gpt-5.4
 ATLAS_MODEL=opencode/claude-sonnet-4-6
 SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-6
 ```
@@ -917,13 +918,13 @@ SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-6
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-6" },
     "hephaestus": { "model": "opencode/gpt-5.3-codex" },
-    "oracle": { "model": "opencode/gpt-5.3-codex" },
+    "oracle": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/claude-haiku-4-5" },
-    "multimodal-looker": { "model": "opencode/gemini-3-flash" },
-    "prometheus": { "model": "opencode/claude-opus-4-6" },
-    "metis": { "model": "opencode/claude-opus-4-6" },
-    "momus": { "model": "opencode/gpt-5.2" },
+    "multimodal-looker": { "model": "opencode/gpt-5.4" },
+    "prometheus": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
+    "metis": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
+    "momus": { "model": "opencode/gpt-5.4", "reasoningEffort": "xhigh" },
     "atlas": { "model": "opencode/claude-sonnet-4-6" },
     "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }
   },
@@ -1255,9 +1256,9 @@ opencode/claude-sonnet-4-5      # 快速
 opencode/claude-haiku-4-5       # 便宜
 #
 #   OpenAI:
-opencode/gpt-5.3-codex          # 最新代码推理，25% 更快
-opencode/gpt-5.2                # 推理
-opencode/gpt-5.2-codex          # 代码推理
+opencode/gpt-5.4                # 最新旗舰推理
+opencode/gpt-5.3-codex          # 代码推理，深度自主工作
+opencode/gpt-5.2                # 上代推理
 #
 #   Google:
 opencode/gemini-3.1-pro         # 多模态，medium reasoning
@@ -1271,8 +1272,8 @@ opencode/big-pickle             # 免费限时
 # 原始 Provider:
 anthropic/claude-opus-4-6
 anthropic/claude-sonnet-4-6
+openai/gpt-5.4
 openai/gpt-5.3-codex
-openai/gpt-5.2
 google/gemini-3.1-pro
 google/gemini-3-pro
 google/gemini-3-flash

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.7.4] - 2026-03-07
+
+### Changed
+
+- **依赖升级**: OpenCode 1.2.17 → 1.2.21, oh-my-opencode 3.10.0 → 3.11.1
+- **模型升级 (GPT-5.4)**: 跟进 oh-my-openagent v3.11.0 大版本模型更新，Oracle/Momus/Metis/Prometheus/Multimodal-Looker 全面切换到 `gpt-5.4`
+  - Oracle: `gpt-5.3-codex` → `gpt-5.4` (reasoningEffort: high)
+  - Momus: `gpt-5.2` → `gpt-5.4` (reasoningEffort: xhigh)
+  - Metis: `claude-opus-4-6` → `gpt-5.4` (reasoningEffort: high)
+  - Prometheus: `claude-opus-4-6` → `gpt-5.4` (reasoningEffort: high)
+  - Multimodal-Looker: `gemini-3-flash` → `gpt-5.4`
+  - Hephaestus 保持 `gpt-5.3-codex`（深度自主工作最优）
+- **可用模型列表刷新**: 新增 `gpt-5.4`，精简旧模型（gpt-5.2-codex、gpt-5.1-codex）
+
 ## [0.7.3] - 2026-02-27
 
 ### Changed
