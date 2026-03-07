@@ -36,7 +36,7 @@
 # HEPHAESTUS_MODEL=opencode/gpt-5.3-codex
 
 # Oracle - 只读顾问（深度推理、架构设计、调试）
-# ORACLE_MODEL=opencode/gpt-5.3-codex
+# ORACLE_MODEL=opencode/gpt-5.4
 
 # Librarian - 文档研究（外部库、官方文档、GitHub 示例）
 # LIBRARIAN_MODEL=opencode/claude-haiku-4-5
@@ -45,16 +45,16 @@
 # EXPLORE_MODEL=opencode/claude-haiku-4-5
 
 # Multimodal Looker - 多媒体分析（PDF、图片、图表）
-# MULTIMODAL_MODEL=opencode/gemini-3-flash
+# MULTIMODAL_MODEL=opencode/gpt-5.4
 
 # Prometheus - 规划 agent（生成详细执行计划）
-# PROMETHEUS_MODEL=opencode/claude-opus-4-6
+# PROMETHEUS_MODEL=opencode/gpt-5.4
 
 # Metis - 预规划顾问（分析需求中的隐藏意图和歧义）
-# METIS_MODEL=opencode/claude-opus-4-6
+# METIS_MODEL=opencode/gpt-5.4
 
 # Momus - 计划审查（评估计划的严谨性和完整性）
-# MOMUS_MODEL=opencode/gpt-5.2
+# MOMUS_MODEL=opencode/gpt-5.4
 
 # Atlas - 高级编排器
 # ATLAS_MODEL=opencode/claude-sonnet-4-6
@@ -108,9 +108,9 @@
 #   - opencode/claude-haiku-4-5       (便宜)
 #
 #   OpenAI:
-#   - opencode/gpt-5.3-codex          (最新代码推理，25% 更快)
-#   - opencode/gpt-5.2                (推理)
-#   - opencode/gpt-5.2-codex          (代码推理)
+#   - opencode/gpt-5.4                (最新旗舰推理)
+#   - opencode/gpt-5.3-codex          (代码推理，深度自主工作)
+#   - opencode/gpt-5.2                (上代推理)
 #
 #   Google:
 #   - opencode/gemini-3.1-pro         (多模态，medium reasoning)
@@ -125,8 +125,8 @@
 # 原始 Provider:
 #   - anthropic/claude-opus-4-6
 #   - anthropic/claude-sonnet-4-6
+#   - openai/gpt-5.4
 #   - openai/gpt-5.3-codex
-#   - openai/gpt-5.2
 #   - google/gemini-3.1-pro
 #   - google/gemini-3-pro
 #   - google/gemini-3-flash

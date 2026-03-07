@@ -4,13 +4,13 @@
   "agents": {
     "sisyphus": { "model": "opencode/claude-opus-4-6" },
     "hephaestus": { "model": "opencode/gpt-5.3-codex" },
-    "oracle": { "model": "opencode/gpt-5.3-codex" },
+    "oracle": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
     "librarian": { "model": "opencode/claude-haiku-4-5" },
     "explore": { "model": "opencode/claude-haiku-4-5" },
-    "multimodal-looker": { "model": "opencode/gemini-3-flash" },
-    "prometheus": { "model": "opencode/claude-opus-4-6" },
-    "metis": { "model": "opencode/claude-opus-4-6" },
-    "momus": { "model": "opencode/gpt-5.2" },
+    "multimodal-looker": { "model": "opencode/gpt-5.4" },
+    "prometheus": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
+    "metis": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },
+    "momus": { "model": "opencode/gpt-5.4", "reasoningEffort": "xhigh" },
     "atlas": { "model": "opencode/claude-sonnet-4-6" },
     "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }
   },

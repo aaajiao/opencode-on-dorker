@@ -7,10 +7,9 @@
   // ============================================================
   // Agent 模型配置
   // 可用模型: opencode/claude-opus-4-6, opencode/claude-sonnet-4-6,
-  //          opencode/claude-haiku-4-5, opencode/gpt-5.3-codex,
-  //          opencode/gpt-5.2-codex, opencode/gpt-5.2,
-  //          opencode/gemini-3-pro, opencode/gemini-3-flash,
-  //          opencode/grok-code
+  //          opencode/claude-haiku-4-5, opencode/gpt-5.4,
+  //          opencode/gpt-5.3-codex, opencode/gpt-5.2,
+  //          opencode/gemini-3-pro, opencode/gemini-3-flash
   // 每个 agent 支持以下选项:
   //   model: 使用的模型 ID
   //   variant: 模型变体，如 "max"（更大上下文）
@@ -30,13 +29,13 @@
         "external_directory": "ask"
       }
     },
-    "oracle": { "model": "opencode/gpt-5.2" },                     // 架构顾问（贵）
+    "oracle": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },  // 架构顾问（贵）
     "librarian": { "model": "opencode/claude-haiku-4-5" },          // 外部研究（便宜）
     "explore": { "model": "opencode/claude-haiku-4-5" },              // 代码导航（便宜）
-    "multimodal-looker": { "model": "opencode/gemini-3-flash" },    // 视觉分析（便宜）
-    "prometheus": { "model": "opencode/claude-opus-4-6" },          // 战略规划（贵）
-    "metis": { "model": "opencode/claude-opus-4-6" },               // 预规划分析（贵）
-    "momus": { "model": "opencode/gpt-5.2" },                       // 计划审查（贵）
+    "multimodal-looker": { "model": "opencode/gpt-5.4" },           // 视觉分析
+    "prometheus": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },  // 战略规划（贵）
+    "metis": { "model": "opencode/gpt-5.4", "reasoningEffort": "high" },     // 预规划分析（贵）
+    "momus": { "model": "opencode/gpt-5.4", "reasoningEffort": "xhigh" },    // 计划审查（贵）
     "atlas": { "model": "opencode/claude-sonnet-4-6" },             // 高级编排（贵）
     "sisyphus-junior": { "model": "opencode/claude-sonnet-4-6" }    // 任务执行（便宜）
   },
