@@ -19,6 +19,14 @@ METIS_MODEL="${METIS_MODEL:-}"
 MOMUS_MODEL="${MOMUS_MODEL:-}"
 ATLAS_MODEL="${ATLAS_MODEL:-}"
 SISYPHUS_JUNIOR_MODEL="${SISYPHUS_JUNIOR_MODEL:-}"
+VISUAL_ENGINEERING_MODEL="${VISUAL_ENGINEERING_MODEL:-}"
+ULTRABRAIN_MODEL="${ULTRABRAIN_MODEL:-}"
+DEEP_MODEL="${DEEP_MODEL:-}"
+ARTISTRY_MODEL="${ARTISTRY_MODEL:-}"
+QUICK_MODEL="${QUICK_MODEL:-}"
+UNSPECIFIED_LOW_MODEL="${UNSPECIFIED_LOW_MODEL:-}"
+UNSPECIFIED_HIGH_MODEL="${UNSPECIFIED_HIGH_MODEL:-}"
+WRITING_MODEL="${WRITING_MODEL:-}"
 
 # =========================================
 # 加载模型配置 (可选)
@@ -252,6 +260,15 @@ ocd_update_omo_agents() {
   [[ -n "$MOMUS_MODEL" ]] && jq_cmd+="| .agents.momus.model = \"$MOMUS_MODEL\" "
   [[ -n "$ATLAS_MODEL" ]] && jq_cmd+="| .agents.atlas.model = \"$ATLAS_MODEL\" "
   [[ -n "$SISYPHUS_JUNIOR_MODEL" ]] && jq_cmd+="| .agents.\"sisyphus-junior\".model = \"$SISYPHUS_JUNIOR_MODEL\" "
+  # Categories
+  [[ -n "$VISUAL_ENGINEERING_MODEL" ]] && jq_cmd+="| .categories.\"visual-engineering\".model = \"$VISUAL_ENGINEERING_MODEL\" "
+  [[ -n "$ULTRABRAIN_MODEL" ]] && jq_cmd+="| .categories.ultrabrain.model = \"$ULTRABRAIN_MODEL\" "
+  [[ -n "$DEEP_MODEL" ]] && jq_cmd+="| .categories.deep.model = \"$DEEP_MODEL\" "
+  [[ -n "$ARTISTRY_MODEL" ]] && jq_cmd+="| .categories.artistry.model = \"$ARTISTRY_MODEL\" "
+  [[ -n "$QUICK_MODEL" ]] && jq_cmd+="| .categories.quick.model = \"$QUICK_MODEL\" "
+  [[ -n "$UNSPECIFIED_LOW_MODEL" ]] && jq_cmd+="| .categories.\"unspecified-low\".model = \"$UNSPECIFIED_LOW_MODEL\" "
+  [[ -n "$UNSPECIFIED_HIGH_MODEL" ]] && jq_cmd+="| .categories.\"unspecified-high\".model = \"$UNSPECIFIED_HIGH_MODEL\" "
+  [[ -n "$WRITING_MODEL" ]] && jq_cmd+="| .categories.writing.model = \"$WRITING_MODEL\" "
 
   if jq "$jq_cmd" "$config_file" > "$tmp_file" 2>/dev/null; then
     mv "$tmp_file" "$config_file"

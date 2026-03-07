@@ -63,6 +63,38 @@
 # SISYPHUS_JUNIOR_MODEL=opencode/claude-sonnet-4-6
 
 # =========================================
+# Category 模型 (oh-my-opencode.json)
+# =========================================
+#
+# task(category="xxx") 委派时使用的模型
+#
+# =========================================
+
+# visual-engineering - 前端、UI/UX、设计、样式、动画
+# VISUAL_ENGINEERING_MODEL=opencode/gemini-3-pro
+
+# ultrabrain - 高难度逻辑推理任务
+# ULTRABRAIN_MODEL=opencode/gpt-5.3-codex
+
+# deep - 目标导向自主深度问题解决
+# DEEP_MODEL=opencode/gpt-5.3-codex
+
+# artistry - 创意型复杂问题解决
+# ARTISTRY_MODEL=opencode/gemini-3-pro
+
+# quick - 简单任务（单文件修改、拼写修正）
+# QUICK_MODEL=opencode/claude-haiku-4-5
+
+# unspecified-low - 不属于其他分类的低难度任务
+# UNSPECIFIED_LOW_MODEL=opencode/claude-sonnet-4-6
+
+# unspecified-high - 不属于其他分类的高难度任务
+# UNSPECIFIED_HIGH_MODEL=opencode/claude-opus-4-6
+
+# writing - 文档、技术写作
+# WRITING_MODEL=opencode/gemini-3-flash
+
+# =========================================
 # 可用模型列表
 # =========================================
 #
