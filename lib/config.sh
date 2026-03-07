@@ -12,6 +12,13 @@ EXPLORE_MODEL="${EXPLORE_MODEL:-}"
 DOCUMENT_WRITER_MODEL="${DOCUMENT_WRITER_MODEL:-}"
 FRONTEND_MODEL="${FRONTEND_MODEL:-}"
 MULTIMODAL_MODEL="${MULTIMODAL_MODEL:-}"
+SISYPHUS_MODEL="${SISYPHUS_MODEL:-}"
+HEPHAESTUS_MODEL="${HEPHAESTUS_MODEL:-}"
+PROMETHEUS_MODEL="${PROMETHEUS_MODEL:-}"
+METIS_MODEL="${METIS_MODEL:-}"
+MOMUS_MODEL="${MOMUS_MODEL:-}"
+ATLAS_MODEL="${ATLAS_MODEL:-}"
+SISYPHUS_JUNIOR_MODEL="${SISYPHUS_JUNIOR_MODEL:-}"
 
 # =========================================
 # 加载模型配置 (可选)
@@ -280,6 +287,10 @@ ocd_reset_global_config() {
   
   # 重新创建
   ocd_ensure_global_config
+  
+  # 应用 models.conf（如果存在）
+  ocd_apply_models_conf
+  
   ocd_info "已重置全局配置"
 }
 
