@@ -10,14 +10,16 @@
 [![Version](https://img.shields.io/badge/version-0.7.4-blue.svg)](../CHANGELOG.md)
 [![English](https://img.shields.io/badge/lang-English-blue.svg)](../README.md)
 
-在 macOS + OrbStack 环境下运行 [OpenCode](https://opencode.ai) AI 编程助手，集成 [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) 多 Agent 编排插件。
+在 macOS + OrbStack 环境下运行 [OpenCode](https://opencode.ai) AI 编程助手，集成 [Oh My OpenCode](https://github.com/code-yeongyu/oh-my-openagent) 多 Agent 编排插件。
+
+上游说明：GitHub 仓库已更名为 `oh-my-openagent`，但 npm 包名和配置文件名仍保留 `oh-my-opencode` 以兼容现有安装。
 
 ## 功能特性
 
 - 一键启动 OpenCode 容器（`ocd` 命令，自动检测工作区）
 - 多窗口支持（自动端口分配 + 锁机制防冲突）
 - macOS 集成（桌面通知、剪贴板桥接、链接自动打开）
-- oh-my-opencode 多 Agent 协作（Sisyphus、Oracle、Hephaestus 等）
+- Oh My OpenCode 多 Agent 协作（Sisyphus、Oracle、Hephaestus 等）
 - MCP 服务器 & Playwright 浏览器自动化
 - 配置持久化（用户所有，OCD 不覆盖）
 
@@ -78,7 +80,7 @@ GITHUB_TOKEN=ghp_xxxx
 EXA_API_KEY=your-exa-api-key
 ```
 
-## oh-my-opencode Agent
+## Oh My OpenCode Agent
 
 | 场景 | Agent | 示例 |
 |------|-------|------|
@@ -101,7 +103,7 @@ EXA_API_KEY=your-exa-api-key
 | [配置详解](./CONFIGURATION.md) | 目录结构、配置生命周期 |
 | [架构说明](./ARCHITECTURE.md) | Mac/Docker 映射关系 |
 | [开发者指南](./OPENCODE_CONFIG_GUIDE.md) | 扩展和定制 |
-| [Agent 指南](./OH_MY_OPENCODE.md) | oh-my-opencode 多 Agent 协作 |
+| [Agent 指南](./OH_MY_OPENCODE.md) | Oh My OpenCode 多 Agent 协作 |
 
 ## 依赖要求
 

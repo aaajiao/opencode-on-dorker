@@ -1,6 +1,8 @@
-# oh-my-opencode Agent 使用指南
+# Oh My OpenCode Agent 使用指南
 
-oh-my-opencode v3.x 多 Agent 协作系统完整说明。
+Oh My OpenCode v3.x 多 Agent 协作系统完整说明。
+
+说明：上游 GitHub 仓库已更名为 `code-yeongyu/oh-my-openagent`，但 npm 包名、配置文件名与文档站品牌仍保留 `oh-my-opencode` / Oh My OpenCode。
 
 ---
 
@@ -24,7 +26,7 @@ oh-my-opencode v3.x 多 Agent 协作系统完整说明。
 
 ## 所有 Agent 一览
 
-oh-my-opencode 共有 **11 个 Agent**，分为四类：
+Oh My OpenCode 共有 **11 个 Agent**，分为四类：
 
 | 类别 | Agent | 默认模型 | 成本 | 核心职责 |
 |------|-------|---------|------|----------|
@@ -1293,5 +1295,6 @@ google/gemini-3-flash
 
 - [配置详解](./CONFIGURATION.md) - 目录结构、配置生命周期
 - [CLI 参考](./CLI_REFERENCE.md) - 命令行完整参考
-- [oh-my-opencode 官方文档](https://ohmyopencode.com/agents/)
+- [Oh My OpenCode 官方文档](https://ohmyopencode.com/agents/)
+- [上游 GitHub 仓库](https://github.com/code-yeongyu/oh-my-openagent)
 - [社区最佳实践](https://www.opencode.live/ecosystem/oh-my-opencode/best-practices/)

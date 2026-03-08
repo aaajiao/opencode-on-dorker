@@ -10,14 +10,16 @@
 [![Version](https://img.shields.io/badge/version-0.7.4-blue.svg)](./CHANGELOG.md)
 [![中文](https://img.shields.io/badge/lang-中文-red.svg)](./docs/README_CN.md)
 
-Run [OpenCode](https://opencode.ai) AI coding agent in a macOS + OrbStack Docker environment, powered by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) multi-agent orchestration.
+Run [OpenCode](https://opencode.ai) AI coding agent in a macOS + OrbStack Docker environment, powered by [Oh My OpenCode](https://github.com/code-yeongyu/oh-my-openagent) multi-agent orchestration.
+
+Upstream note: the GitHub repository was renamed to `oh-my-openagent`, while the published npm package and config filenames still use `oh-my-opencode` for compatibility.
 
 ## Features
 
 - One-command launch (`ocd`) with auto workspace detection
 - Multi-window support (auto port allocation + lock mechanism)
 - macOS integration (desktop notifications, clipboard bridge, auto-open links)
-- Multi-agent collaboration via oh-my-opencode (Sisyphus, Oracle, Hephaestus, etc.)
+- Multi-agent collaboration via Oh My OpenCode (Sisyphus, Oracle, Hephaestus, etc.)
 - MCP servers & Playwright browser automation
 - Persistent user-owned configuration (OCD never overwrites)
 
@@ -78,7 +80,7 @@ GITHUB_TOKEN=ghp_xxxx
 EXA_API_KEY=your-exa-api-key
 ```
 
-## oh-my-opencode Agents
+## Oh My OpenCode Agents
 
 | Scenario | Agent | Example |
 |----------|-------|---------|
@@ -101,7 +103,7 @@ Full guide: [docs/OH_MY_OPENCODE.md](./docs/OH_MY_OPENCODE.md)
 | [Configuration](./docs/CONFIGURATION.md) | Directory structure, config lifecycle |
 | [Architecture](./docs/ARCHITECTURE.md) | Mac/Docker mapping, IPC |
 | [Developer Guide](./docs/OPENCODE_CONFIG_GUIDE.md) | Extension & customization |
-| [Agent Guide](./docs/OH_MY_OPENCODE.md) | oh-my-opencode multi-agent system |
+| [Agent Guide](./docs/OH_MY_OPENCODE.md) | Oh My OpenCode multi-agent system |
 
 ## Requirements
 

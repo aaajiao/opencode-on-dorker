@@ -4,7 +4,7 @@ Guidelines for AI agents working on this repository.
 
 ## Project Overview
 
-**OCD (OpenCode Docker)** v0.7.4: macOS + OrbStack environment for OpenCode AI with oh-my-opencode plugin.
+**OCD (OpenCode Docker)** v0.7.4: macOS + OrbStack environment for OpenCode AI with the Oh My OpenCode plugin (upstream repo: `oh-my-openagent`).
 
 **Tech Stack**: Docker, Shell (bash/zsh), JSON configuration
 
@@ -137,7 +137,7 @@ docker run -it --rm --network host opencode-bun bash
 | Understand config system | `docs/CONFIGURATION.md` | Directory structure, lifecycle |
 | Debug Mac/Docker mapping | `docs/ARCHITECTURE.md` | Mount points, IPC mechanism |
 | Extend OCD (developer) | `docs/OPENCODE_CONFIG_GUIDE.md` | Modules, extension points |
-| oh-my-opencode Agent system | `docs/OH_MY_OPENCODE.md` | Agents, Skills, MCPs, advanced features |
+| Oh My OpenCode agent system | `docs/OH_MY_OPENCODE.md` | Agents, Skills, MCPs, advanced features |
 | Quick user overview | `README.md` (English) | Keep concise (~100 lines) |
 | Chinese documentation | `docs/README_CN.md` | Sync with README.md |
 
@@ -145,7 +145,7 @@ docker run -it --rm --network host opencode-bun bash
 - New CLI option → `CLI_REFERENCE.md` + `README.md` (if major)
 - New config/directory → `CONFIGURATION.md` + `ARCHITECTURE.md`
 - Breaking change → `CHANGELOG.md` + version bump in README/AGENTS.md
-- oh-my-opencode features → `OH_MY_OPENCODE.md`
+- Oh My OpenCode features → `OH_MY_OPENCODE.md`
 - Always sync: `README.md` ↔ `docs/README_CN.md`
 
 ## Code Style Guidelines
@@ -209,7 +209,7 @@ Key variables:
 ## Playwright Browser Automation
 
 Playwright CLI (`playwright-cli`) is installed globally in the Docker image via `@playwright/cli`.
-Browser automation uses oh-my-opencode's built-in `playwright` and `dev-browser` skills (CLI mode, token-efficient).
+Browser automation uses Oh My OpenCode's built-in `playwright` and `dev-browser` skills (CLI mode, token-efficient).
 
 ## CLI Reference
 
