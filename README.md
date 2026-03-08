@@ -7,7 +7,7 @@
   ╚═════╝  ╚═════╝╚═════╝
 ```
 
-[![Version](https://img.shields.io/badge/version-0.7.3-blue.svg)](./CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.7.4-blue.svg)](./CHANGELOG.md)
 [![中文](https://img.shields.io/badge/lang-中文-red.svg)](./docs/README_CN.md)
 
 Run [OpenCode](https://opencode.ai) AI coding agent in a macOS + OrbStack Docker environment, powered by [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) multi-agent orchestration.
