@@ -14,25 +14,28 @@
 # ================================================
 
 # Docker 基础镜像
-BUN_VERSION=1.3.5
+BUN_VERSION=1.3.10
 
 # OpenCode 核心 CLI
-OPENCODE_AI_VERSION=1.1.28
+OPENCODE_AI_VERSION=1.2.21
+
+# Playwright CLI (浏览器自动化)
+PLAYWRIGHT_CLI_VERSION=0.1.1
 
 # Python 依赖
 PIP_REQUESTS=2.32.5
-PIP_PANDAS=2.2.3
-PIP_NUMPY=2.2.1
-PIP_MATPLOTLIB=3.10.0
-PIP_BEAUTIFULSOUP4=4.12.3
-PIP_PILLOW=11.1.0
+PIP_PANDAS=3.0.1
+PIP_NUMPY=2.4.2
+PIP_MATPLOTLIB=3.10.8
+PIP_BEAUTIFULSOUP4=4.14.3
+PIP_PILLOW=12.1.1
 
 # NotebookLM Skill
-PIP_NOTEBOOKLM_PY=0.2.0
+PIP_NOTEBOOKLM_PY=0.3.3
 
 # ================================================
 # 运行时安装 (ocd --clean + 清缓存)
 # ================================================
 
 # OpenCode 插件
-OH_MY_OPENCODE_VERSION=2.14.0
+OH_MY_OPENCODE_VERSION=3.11.1

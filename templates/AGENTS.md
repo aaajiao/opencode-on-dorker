@@ -38,12 +38,12 @@ templates/
 
 **In versions.lock**:
 ```bash
-OH_MY_OPENCODE_VERSION=2.14.0
+OH_MY_OPENCODE_VERSION=3.11.1
 ```
 
 **After substitution**:
 ```json
-"plugin": ["oh-my-opencode@2.14.0"]
+"plugin": ["oh-my-opencode@3.11.1"]
 ```
 
 **Fallback**: If variable not found → replaced with `"latest"`
