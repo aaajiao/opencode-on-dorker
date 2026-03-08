@@ -2,7 +2,7 @@
 // 实际使用时请复制为 oh-my-opencode.json 并删除注释
 // 配置位置: ~/.config/opencode/oh-my-opencode.json
 {
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/master/assets/oh-my-opencode.schema.json",
 
   // ============================================================
   // Agent 模型配置
