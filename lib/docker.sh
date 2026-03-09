@@ -95,7 +95,7 @@ ocd_run_container() {
   fi
 
   mkdir -p "$OCD_CONFIG_HOME"/{skills,commands,agents}
-  mkdir -p "$OCD_DATA_HOME"/{bin,storage}
+  mkdir -p "$OCD_DATA_HOME"/{bin,storage,npm-global}
   mkdir -p "$OCD_OMO_CACHE_HOME/bin"
   mkdir -p "$global_claude"/{commands,skills,agents,rules}
   mkdir -p "$OCD_CLAUDE_RUNTIME"/{todos,transcripts}

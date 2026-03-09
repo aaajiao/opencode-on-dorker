@@ -163,7 +163,9 @@ RUN mkdir -p /root/.claude/todos \
 # -------------------------------------------------------
 WORKDIR /workspace
 
-ENV PATH="/root/.local/bin:/opt/venv/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
+# npm -g 持久化：重定向到已挂载的 data 目录，LSP server 等全局包容器重启后保留
+ENV NPM_CONFIG_PREFIX="/root/.local/share/opencode/npm-global"
+ENV PATH="/root/.local/share/opencode/npm-global/bin:/root/.local/bin:/opt/venv/bin:/usr/local/bin:/usr/bin:/bin:${PATH}"
 
 RUN git config --global user.email "ai@opencode.orbstack" && \
     git config --global user.name "OpenCode Agent"
@@ -185,6 +187,7 @@ if [[ ! -d "/root/.cache/oh-my-opencode" ]]; then\n\
     mkdir -p /root/.cache/oh-my-opencode\n\
 fi\n\
 mkdir -p /root/.cache/oh-my-opencode/bin 2>/dev/null\n\
+mkdir -p /root/.local/share/opencode/npm-global 2>/dev/null\n\
 chmod 755 /root/.cache/oh-my-opencode /root/.cache/oh-my-opencode/bin 2>/dev/null || true\n\
 ocd_debug "目录状态: $(ls -la /root/.cache/oh-my-opencode/ 2>&1)"\n\
 \n\
