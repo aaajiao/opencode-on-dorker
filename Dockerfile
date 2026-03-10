@@ -261,6 +261,14 @@ if [[ -d "$NOTEBOOKLM_SKILL" ]]; then\n\
 fi\n\
 # === End NotebookLM Skill ===\n\
 \n\
+# LSP workaround: project-local node_modules/.bin 加入 PATH\n\
+# oh-my-opencode isServerInstalled() 检测时查 node_modules/.bin，但 spawn 时不查\n\
+# upstream: https://github.com/code-yeongyu/oh-my-openagent/issues/2431\n\
+if [[ -d "$PROJECT_ROOT/node_modules/.bin" ]]; then\n\
+    export PATH="$PROJECT_ROOT/node_modules/.bin:$PATH"\n\
+    ocd_debug "LSP PATH workaround: added $PROJECT_ROOT/node_modules/.bin"\n\
+fi\n\
+\n\
 # 始终传递当前工作目录给 opencode（使用 -c 选项明确指定）\n\
 exec opencode -c . "$@"\n\
 ' > /usr/local/bin/entrypoint.sh && \
