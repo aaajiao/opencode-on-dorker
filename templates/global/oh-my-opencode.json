@@ -60,5 +60,6 @@
     "provider": "playwright"
   },
 
-  "auto_update": true
+  "auto_update": true,
+  "notification": "off"
 }

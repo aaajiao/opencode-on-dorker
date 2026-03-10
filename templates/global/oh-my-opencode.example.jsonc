@@ -128,6 +128,15 @@
   },
 
   // ============================================================
+  // 通知设置
+  // oh-my-opencode 自带 session-notification，每次 agent 回复完毕
+  // 会通过 osascript/terminal-notifier 发 macOS 通知
+  // OCD 已有自己的通知系统（notify 命令 + fswatch），两套会冲突
+  // 可选值: "off", "minimal", "detailed"
+  // ============================================================
+  "notification": "off",
+
+  // ============================================================
   // Tmux 集成
   // 可视化多 Agent 执行，每个 subagent 在独立 tmux pane 中运行
   // 要求: 必须在 tmux 会话内运行，且 OpenCode 使用 --port 模式
