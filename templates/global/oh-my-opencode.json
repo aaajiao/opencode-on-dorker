@@ -61,5 +61,5 @@
   },
 
   "auto_update": true,
-  "notification": "off"
+  "disabled_hooks": ["session-notification"]
 }

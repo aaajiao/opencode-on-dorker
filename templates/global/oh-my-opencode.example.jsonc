@@ -128,13 +128,12 @@
   },
 
   // ============================================================
-  // 通知设置
-  // oh-my-opencode 自带 session-notification，每次 agent 回复完毕
-  // 会通过 osascript/terminal-notifier 发 macOS 通知
-  // OCD 已有自己的通知系统（notify 命令 + fswatch），两套会冲突
-  // 可选值: "off", "minimal", "detailed"
+  // 禁用的 Hooks
+  // session-notification: oh-my-opencode 自带的通知，每次 agent 回复完毕
+  //   会通过 osascript/terminal-notifier 发 macOS 通知
+  //   OCD 已有自己的通知系统（notify 命令 + fswatch），两套会冲突
   // ============================================================
-  "notification": "off",
+  "disabled_hooks": ["session-notification"],
 
   // ============================================================
   // Tmux 集成
